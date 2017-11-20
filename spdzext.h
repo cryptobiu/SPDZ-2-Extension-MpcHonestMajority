@@ -7,8 +7,8 @@
 extern "C"
 {
 	int init(const int pid, const char * field, const int offline_size);
-	int start_open(const size_t share_count, const char ** shares, size_t * secret_count, char *** secrets);
-	int stop_open(void *);
+	int start_open(const size_t share_count, const char ** shares, size_t * open_count, char *** opens);
+	int stop_open(const size_t share_count, const char ** shares, const size_t open_count, const char ** opens);
 	int term(void *);
 }
 

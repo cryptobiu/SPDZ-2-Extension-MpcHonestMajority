@@ -21,11 +21,11 @@ int init(const int pid, const char * /*field*/, const int offline_size)
 	return 0;
 }
 
-int start_open(const size_t share_count, const char ** shares, char *** secrets)
+int start_open(const size_t share_count, const char ** shares, size_t * open_count, char *** opens)
 {
 	syslog(LOG_NOTICE, "Player %d SPDZ-2 extension library start_open for %u shares", the_pid, (unsigned int)share_count);
 
-	std::vector<ZpMersenneLongElement> ext_shares, ext_secrets;
+	std::vector<ZpMersenneLongElement> ext_shares, ext_opens;
 
 	char * end_ptr = NULL;
 	for(size_t i = 0; i < share_count; i++)
@@ -38,13 +38,41 @@ int start_open(const size_t share_count, const char ** shares, char *** secrets)
 
 	syslog(LOG_NOTICE, "Player %d SPDZ-2 extension library start_open prep %u shares", the_pid, (unsigned int)ext_shares.size());
 
-	the_party->openShare((int)ext_shares.size(), ext_shares, ext_secrets);
+	the_party->openShare((int)ext_shares.size(), ext_shares, ext_opens);
+
+	syslog(LOG_NOTICE, "Player %d SPDZ-2 extension library start_open returned %u opens", the_pid, (unsigned int)ext_opens.size());
+
+	*open_count = ext_opens.size();
+	if(0 < *open_count)
+	{
+		*opens = new char*[*open_count];
+		memset(*opens, 0, *open_count * sizeof(char*));
+
+		*open_count = 0;
+		for(vector<ZpMersenneLongElement>::const_iterator i = ext_opens.begin(); i != ext_opens.end(); ++i)
+		{
+			std::stringstream ss;
+			ss << *i;
+			(*opens)[(*open_count)++] = strdup(ss.str().c_str());
+		}
+	}
+
 	return 0;
 }
 
-int stop_open(void *)
+int stop_open(const size_t /*share_count*/, const char ** /*shares*/, const size_t /*open_count*/, const char ** /*opens*/)
 {
-	return 0;
+	//the current implementation does not use any of the params provided.
+	if(the_party->verify())
+	{
+		syslog(LOG_NOTICE, "Player %d SPDZ-2 extension library verify() succeeded", the_pid);
+		return 0;
+	}
+	else
+	{
+		syslog(LOG_NOTICE, "Player %d SPDZ-2 extension library verify() failed", the_pid);
+		return -1;
+	}
 }
 
 int term(void *)
