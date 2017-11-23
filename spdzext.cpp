@@ -1,10 +1,15 @@
 
 #include "spdzext.h"
-#include <syslog.h>
+//#include <syslog.h>
+#include <iostream>
 #include <vector>
 
 #include "ProtocolParty.h"
 
+void load_mersenne_elements(const size_t ul_count, const unsigned long * uls, std::vector<ZpMersenneLongElement> & elements);
+void store_mersenne_elements(const std::vector<ZpMersenneLongElement> & elements, size_t * ul_count, unsigned long ** uls);
+
+//-------------------------------------------------------------------------------------------//
 ProtocolParty<ZpMersenneLongElement> * the_party = NULL;
 int the_pid = -1;
 
@@ -17,69 +22,94 @@ int init(const int pid, const char * /*field*/, const int offline_size)
 	the_party = new ProtocolParty<ZpMersenneLongElement>(pid, offline_size);
 	the_party->init();
 
-	syslog(LOG_NOTICE, "Player %d SPDZ-2 extension library initialized", pid);
+	std::cout << "Player " << pid << " SPDZ-2 extension library initialized" << std::endl;
 	return 0;
 }
-
-int start_open(const size_t share_count, const char ** shares, size_t * open_count, char *** opens)
+//-------------------------------------------------------------------------------------------//
+int start_open(const size_t share_count, const unsigned long * shares, size_t * open_count, unsigned long ** opens)
 {
-	syslog(LOG_NOTICE, "Player %d SPDZ-2 extension library start_open for %u shares", the_pid, (unsigned int)share_count);
+	std::cout << "Player " << the_pid << " SPDZ-2 extension library start_open for " << share_count << " shares" << std::endl;
 
-	std::vector<ZpMersenneLongElement> ext_shares, ext_opens;
-
-	char * end_ptr = NULL;
-	for(size_t i = 0; i < share_count; i++)
+	if(0 < share_count)
 	{
-		syslog(LOG_NOTICE, "Player %d SPDZ-2 extension library start_open textual share[%u] = [%s]", the_pid, (unsigned int)i, shares[i]);
-		unsigned long share_value = strtol(shares[i], &end_ptr, 10);
-		syslog(LOG_NOTICE, "Player %d SPDZ-2 extension library start_open binary share[%u] = [%lu]", the_pid, (unsigned int)i, share_value);
-		ext_shares.push_back(ZpMersenneLongElement(share_value));
-	}
-
-	syslog(LOG_NOTICE, "Player %d SPDZ-2 extension library start_open prep %u shares", the_pid, (unsigned int)ext_shares.size());
-
-	the_party->openShare((int)ext_shares.size(), ext_shares, ext_opens);
-
-	syslog(LOG_NOTICE, "Player %d SPDZ-2 extension library start_open returned %u opens", the_pid, (unsigned int)ext_opens.size());
-
-	*open_count = ext_opens.size();
-	if(0 < *open_count)
-	{
-		*opens = new char*[*open_count];
-		memset(*opens, 0, *open_count * sizeof(char*));
-
-		*open_count = 0;
-		for(vector<ZpMersenneLongElement>::const_iterator i = ext_opens.begin(); i != ext_opens.end(); ++i)
+		/*
+		for(size_t i = 0; i < share_count; i++)
 		{
-			std::stringstream ss;
-			ss << *i;
-			(*opens)[(*open_count)++] = strdup(ss.str().c_str());
+			cout << "start_open() share[" << i << "] = " << shares[i] << endl;
+		}
+		*/
+		std::vector<ZpMersenneLongElement> ext_shares, ext_opens;
+		load_mersenne_elements(share_count, shares, ext_shares);
+
+		//std::cout << "Player " << the_pid << " SPDZ-2 extension library start_open prep " << ext_shares.size() << " shares" << std::endl;
+
+		ext_opens.resize(ext_shares.size());
+		the_party->openShare((int)ext_shares.size(), ext_shares, ext_opens);
+
+		//std::cout << "Player " << the_pid << " SPDZ-2 extension library start_open returned " << ext_opens.size() << " opens" << std::endl;
+
+		if(0 < ext_opens.size())
+		{
+			store_mersenne_elements(ext_opens, open_count, opens);
+			/*
+			for(size_t i = 0; i < share_count; i++)
+			{
+				cout << "start_open() open[" << (unsigned long)i << "] = " << (*opens)[i] << "/" << ext_opens[i] << endl;
+			}
+			*/
 		}
 	}
-
 	return 0;
 }
-
-int stop_open(const size_t /*share_count*/, const char ** /*shares*/, const size_t /*open_count*/, const char ** /*opens*/)
+//-------------------------------------------------------------------------------------------//
+int stop_open()
 {
-	//the current implementation does not use any of the params provided.
 	if(the_party->verify())
 	{
-		syslog(LOG_NOTICE, "Player %d SPDZ-2 extension library verify() succeeded", the_pid);
+		std::cout << "Player " << the_pid << " SPDZ-2 extension library verify() succeeded" << std::endl;
 		return 0;
 	}
 	else
 	{
-		syslog(LOG_NOTICE, "Player %d SPDZ-2 extension library verify() failed", the_pid);
+		std::cout << "Player " << the_pid << " SPDZ-2 extension library verify() failed" << std::endl;
 		return -1;
 	}
 }
-
+//-------------------------------------------------------------------------------------------//
 int term(void *)
 {
-	delete the_party;
-	the_party = NULL;
+	if(NULL != the_party)
+	{
+		delete the_party;
+		the_party = NULL;
+	}
 
-	syslog(LOG_NOTICE, "Player %d SPDZ-2 extension library terminated", the_pid);
+	std::cout << "Player " << the_pid << " SPDZ-2 extension library terminated" << std::endl;
 	return 0;
 }
+//-------------------------------------------------------------------------------------------//
+unsigned long test_conversion(const unsigned long value)
+{
+	ZpMersenneLongElement element(value);
+	return element.elem;
+}
+//-------------------------------------------------------------------------------------------//
+void load_mersenne_elements(const size_t ul_count, const unsigned long * uls, std::vector<ZpMersenneLongElement> & elements)
+{
+	elements.clear();
+	for(size_t i = 0; i < ul_count; i++)
+	{
+		elements.push_back(ZpMersenneLongElement(uls[i]));
+	}
+}
+//-------------------------------------------------------------------------------------------//
+void store_mersenne_elements(const std::vector<ZpMersenneLongElement> & elements, size_t * ul_count, unsigned long ** uls)
+{
+	*uls = new unsigned long[*ul_count = elements.size()];
+	for(size_t i = 0; i < *ul_count; i++)
+	{
+		(*uls)[i] = elements[i].elem;
+	}
+
+}
+//-------------------------------------------------------------------------------------------//
