@@ -19,6 +19,11 @@ int init(void ** handle, const int pid, const char * field, const int offline_si
 	return 0;
 }
 //-------------------------------------------------------------------------------------------//
+int offline(void * handle, const int offline_size)
+{
+	return ((spdz_ext_processor_ifc *)handle)->offline(offline_size);
+}
+//-------------------------------------------------------------------------------------------//
 int start_open(void * handle, const size_t share_count, const unsigned long * shares)
 {
 	return ((spdz_ext_processor_ifc *)handle)->start_open(share_count, shares);

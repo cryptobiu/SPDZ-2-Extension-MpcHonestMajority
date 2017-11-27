@@ -37,12 +37,20 @@ class spdz_ext_processor_cc_imp
 	void exec_triple();
 	//---------------------------------------------------
 
+	//--offline------------------------------------------
+	int size_of_offline;
+	sem_t offline_done;
+	void exec_offline();
+	//---------------------------------------------------
+
 public:
 	spdz_ext_processor_cc_imp();
 	~spdz_ext_processor_cc_imp();
 
-	int start(const int pid, const char * field, const int offline_size);
+	int start(const int pid, const char * field, const int offline_size = 0);
 	int stop(const time_t timeout_sec = 2);
+
+	int offline(const int offline_size, const time_t timeout_sec = 2);
 
 	int start_open(const size_t share_count, const unsigned long * share_values);
 	int stop_open(size_t * open_count, unsigned long ** open_values, const time_t timeout_sec = 2);
@@ -53,6 +61,7 @@ public:
 
 	static const int op_code_open;
 	static const int op_code_triple;
+	static const int op_code_offline;
 };
 
 //***********************************************************************************************//
@@ -80,6 +89,12 @@ int spdz_ext_processor_ifc::stop(const time_t timeout_sec)
 }
 
 //***********************************************************************************************//
+int spdz_ext_processor_ifc::offline(const int offline_size, const time_t timeout_sec)
+{
+	return impl->offline(offline_size, timeout_sec);
+}
+
+//***********************************************************************************************//
 int spdz_ext_processor_ifc::start_open(const size_t share_count, const unsigned long * share_values)
 {
 	return impl->start_open(share_count, share_values);
@@ -94,7 +109,7 @@ int spdz_ext_processor_ifc::stop_open(size_t * open_count, unsigned long ** open
 //***********************************************************************************************//
 int spdz_ext_processor_ifc::triple(unsigned long * a, unsigned long * b, unsigned long * c, const time_t timeout_sec)
 {
-	return impl->triple(a, b, c);
+	return impl->triple(a, b, c, timeout_sec);
 }
 
 //***********************************************************************************************//
@@ -107,16 +122,18 @@ void * cc_proc(void * arg)
 //***********************************************************************************************//
 const int spdz_ext_processor_cc_imp::op_code_open = 100;
 const int spdz_ext_processor_cc_imp::op_code_triple = 101;
+const int spdz_ext_processor_cc_imp::op_code_offline = 102;
 
 //***********************************************************************************************//
 spdz_ext_processor_cc_imp::spdz_ext_processor_cc_imp()
  : runner(0), run_flag(false), the_party(NULL), party_id(-1), offline_size(-1)
- , start_open_on(false), pa(NULL), pb(NULL), pc(NULL)
+ , start_open_on(false), pa(NULL), pb(NULL), pc(NULL), size_of_offline(-1)
 {
 	pthread_mutex_init(&q_lock, NULL);
 	sem_init(&task, 0, 0);
 	sem_init(&open_done, 0, 0);
 	sem_init(&triple_done, 0, 0);
+	sem_init(&offline_done, 0, 0);
 }
 
 //***********************************************************************************************//
@@ -126,6 +143,7 @@ spdz_ext_processor_cc_imp::~spdz_ext_processor_cc_imp()
 	sem_destroy(&task);
 	sem_destroy(&open_done);
 	sem_destroy(&triple_done);
+	sem_destroy(&offline_done);
 }
 
 //***********************************************************************************************//
@@ -184,7 +202,6 @@ int spdz_ext_processor_cc_imp::stop(const time_t timeout_sec)
 	return 0;
 }
 
-
 //***********************************************************************************************//
 void spdz_ext_processor_cc_imp::run()
 {
@@ -209,6 +226,9 @@ void spdz_ext_processor_cc_imp::run()
 				break;
 			case op_code_triple:
 				exec_triple();
+				break;
+			case op_code_offline:
+				exec_offline();
 				break;
 			default:
 				std::cerr << "spdz_ext_processor_cc_imp::run: unsupported op code " << op_code << std::endl;
@@ -268,6 +288,39 @@ int spdz_ext_processor_cc_imp::pop_task()
 
 	std::cout << "spdz_ext_processor_cc_imp::pop_task: op_code " << op_code << std::endl;
 	return op_code;
+}
+
+//***********************************************************************************************//
+int spdz_ext_processor_cc_imp::offline(const int offline_size, const time_t timeout_sec)
+{
+	size_of_offline = offline_size;
+	if(0 != push_task(spdz_ext_processor_cc_imp::op_code_offline))
+	{
+		std::cerr << "spdz_ext_processor_cc_imp::start_open: failed pushing an open task to queue." << std::endl;
+		return -1;
+	}
+
+	struct timespec timeout;
+	clock_gettime(CLOCK_REALTIME, &timeout);
+	timeout.tv_sec += timeout_sec;
+
+	int result = sem_timedwait(&offline_done, &timeout);
+	if(0 != result)
+	{
+		result = errno;
+		char errmsg[512];
+		std::cerr << "spdz_ext_processor_cc_imp::triple: sem_timedwait() failed with error " << result << " : " << strerror_r(result, errmsg, 512) << std::endl;
+		return -1;
+	}
+
+	return 0;
+}
+
+//***********************************************************************************************//
+void spdz_ext_processor_cc_imp::exec_offline()
+{
+	//the_party->offline(size_of_offline);
+	sem_post(&offline_done);
 }
 
 //***********************************************************************************************//

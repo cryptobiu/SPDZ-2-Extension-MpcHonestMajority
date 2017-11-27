@@ -6,7 +6,8 @@
 
 extern "C"
 {
-	int init(void ** handle, const int pid, const char * field, const int offline_size);
+	int init(void ** handle, const int pid, const char * field, const int offline_size = 0);
+	int offline(void * handle, const int offline_size);
 	int start_open(void * handle, const size_t share_count, const unsigned long * shares);
 	int stop_open(void * handle, size_t * open_count, unsigned long ** opens);
 	int triple(void * handle, unsigned long * a, unsigned long * b, unsigned long * c);
