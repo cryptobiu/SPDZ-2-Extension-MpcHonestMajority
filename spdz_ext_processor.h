@@ -5,11 +5,11 @@
 #include <semaphore.h>
 #include <vector>
 
-class spdz_ext_processor_imp;
+class spdz_ext_processor_cc_imp;
 
 class spdz_ext_processor_ifc
 {
-	spdz_ext_processor_imp * impl;
+	spdz_ext_processor_cc_imp * impl;
 public:
 	spdz_ext_processor_ifc();
 	~spdz_ext_processor_ifc();
