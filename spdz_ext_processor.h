@@ -19,6 +19,8 @@ public:
 
 	int start_open(const size_t share_count, const unsigned long * share_values);
 	int stop_open(size_t * open_count, unsigned long ** open_values, const time_t timeout_sec = 2);
+
+	int triple(unsigned long * a, unsigned long * b, unsigned long * c, const time_t timeout_sec = 2);
 };
 
 

@@ -31,6 +31,12 @@ class spdz_ext_processor_cc_imp
 	void exec_open();
 	//---------------------------------------------------
 
+	//--triple-------------------------------------------
+	unsigned long * pa, * pb, * pc;
+	sem_t triple_done;
+	void exec_triple();
+	//---------------------------------------------------
+
 public:
 	spdz_ext_processor_cc_imp();
 	~spdz_ext_processor_cc_imp();
@@ -41,9 +47,12 @@ public:
 	int start_open(const size_t share_count, const unsigned long * share_values);
 	int stop_open(size_t * open_count, unsigned long ** open_values, const time_t timeout_sec = 2);
 
+	int triple(unsigned long * a, unsigned long * b, unsigned long * c, const time_t timeout_sec = 2);
+
 	friend void * cc_proc(void * arg);
 
 	static const int op_code_open;
+	static const int op_code_triple;
 };
 
 //***********************************************************************************************//
@@ -83,6 +92,12 @@ int spdz_ext_processor_ifc::stop_open(size_t * open_count, unsigned long ** open
 }
 
 //***********************************************************************************************//
+int spdz_ext_processor_ifc::triple(unsigned long * a, unsigned long * b, unsigned long * c, const time_t timeout_sec)
+{
+	return impl->triple(a, b, c);
+}
+
+//***********************************************************************************************//
 void * cc_proc(void * arg)
 {
 	spdz_ext_processor_cc_imp * processor = (spdz_ext_processor_cc_imp *)arg;
@@ -91,15 +106,17 @@ void * cc_proc(void * arg)
 
 //***********************************************************************************************//
 const int spdz_ext_processor_cc_imp::op_code_open = 100;
+const int spdz_ext_processor_cc_imp::op_code_triple = 101;
 
 //***********************************************************************************************//
 spdz_ext_processor_cc_imp::spdz_ext_processor_cc_imp()
  : runner(0), run_flag(false), the_party(NULL), party_id(-1), offline_size(-1)
- , start_open_on(false)
+ , start_open_on(false), pa(NULL), pb(NULL), pc(NULL)
 {
 	pthread_mutex_init(&q_lock, NULL);
 	sem_init(&task, 0, 0);
 	sem_init(&open_done, 0, 0);
+	sem_init(&triple_done, 0, 0);
 }
 
 //***********************************************************************************************//
@@ -108,6 +125,7 @@ spdz_ext_processor_cc_imp::~spdz_ext_processor_cc_imp()
 	pthread_mutex_destroy(&q_lock);
 	sem_destroy(&task);
 	sem_destroy(&open_done);
+	sem_destroy(&triple_done);
 }
 
 //***********************************************************************************************//
@@ -188,6 +206,9 @@ void spdz_ext_processor_cc_imp::run()
 			{
 			case op_code_open:
 				exec_open();
+				break;
+			case op_code_triple:
+				exec_triple();
 				break;
 			default:
 				std::cerr << "spdz_ext_processor_cc_imp::run: unsupported op code " << op_code << std::endl;
@@ -341,3 +362,46 @@ void spdz_ext_processor_cc_imp::exec_open()
 	std::cout << "spdz_ext_processor_cc_imp::exec_open: posting open done." << std::endl;
 	sem_post(&open_done);
 }
+
+//***********************************************************************************************//
+int spdz_ext_processor_cc_imp::triple(unsigned long * a, unsigned long * b, unsigned long * c, const time_t timeout_sec)
+{
+	pa = a;
+	pb = b;
+	pc = c;
+
+	if(0 != push_task(spdz_ext_processor_cc_imp::op_code_triple))
+	{
+		std::cerr << "spdz_ext_processor_cc_imp::triple: failed pushing a triple task to queue." << std::endl;
+		return -1;
+	}
+
+	struct timespec timeout;
+	clock_gettime(CLOCK_REALTIME, &timeout);
+	timeout.tv_sec += timeout_sec;
+
+	int result = sem_timedwait(&triple_done, &timeout);
+	if(0 != result)
+	{
+		result = errno;
+		char errmsg[512];
+		std::cerr << "spdz_ext_processor_cc_imp::triple: sem_timedwait() failed with error " << result << " : " << strerror_r(result, errmsg, 512) << std::endl;
+		return -1;
+	}
+
+	pa = pb = pc = NULL;
+	return 0;
+}
+
+//***********************************************************************************************//
+void spdz_ext_processor_cc_imp::exec_triple()
+{
+	//ZpMersenneLongElement A, B, C;
+	//the_party->triple(A, B, C);		//<--- not yet implemented
+	*pa = 0;//A.elem;
+	*pb = 0;//B.elem;
+	*pc = 0;//C.elem;
+	sem_post(&triple_done);
+}
+
+//***********************************************************************************************//

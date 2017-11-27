@@ -29,6 +29,11 @@ int stop_open(void * handle, size_t * open_count, unsigned long ** opens)
 	return ((spdz_ext_processor_ifc *)handle)->stop_open(open_count, opens, 20);
 }
 //-------------------------------------------------------------------------------------------//
+int triple(void * handle, unsigned long * a, unsigned long * b, unsigned long * c)
+{
+	return ((spdz_ext_processor_ifc *)handle)->triple(a, b, c, 20);
+}
+//-------------------------------------------------------------------------------------------//
 int term(void * handle)
 {
 	spdz_ext_processor_ifc * proc = ((spdz_ext_processor_ifc *)handle);
