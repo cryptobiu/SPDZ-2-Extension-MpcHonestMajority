@@ -15,6 +15,8 @@ extern "C"
 	int input(void * handle, const int input_of_pid, unsigned long * input_value);
 	int start_verify(void * handle, int * error);
 	int stop_verify(void * handle);
+    int start_input(void * handle, const int input_of_pid, const size_t num_of_inputs);
+    int stop_input(void * handle, size_t * input_count, unsigned long ** inputs);
 
 	unsigned long test_conversion(const unsigned long);
 }

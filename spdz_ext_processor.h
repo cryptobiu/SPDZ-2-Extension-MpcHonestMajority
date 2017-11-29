@@ -28,6 +28,9 @@ public:
 
 	int start_verify(int * error);
 	int stop_verify(const time_t timeout_sec = 2);
+
+    int start_input(const int input_of_pid, const size_t num_of_inputs);
+    int stop_input(size_t * input_count, unsigned long ** inputs);
 };
 
 

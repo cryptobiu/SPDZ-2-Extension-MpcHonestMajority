@@ -62,6 +62,16 @@ int stop_verify(void * handle)
 	return ((spdz_ext_processor_ifc *)handle)->stop_verify();
 }
 //-------------------------------------------------------------------------------------------//
+int start_input(void * handle, const int input_of_pid, const size_t num_of_inputs)
+{
+	return ((spdz_ext_processor_ifc *)handle)->start_input(input_of_pid, num_of_inputs);
+}
+//-------------------------------------------------------------------------------------------//
+int stop_input(void * handle, size_t * input_count, unsigned long ** inputs)
+{
+	return ((spdz_ext_processor_ifc *)handle)->stop_input(input_count, inputs);
+}
+//-------------------------------------------------------------------------------------------//
 unsigned long test_conversion(const unsigned long value)
 {
 	ZpMersenneLongElement element(value);
