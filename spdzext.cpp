@@ -19,14 +19,22 @@ int init(void ** handle, const int pid, const char * field, const int offline_si
 	return 0;
 }
 //-------------------------------------------------------------------------------------------//
+int term(void * handle)
+{
+	spdz_ext_processor_ifc * proc = ((spdz_ext_processor_ifc *)handle);
+	proc->stop(20);
+	delete proc;
+	return 0;
+}
+//-------------------------------------------------------------------------------------------//
 int offline(void * handle, const int offline_size)
 {
 	return ((spdz_ext_processor_ifc *)handle)->offline(offline_size);
 }
 //-------------------------------------------------------------------------------------------//
-int start_open(void * handle, const size_t share_count, const unsigned long * shares)
+int start_open(void * handle, const size_t share_count, const unsigned long * shares, int verify)
 {
-	return ((spdz_ext_processor_ifc *)handle)->start_open(share_count, shares);
+	return ((spdz_ext_processor_ifc *)handle)->start_open(share_count, shares, verify);
 }
 //-------------------------------------------------------------------------------------------//
 int stop_open(void * handle, size_t * open_count, unsigned long ** opens)
@@ -44,12 +52,14 @@ int input(void * handle, const int input_of_pid, unsigned long * input_value)
 	return ((spdz_ext_processor_ifc *)handle)->input(input_of_pid, input_value);
 }
 //-------------------------------------------------------------------------------------------//
-int term(void * handle)
+int start_verify(void * handle, int * error)
 {
-	spdz_ext_processor_ifc * proc = ((spdz_ext_processor_ifc *)handle);
-	proc->stop(20);
-	delete proc;
-	return 0;
+	return ((spdz_ext_processor_ifc *)handle)->start_verify(error);
+}
+//-------------------------------------------------------------------------------------------//
+int stop_verify(void * handle)
+{
+	return ((spdz_ext_processor_ifc *)handle)->stop_verify();
 }
 //-------------------------------------------------------------------------------------------//
 unsigned long test_conversion(const unsigned long value)

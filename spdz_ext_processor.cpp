@@ -25,7 +25,7 @@ class spdz_ext_processor_cc_imp
 	int pop_task();
 
 	//--start_open---------------------------------------
-	bool start_open_on;
+	bool start_open_on, do_verify;
 	std::vector<unsigned long> shares, opens;
 	sem_t open_done;
 	void exec_open();
@@ -50,6 +50,12 @@ class spdz_ext_processor_cc_imp
 	void exec_input();
 	//---------------------------------------------------
 
+	//--verify-------------------------------------------
+	int * verification_error;
+	sem_t verify_done;
+	void exec_verify();
+	//---------------------------------------------------
+
 public:
 	spdz_ext_processor_cc_imp();
 	~spdz_ext_processor_cc_imp();
@@ -59,12 +65,15 @@ public:
 
 	int offline(const int offline_size, const time_t timeout_sec = 2);
 
-	int start_open(const size_t share_count, const unsigned long * share_values);
+	int start_open(const size_t share_count, const unsigned long * share_values, int verify);
 	int stop_open(size_t * open_count, unsigned long ** open_values, const time_t timeout_sec = 2);
 
 	int triple(unsigned long * a, unsigned long * b, unsigned long * c, const time_t timeout_sec = 2);
 
 	int input(const int input_of_pid, unsigned long * input_value);
+
+	int start_verify(int * error);
+	int stop_verify(const time_t timeout_sec);
 
 	friend void * cc_proc(void * arg);
 
@@ -72,6 +81,7 @@ public:
 	static const int op_code_triple;
 	static const int op_code_offline;
 	static const int op_code_input;
+	static const int op_code_verify;
 };
 
 //***********************************************************************************************//
@@ -105,9 +115,9 @@ int spdz_ext_processor_ifc::offline(const int offline_size, const time_t timeout
 }
 
 //***********************************************************************************************//
-int spdz_ext_processor_ifc::start_open(const size_t share_count, const unsigned long * share_values)
+int spdz_ext_processor_ifc::start_open(const size_t share_count, const unsigned long * share_values, int verify)
 {
-	return impl->start_open(share_count, share_values);
+	return impl->start_open(share_count, share_values, verify);
 }
 
 //***********************************************************************************************//
@@ -129,6 +139,18 @@ int spdz_ext_processor_ifc::input(const int input_of_pid, unsigned long * input_
 }
 
 //***********************************************************************************************//
+int spdz_ext_processor_ifc::start_verify(int * error)
+{
+	return impl->start_verify(error);
+}
+
+//***********************************************************************************************//
+int spdz_ext_processor_ifc::stop_verify(const time_t timeout_sec)
+{
+	return impl->stop_verify(timeout_sec);
+}
+
+//***********************************************************************************************//
 void * cc_proc(void * arg)
 {
 	spdz_ext_processor_cc_imp * processor = (spdz_ext_processor_cc_imp *)arg;
@@ -140,12 +162,13 @@ const int spdz_ext_processor_cc_imp::op_code_open = 100;
 const int spdz_ext_processor_cc_imp::op_code_triple = 101;
 const int spdz_ext_processor_cc_imp::op_code_offline = 102;
 const int spdz_ext_processor_cc_imp::op_code_input = 103;
+const int spdz_ext_processor_cc_imp::op_code_verify = 104;
 
 //***********************************************************************************************//
 spdz_ext_processor_cc_imp::spdz_ext_processor_cc_imp()
  : runner(0), run_flag(false), the_party(NULL), party_id(-1), offline_size(-1)
  , start_open_on(false), pa(NULL), pb(NULL), pc(NULL), size_of_offline(-1)
- , intput_party_id(-1), p_intput_value(NULL)
+ , intput_party_id(-1), p_intput_value(NULL), do_verify(false), verification_error(NULL)
 {
 	pthread_mutex_init(&q_lock, NULL);
 	sem_init(&task, 0, 0);
@@ -153,6 +176,7 @@ spdz_ext_processor_cc_imp::spdz_ext_processor_cc_imp()
 	sem_init(&triple_done, 0, 0);
 	sem_init(&offline_done, 0, 0);
 	sem_init(&input_done, 0, 0);
+	sem_init(&verify_done, 0, 0);
 }
 
 //***********************************************************************************************//
@@ -164,6 +188,7 @@ spdz_ext_processor_cc_imp::~spdz_ext_processor_cc_imp()
 	sem_destroy(&triple_done);
 	sem_destroy(&offline_done);
 	sem_destroy(&input_done);
+	sem_destroy(&verify_done);
 }
 
 //***********************************************************************************************//
@@ -252,6 +277,9 @@ void spdz_ext_processor_cc_imp::run()
 				break;
 			case op_code_input:
 				exec_input();
+				break;
+			case op_code_verify:
+				exec_verify();
 				break;
 			default:
 				std::cerr << "spdz_ext_processor_cc_imp::run: unsupported op code " << op_code << std::endl;
@@ -347,7 +375,7 @@ void spdz_ext_processor_cc_imp::exec_offline()
 }
 
 //***********************************************************************************************//
-int spdz_ext_processor_cc_imp::start_open(const size_t share_count, const unsigned long * share_values)
+int spdz_ext_processor_cc_imp::start_open(const size_t share_count, const unsigned long * share_values, int verify)
 {
 	if(start_open_on)
 	{
@@ -357,6 +385,7 @@ int spdz_ext_processor_cc_imp::start_open(const size_t share_count, const unsign
 	start_open_on = true;
 
 	shares.assign(share_values, share_values + share_count);
+	do_verify = (verify != 0)? true: false;
 	if(0 != push_task(spdz_ext_processor_cc_imp::op_code_open))
 	{
 		std::cerr << "spdz_ext_processor_cc_imp::start_open: failed pushing an open task to queue." << std::endl;
@@ -422,7 +451,7 @@ void spdz_ext_processor_cc_imp::exec_open()
 
 	opens.clear();
 
-	if(the_party->verify())
+	if(!do_verify || the_party->verify())
 	{
 		std::cout << "spdz_ext_processor_cc_imp::exec_open: verify open for " << ext_opens.size() << std::endl;
 		for(std::vector<ZpMersenneLongElement>::const_iterator i = ext_opens.begin(); i != ext_opens.end(); ++i)
@@ -515,6 +544,44 @@ void spdz_ext_processor_cc_imp::exec_input()
 	//the_party->input(input_party_id, input_value);		//<--- not yet implemented
 	*p_intput_value = 0;//input_value.elem;
 	sem_post(&input_done);
+}
+
+//***********************************************************************************************//
+int spdz_ext_processor_cc_imp::start_verify(int * error)
+{
+	verification_error = error;
+	if(0 != push_task(spdz_ext_processor_cc_imp::op_code_verify))
+	{
+		std::cerr << "spdz_ext_processor_cc_imp::start_verify: failed pushing a verify start task to queue." << std::endl;
+		return -1;
+	}
+	return 0;
+}
+
+//***********************************************************************************************//
+int spdz_ext_processor_cc_imp::stop_verify(const time_t timeout_sec)
+{
+	struct timespec timeout;
+	clock_gettime(CLOCK_REALTIME, &timeout);
+	timeout.tv_sec += timeout_sec;
+
+	int result = sem_timedwait(&verify_done, &timeout);
+	if(0 != result)
+	{
+		result = errno;
+		char errmsg[512];
+		std::cerr << "spdz_ext_processor_cc_imp::stop_verify: sem_timedwait() failed with error " << result << " : " << strerror_r(result, errmsg, 512) << std::endl;
+		return -1;
+	}
+
+	return 0;
+}
+
+//***********************************************************************************************//
+void spdz_ext_processor_cc_imp::exec_verify()
+{
+	*verification_error = (the_party->verify())? 0: -1;
+	sem_post(&verify_done);
 }
 
 //***********************************************************************************************//
