@@ -43,6 +43,13 @@ class spdz_ext_processor_cc_imp
 	void exec_offline();
 	//---------------------------------------------------
 
+	//--input--------------------------------------------
+	int intput_party_id;
+	unsigned long * p_intput_value;
+	sem_t input_done;
+	void exec_input();
+	//---------------------------------------------------
+
 public:
 	spdz_ext_processor_cc_imp();
 	~spdz_ext_processor_cc_imp();
@@ -57,11 +64,14 @@ public:
 
 	int triple(unsigned long * a, unsigned long * b, unsigned long * c, const time_t timeout_sec = 2);
 
+	int input(const int input_of_pid, unsigned long * input_value);
+
 	friend void * cc_proc(void * arg);
 
 	static const int op_code_open;
 	static const int op_code_triple;
 	static const int op_code_offline;
+	static const int op_code_input;
 };
 
 //***********************************************************************************************//
@@ -113,6 +123,12 @@ int spdz_ext_processor_ifc::triple(unsigned long * a, unsigned long * b, unsigne
 }
 
 //***********************************************************************************************//
+int spdz_ext_processor_ifc::input(const int input_of_pid, unsigned long * input_value)
+{
+	return impl->input(input_of_pid, input_value);
+}
+
+//***********************************************************************************************//
 void * cc_proc(void * arg)
 {
 	spdz_ext_processor_cc_imp * processor = (spdz_ext_processor_cc_imp *)arg;
@@ -123,17 +139,20 @@ void * cc_proc(void * arg)
 const int spdz_ext_processor_cc_imp::op_code_open = 100;
 const int spdz_ext_processor_cc_imp::op_code_triple = 101;
 const int spdz_ext_processor_cc_imp::op_code_offline = 102;
+const int spdz_ext_processor_cc_imp::op_code_input = 103;
 
 //***********************************************************************************************//
 spdz_ext_processor_cc_imp::spdz_ext_processor_cc_imp()
  : runner(0), run_flag(false), the_party(NULL), party_id(-1), offline_size(-1)
  , start_open_on(false), pa(NULL), pb(NULL), pc(NULL), size_of_offline(-1)
+ , intput_party_id(-1), p_intput_value(NULL)
 {
 	pthread_mutex_init(&q_lock, NULL);
 	sem_init(&task, 0, 0);
 	sem_init(&open_done, 0, 0);
 	sem_init(&triple_done, 0, 0);
 	sem_init(&offline_done, 0, 0);
+	sem_init(&input_done, 0, 0);
 }
 
 //***********************************************************************************************//
@@ -144,6 +163,7 @@ spdz_ext_processor_cc_imp::~spdz_ext_processor_cc_imp()
 	sem_destroy(&open_done);
 	sem_destroy(&triple_done);
 	sem_destroy(&offline_done);
+	sem_destroy(&input_done);
 }
 
 //***********************************************************************************************//
@@ -229,6 +249,9 @@ void spdz_ext_processor_cc_imp::run()
 				break;
 			case op_code_offline:
 				exec_offline();
+				break;
+			case op_code_input:
+				exec_input();
 				break;
 			default:
 				std::cerr << "spdz_ext_processor_cc_imp::run: unsupported op code " << op_code << std::endl;
@@ -455,6 +478,43 @@ void spdz_ext_processor_cc_imp::exec_triple()
 	*pb = 0;//B.elem;
 	*pc = 0;//C.elem;
 	sem_post(&triple_done);
+}
+
+//***********************************************************************************************//
+int spdz_ext_processor_cc_imp::input(const int input_of_pid, unsigned long * input_value)
+{
+	p_intput_value = input_value;
+	intput_party_id = input_of_pid;
+
+	if(0 != push_task(spdz_ext_processor_cc_imp::op_code_input))
+	{
+		std::cerr << "spdz_ext_processor_cc_imp::input: failed pushing an input task to queue." << std::endl;
+		return -1;
+	}
+
+	//No timeout waiting for input - the user might take long to enter data
+
+	int result = sem_wait(&input_done);
+	if(0 != result)
+	{
+		result = errno;
+		char errmsg[512];
+		std::cerr << "spdz_ext_processor_cc_imp::triple: sem_wait() failed with error " << result << " : " << strerror_r(result, errmsg, 512) << std::endl;
+		return -1;
+	}
+
+	p_intput_value = NULL;
+	intput_party_id = -1;
+	return 0;
+}
+
+//***********************************************************************************************//
+void spdz_ext_processor_cc_imp::exec_input()
+{
+	//ZpMersenneLongElement input_value;
+	//the_party->input(input_party_id, input_value);		//<--- not yet implemented
+	*p_intput_value = 0;//input_value.elem;
+	sem_post(&input_done);
 }
 
 //***********************************************************************************************//

@@ -23,6 +23,8 @@ public:
 	int stop_open(size_t * open_count, unsigned long ** open_values, const time_t timeout_sec = 2);
 
 	int triple(unsigned long * a, unsigned long * b, unsigned long * c, const time_t timeout_sec = 2);
+
+	int input(const int input_of_pid, unsigned long * input_value);
 };
 
 

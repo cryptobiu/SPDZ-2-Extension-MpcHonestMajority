@@ -39,6 +39,11 @@ int triple(void * handle, unsigned long * a, unsigned long * b, unsigned long * 
 	return ((spdz_ext_processor_ifc *)handle)->triple(a, b, c, 20);
 }
 //-------------------------------------------------------------------------------------------//
+int input(void * handle, const int input_of_pid, unsigned long * input_value)
+{
+	return ((spdz_ext_processor_ifc *)handle)->input(input_of_pid, input_value);
+}
+//-------------------------------------------------------------------------------------------//
 int term(void * handle)
 {
 	spdz_ext_processor_ifc * proc = ((spdz_ext_processor_ifc *)handle);
