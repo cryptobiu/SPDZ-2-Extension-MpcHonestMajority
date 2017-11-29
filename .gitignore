@@ -1,4 +1,6 @@
-.cproject
-.project
-Release/
-Debug/
+CMakeCache.txt
+CMakeFiles/
+Makefile
+cmake_install.cmake
+libspdz_ext_biu.so
+
