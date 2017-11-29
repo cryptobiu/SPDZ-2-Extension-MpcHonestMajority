@@ -51,6 +51,7 @@ class spdz_ext_processor_cc_imp
 	//---------------------------------------------------
 
 	//--verify-------------------------------------------
+	bool verification_on;
 	int * verification_error;
 	sem_t verify_done;
 	void exec_verify();
@@ -169,6 +170,7 @@ spdz_ext_processor_cc_imp::spdz_ext_processor_cc_imp()
  : runner(0), run_flag(false), the_party(NULL), party_id(-1), offline_size(-1)
  , start_open_on(false), pa(NULL), pb(NULL), pc(NULL), size_of_offline(-1)
  , intput_party_id(-1), p_intput_value(NULL), do_verify(false), verification_error(NULL)
+ , verification_on(false)
 {
 	pthread_mutex_init(&q_lock, NULL);
 	sem_init(&task, 0, 0);
@@ -549,6 +551,13 @@ void spdz_ext_processor_cc_imp::exec_input()
 //***********************************************************************************************//
 int spdz_ext_processor_cc_imp::start_verify(int * error)
 {
+	if(verification_on)
+	{
+		std::cerr << "spdz_ext_processor_cc_imp::start_verify: verify is already started (a stop_verify() call is required)." << std::endl;
+		return -1;
+	}
+	verification_on = true;
+
 	verification_error = error;
 	if(0 != push_task(spdz_ext_processor_cc_imp::op_code_verify))
 	{
@@ -561,6 +570,13 @@ int spdz_ext_processor_cc_imp::start_verify(int * error)
 //***********************************************************************************************//
 int spdz_ext_processor_cc_imp::stop_verify(const time_t timeout_sec)
 {
+	if(!verification_on)
+	{
+		std::cerr << "spdz_ext_processor_cc_imp::stop_verify: verify is not started." << std::endl;
+		return -1;
+	}
+	verification_on = false;
+
 	struct timespec timeout;
 	clock_gettime(CLOCK_REALTIME, &timeout);
 	timeout.tv_sec += timeout_sec;
