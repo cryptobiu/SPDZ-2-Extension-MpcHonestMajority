@@ -26,13 +26,13 @@ class spdz_ext_processor_cc_imp
 
 	//--start_open---------------------------------------
 	bool start_open_on, do_verify;
-	std::vector<unsigned long> shares, opens;
+	std::vector<u_int64_t> shares, opens;
 	sem_t open_done;
 	void exec_open();
 	//---------------------------------------------------
 
 	//--triple-------------------------------------------
-	unsigned long * pa, * pb, * pc;
+	u_int64_t * pa, * pb, * pc;
 	sem_t triple_done;
 	void exec_triple();
 	//---------------------------------------------------
@@ -45,7 +45,7 @@ class spdz_ext_processor_cc_imp
 
 	//--input--------------------------------------------
 	int intput_party_id;
-	unsigned long * p_intput_value;
+	u_int64_t * p_intput_value;
 	sem_t input_done;
 	void exec_input();
 	//---------------------------------------------------
@@ -61,7 +61,7 @@ class spdz_ext_processor_cc_imp
 	bool input_asynch_on;
 	int intput_asynch_party_id;
 	size_t num_of_inputs;
-	std::vector<unsigned long> input_values;
+	std::vector<u_int64_t> input_values;
 	sem_t input_asynch_done;
 	void exec_input_asynch();
 	//---------------------------------------------------
@@ -75,18 +75,18 @@ public:
 
 	int offline(const int offline_size, const time_t timeout_sec = 2);
 
-	int start_open(const size_t share_count, const unsigned long * share_values, int verify);
-	int stop_open(size_t * open_count, unsigned long ** open_values, const time_t timeout_sec = 2);
+	int start_open(const size_t share_count, const u_int64_t * share_values, int verify);
+	int stop_open(size_t * open_count, u_int64_t ** open_values, const time_t timeout_sec = 2);
 
-	int triple(unsigned long * a, unsigned long * b, unsigned long * c, const time_t timeout_sec = 2);
+	int triple(u_int64_t * a, u_int64_t * b, u_int64_t * c, const time_t timeout_sec = 2);
 
-	int input(const int input_of_pid, unsigned long * input_value);
+	int input(const int input_of_pid, u_int64_t * input_value);
 
 	int start_verify(int * error);
 	int stop_verify(const time_t timeout_sec);
 
     int start_input(const int input_of_pid, const size_t num_of_inputs);
-    int stop_input(size_t * input_count, unsigned long ** inputs);
+    int stop_input(size_t * input_count, u_int64_t ** inputs);
 
     friend void * cc_proc(void * arg);
 
@@ -129,25 +129,25 @@ int spdz_ext_processor_ifc::offline(const int offline_size, const time_t timeout
 }
 
 //***********************************************************************************************//
-int spdz_ext_processor_ifc::start_open(const size_t share_count, const unsigned long * share_values, int verify)
+int spdz_ext_processor_ifc::start_open(const size_t share_count, const u_int64_t * share_values, int verify)
 {
 	return impl->start_open(share_count, share_values, verify);
 }
 
 //***********************************************************************************************//
-int spdz_ext_processor_ifc::stop_open(size_t * open_count, unsigned long ** open_values, const time_t timeout_sec)
+int spdz_ext_processor_ifc::stop_open(size_t * open_count, u_int64_t ** open_values, const time_t timeout_sec)
 {
 	return impl->stop_open(open_count, open_values, timeout_sec);
 }
 
 //***********************************************************************************************//
-int spdz_ext_processor_ifc::triple(unsigned long * a, unsigned long * b, unsigned long * c, const time_t timeout_sec)
+int spdz_ext_processor_ifc::triple(u_int64_t * a, u_int64_t * b, u_int64_t * c, const time_t timeout_sec)
 {
 	return impl->triple(a, b, c, timeout_sec);
 }
 
 //***********************************************************************************************//
-int spdz_ext_processor_ifc::input(const int input_of_pid, unsigned long * input_value)
+int spdz_ext_processor_ifc::input(const int input_of_pid, u_int64_t * input_value)
 {
 	return impl->input(input_of_pid, input_value);
 }
@@ -171,7 +171,7 @@ int spdz_ext_processor_ifc::start_input(const int input_of_pid, const size_t num
 }
 
 //***********************************************************************************************//
-int spdz_ext_processor_ifc::stop_input(size_t * input_count, unsigned long ** inputs)
+int spdz_ext_processor_ifc::stop_input(size_t * input_count, u_int64_t ** inputs)
 {
 	return impl->stop_input(input_count, inputs);
 }
@@ -408,7 +408,7 @@ void spdz_ext_processor_cc_imp::exec_offline()
 }
 
 //***********************************************************************************************//
-int spdz_ext_processor_cc_imp::start_open(const size_t share_count, const unsigned long * share_values, int verify)
+int spdz_ext_processor_cc_imp::start_open(const size_t share_count, const u_int64_t * share_values, int verify)
 {
 	if(start_open_on)
 	{
@@ -431,7 +431,7 @@ int spdz_ext_processor_cc_imp::start_open(const size_t share_count, const unsign
 }
 
 //***********************************************************************************************//
-int spdz_ext_processor_cc_imp::stop_open(size_t * open_count, unsigned long ** open_values, const time_t timeout_sec)
+int spdz_ext_processor_cc_imp::stop_open(size_t * open_count, u_int64_t ** open_values, const time_t timeout_sec)
 {
 	if(!start_open_on)
 	{
@@ -458,8 +458,8 @@ int spdz_ext_processor_cc_imp::stop_open(size_t * open_count, unsigned long ** o
 
 	if(!opens.empty())
 	{
-		*open_values = new unsigned long[*open_count = opens.size()];
-		memcpy(*open_values, &opens[0], (*open_count)*sizeof(unsigned long));
+		*open_values = new u_int64_t[*open_count = opens.size()];
+		memcpy(*open_values, &opens[0], (*open_count)*sizeof(u_int64_t));
 		opens.clear();
 	}
 
@@ -471,7 +471,7 @@ int spdz_ext_processor_cc_imp::stop_open(size_t * open_count, unsigned long ** o
 void spdz_ext_processor_cc_imp::exec_open()
 {
 	std::vector<ZpMersenneLongElement> ext_shares, ext_opens;
-	for(std::vector<unsigned long>::const_iterator i = shares.begin(); i != shares.end(); ++i)
+	for(std::vector<u_int64_t>::const_iterator i = shares.begin(); i != shares.end(); ++i)
 	{
 		ext_shares.push_back(ZpMersenneLongElement(*i));
 	}
@@ -502,7 +502,7 @@ void spdz_ext_processor_cc_imp::exec_open()
 }
 
 //***********************************************************************************************//
-int spdz_ext_processor_cc_imp::triple(unsigned long * a, unsigned long * b, unsigned long * c, const time_t timeout_sec)
+int spdz_ext_processor_cc_imp::triple(u_int64_t * a, u_int64_t * b, u_int64_t * c, const time_t timeout_sec)
 {
 	pa = a;
 	pb = b;
@@ -543,7 +543,7 @@ void spdz_ext_processor_cc_imp::exec_triple()
 }
 
 //***********************************************************************************************//
-int spdz_ext_processor_cc_imp::input(const int input_of_pid, unsigned long * input_value)
+int spdz_ext_processor_cc_imp::input(const int input_of_pid, u_int64_t * input_value)
 {
 	p_intput_value = input_value;
 	intput_party_id = input_of_pid;
@@ -653,7 +653,7 @@ int spdz_ext_processor_cc_imp::start_input(const int input_of_pid, const size_t 
 }
 
 //***********************************************************************************************//
-int spdz_ext_processor_cc_imp::stop_input(size_t * input_count, unsigned long ** inputs)
+int spdz_ext_processor_cc_imp::stop_input(size_t * input_count, u_int64_t ** inputs)
 {
 	if(!input_asynch_on)
 	{
@@ -673,8 +673,8 @@ int spdz_ext_processor_cc_imp::stop_input(size_t * input_count, unsigned long **
 
 	if(!input_values.empty())
 	{
-		*inputs = new unsigned long[*input_count = input_values.size()];
-		memcpy(*inputs, &input_values[0], *input_count * sizeof(unsigned long));
+		*inputs = new u_int64_t[*input_count = input_values.size()];
+		memcpy(*inputs, &input_values[0], *input_count * sizeof(u_int64_t));
 	}
 
 	return 0;

@@ -32,22 +32,22 @@ int offline(void * handle, const int offline_size)
 	return ((spdz_ext_processor_ifc *)handle)->offline(offline_size);
 }
 //-------------------------------------------------------------------------------------------//
-int start_open(void * handle, const size_t share_count, const unsigned long * shares, int verify)
+int start_open(void * handle, const size_t share_count, const u_int64_t * shares, int verify)
 {
 	return ((spdz_ext_processor_ifc *)handle)->start_open(share_count, shares, verify);
 }
 //-------------------------------------------------------------------------------------------//
-int stop_open(void * handle, size_t * open_count, unsigned long ** opens)
+int stop_open(void * handle, size_t * open_count, u_int64_t ** opens)
 {
 	return ((spdz_ext_processor_ifc *)handle)->stop_open(open_count, opens, 20);
 }
 //-------------------------------------------------------------------------------------------//
-int triple(void * handle, unsigned long * a, unsigned long * b, unsigned long * c)
+int triple(void * handle, u_int64_t * a, u_int64_t * b, u_int64_t * c)
 {
 	return ((spdz_ext_processor_ifc *)handle)->triple(a, b, c, 20);
 }
 //-------------------------------------------------------------------------------------------//
-int input(void * handle, const int input_of_pid, unsigned long * input_value)
+int input(void * handle, const int input_of_pid, u_int64_t * input_value)
 {
 	return ((spdz_ext_processor_ifc *)handle)->input(input_of_pid, input_value);
 }
@@ -67,12 +67,12 @@ int start_input(void * handle, const int input_of_pid, const size_t num_of_input
 	return ((spdz_ext_processor_ifc *)handle)->start_input(input_of_pid, num_of_inputs);
 }
 //-------------------------------------------------------------------------------------------//
-int stop_input(void * handle, size_t * input_count, unsigned long ** inputs)
+int stop_input(void * handle, size_t * input_count, u_int64_t ** inputs)
 {
 	return ((spdz_ext_processor_ifc *)handle)->stop_input(input_count, inputs);
 }
 //-------------------------------------------------------------------------------------------//
-unsigned long test_conversion(const unsigned long value)
+u_int64_t test_conversion(const u_int64_t value)
 {
 	ZpMersenneLongElement element(value);
 	return element.elem;

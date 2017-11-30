@@ -4,6 +4,9 @@
 
 #include <stdlib.h>
 
+//#define SPDZEXT_VALTYPE	u_int32_t
+#define SPDZEXT_VALTYPE	u_int64_t
+
 extern "C"
 {
 	/**
@@ -40,7 +43,7 @@ extern "C"
 	 * @param[in] verify Whether the opened values are to be verified, 0 for false
 	 * @return 0 on success, -1 otherwise
 	 */
-	int start_open(void * handle, const size_t share_count, const unsigned long * shares, int verify);
+	int start_open(void * handle, const size_t share_count, const SPDZEXT_VALTYPE * shares, int verify);
 
 	/**
 	 * Complete an asynchronous opening of shared values
@@ -50,7 +53,7 @@ extern "C"
 	 * @param[out] opens The opened values - the memory will be allocated by the function
 	 * @return 0 on success, -1 otherwise
 	 */
-	int stop_open(void * handle, size_t * open_count, unsigned long ** opens);
+	int stop_open(void * handle, size_t * open_count, SPDZEXT_VALTYPE ** opens);
 
 	/**
 	 * Retrieve a triple of values
@@ -60,7 +63,7 @@ extern "C"
 	 * @param[out] c The third value
 	 * @return 0 on success, -1 otherwise
 	 */
-	int triple(void * handle, unsigned long * a, unsigned long * b, unsigned long * c);
+	int triple(void * handle, SPDZEXT_VALTYPE * a, SPDZEXT_VALTYPE * b, SPDZEXT_VALTYPE * c);
 
 	/**
 	 * Retrieve an input value from a party
@@ -69,7 +72,7 @@ extern "C"
 	 * @param[out] input_value The input value
 	 * @return 0 on success, -1 otherwise
 	 */
-	int input(void * handle, const int input_of_pid, unsigned long * input_value);
+	int input(void * handle, const int input_of_pid, SPDZEXT_VALTYPE * input_value);
 
 	/**
 	 * Start an asynchronous verification operation
@@ -106,15 +109,15 @@ extern "C"
 	 * @param[out] inputs The input values - the memory will be allocated by the function
 	 * @return 0 on success, -1 otherwise
 	 */
-    int stop_input(void * handle, size_t * input_count, unsigned long ** inputs);
+    int stop_input(void * handle, size_t * input_count, SPDZEXT_VALTYPE ** inputs);
 
     /**
-     * Test the library value conversion from unsigned long to internal representation
+     * Test the library value conversion from integer (32/64) to internal representation
      * The returned value should be equal to the provided value
      * @param value The test value to convert
      * @return The value restored from the converted value
      */
-	unsigned long test_conversion(const unsigned long value);
+	SPDZEXT_VALTYPE test_conversion(const SPDZEXT_VALTYPE value);
 }
 
 #endif /* SPDZEXT_H_ */
