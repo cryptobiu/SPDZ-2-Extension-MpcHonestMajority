@@ -14,7 +14,7 @@ public:
 	spdz_ext_processor_ifc();
 	~spdz_ext_processor_ifc();
 
-	int start(const int pid, const char * field, const int offline_size = 0);
+	int start(const int pid, const int num_of_parties, const char * field, const int offline_size = 0);
 	int stop(const time_t timeout_sec = 2);
 
 	int offline(const int offline_size, const time_t timeout_sec = 2);

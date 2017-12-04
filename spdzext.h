@@ -13,11 +13,12 @@ extern "C"
 	 * Initialize a session with the extension library for the client.
 	 * @param[out] handle A session handle to be filled by the function
 	 * @param[in] pid The party identifier
+	 * @param[in] num_of_parties The total number of parties
 	 * @param[in] field The prime field used in text format
 	 * @param[in] offline_size The number of offline elements to create
 	 * @return 0 on success, -1 otherwise
 	 */
-	int init(void ** handle, const int pid, const char * field, const int offline_size = 0);
+	int init(void ** handle, const int pid, const int num_of_parties, const char * field, const int offline_size = 0);
 
 	/**
 	 * Terminates an initialized session with the extension library and frees all resources

@@ -7,10 +7,10 @@
 #include "ProtocolParty.h"
 
 //-------------------------------------------------------------------------------------------//
-int init(void ** handle, const int pid, const char * field, const int offline_size)
+int init(void ** handle, const int pid, const int num_of_parties, const char * field, const int offline_size)
 {
 	spdz_ext_processor_ifc * proc = new spdz_ext_processor_ifc;
-	if(0 != proc->start(pid, field, offline_size))
+	if(0 != proc->start(pid, num_of_parties, field, offline_size))
 	{
 		delete proc;
 		return -1;

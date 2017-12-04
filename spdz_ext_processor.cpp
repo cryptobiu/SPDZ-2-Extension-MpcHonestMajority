@@ -70,7 +70,7 @@ public:
 	spdz_ext_processor_cc_imp();
 	~spdz_ext_processor_cc_imp();
 
-	int start(const int pid, const char * field, const int offline_size = 0);
+	int start(const int pid, const int num_of_parties, const char * field, const int offline_size = 0);
 	int stop(const time_t timeout_sec = 2);
 
 	int offline(const int offline_size, const time_t timeout_sec = 2);
@@ -111,9 +111,9 @@ spdz_ext_processor_ifc::~spdz_ext_processor_ifc()
 }
 
 //***********************************************************************************************//
-int spdz_ext_processor_ifc::start(const int pid, const char * field, const int offline_size)
+int spdz_ext_processor_ifc::start(const int pid, const int num_of_parties, const char * field, const int offline_size)
 {
-	return impl->start(pid, field, offline_size);
+	return impl->start(pid, num_of_parties, field, offline_size);
 }
 
 //***********************************************************************************************//
@@ -222,7 +222,7 @@ spdz_ext_processor_cc_imp::~spdz_ext_processor_cc_imp()
 }
 
 //***********************************************************************************************//
-int spdz_ext_processor_cc_imp::start(const int pid, const char * field, const int offline)
+int spdz_ext_processor_cc_imp::start(const int pid, const int num_of_parties, const char * field, const int offline)
 {
 	if(run_flag)
 	{
@@ -232,7 +232,7 @@ int spdz_ext_processor_cc_imp::start(const int pid, const char * field, const in
 
 	party_id = pid;
 	offline_size = offline;
-	the_party = new ProtocolParty<ZpMersenneLongElement>(party_id, offline_size);
+	the_party = new ProtocolParty<ZpMersenneLongElement>(party_id/* , num_of_parties*/, offline_size);
 	the_party->init();
 
 	run_flag = true;
