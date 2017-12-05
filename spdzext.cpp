@@ -4,7 +4,7 @@
 #include <vector>
 
 #include "spdz_ext_processor.h"
-#include "ProtocolParty.h"
+#include "ZpMersenneLongElement.h"
 
 //-------------------------------------------------------------------------------------------//
 int init(void ** handle, const int pid, const int num_of_parties, const char * field, const int offline_size)

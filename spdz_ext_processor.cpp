@@ -5,7 +5,8 @@
 #include <deque>
 
 #include "spdz_ext_processor.h"
-#include "ProtocolParty.h"
+#include "Protocol.h"
+#include "ZpMersenneLongElement.h"
 
 //***********************************************************************************************//
 class spdz_ext_processor_cc_imp
@@ -13,7 +14,8 @@ class spdz_ext_processor_cc_imp
 	pthread_t runner;
 	bool run_flag;
 
-	ProtocolParty<ZpMersenneLongElement> * the_party;
+	TemplateField<ZpMersenneLongElement> * the_field;
+	Protocol<ZpMersenneLongElement> * the_party;
 	int party_id, offline_size;
 
 	sem_t task;
@@ -24,37 +26,41 @@ class spdz_ext_processor_cc_imp
 	int push_task(const int op_code);
 	int pop_task();
 
-	//--start_open---------------------------------------
+	//--offline------------------------------------------done
+	sem_t offline_done;
+	void exec_offline();
+	bool offline_success;
+	//---------------------------------------------------
+
+	//--start_open---------------------------------------done
 	bool start_open_on, do_verify;
 	std::vector<u_int64_t> shares, opens;
 	sem_t open_done;
 	void exec_open();
+	bool open_success;
 	//---------------------------------------------------
 
-	//--triple-------------------------------------------
+	//--triple-------------------------------------------done
 	u_int64_t * pa, * pb, * pc;
 	sem_t triple_done;
 	void exec_triple();
+	bool triple_success;
 	//---------------------------------------------------
 
-	//--offline------------------------------------------
-	int size_of_offline;
-	sem_t offline_done;
-	void exec_offline();
-	//---------------------------------------------------
-
-	//--input--------------------------------------------
-	int intput_party_id;
-	u_int64_t * p_intput_value;
+	//--input--------------------------------------------done
+	int input_party_id;
+	u_int64_t * p_input_value;
 	sem_t input_done;
 	void exec_input();
+	bool input_success;
 	//---------------------------------------------------
 
-	//--verify-------------------------------------------
+	//--verify-------------------------------------------done
 	bool verification_on;
 	int * verification_error;
 	sem_t verify_done;
 	void exec_verify();
+	bool verify_success;
 	//---------------------------------------------------
 
 	//--input_asynch-------------------------------------
@@ -64,6 +70,7 @@ class spdz_ext_processor_cc_imp
 	std::vector<u_int64_t> input_values;
 	sem_t input_asynch_done;
 	void exec_input_asynch();
+	bool input_asynch_success;
 	//---------------------------------------------------
 
 public:
@@ -193,10 +200,13 @@ const int spdz_ext_processor_cc_imp::op_code_input_asynch = 105;
 
 //***********************************************************************************************//
 spdz_ext_processor_cc_imp::spdz_ext_processor_cc_imp()
- : runner(0), run_flag(false), the_party(NULL), party_id(-1), offline_size(-1)
- , start_open_on(false), pa(NULL), pb(NULL), pc(NULL), size_of_offline(-1)
- , intput_party_id(-1), p_intput_value(NULL), do_verify(false), verification_error(NULL)
- , verification_on(false), input_asynch_on(false), intput_asynch_party_id(-1), num_of_inputs(0)
+ : runner(0), run_flag(false), the_field(NULL), the_party(NULL), party_id(-1), offline_size(-1)
+ , offline_success(false)
+ , start_open_on(false), do_verify(false), open_success(false)
+ , pa(NULL), pb(NULL), pc(NULL), triple_success(false)
+ , input_party_id(-1), input_success(false), p_input_value(NULL)
+ , verification_error(NULL), verification_on(false), verify_success(false)
+ , input_asynch_on(false), intput_asynch_party_id(-1), num_of_inputs(0), input_asynch_success(false)
 {
 	pthread_mutex_init(&q_lock, NULL);
 	sem_init(&task, 0, 0);
@@ -232,8 +242,13 @@ int spdz_ext_processor_cc_imp::start(const int pid, const int num_of_parties, co
 
 	party_id = pid;
 	offline_size = offline;
-	the_party = new ProtocolParty<ZpMersenneLongElement>(party_id/* , num_of_parties*/, offline_size);
-	the_party->init();
+	the_field = new TemplateField<ZpMersenneLongElement>(0);
+	the_party = new Protocol<ZpMersenneLongElement>(num_of_parties, pid, offline, the_field);
+	if(!the_party->offline())
+	{
+		std::cerr << "spdz_ext_processor_cc_imp::start: protocol offline failure." << std::endl;
+		return -1;
+	}
 
 	run_flag = true;
 	int result = pthread_create(&runner, NULL, cc_proc, this);
@@ -272,6 +287,12 @@ int spdz_ext_processor_cc_imp::stop(const time_t timeout_sec)
 		std::cerr << "spdz_ext_processor_cc_imp::stop: pthread_timedjoin_np() failed with error " << result << " : " << strerror_r(result, errmsg, 512) << std::endl;
 		return -1;
 	}
+
+	delete the_party;
+	the_party = NULL;
+
+	delete the_field;
+	the_field = NULL;
 
 	std::cout << "spdz_ext_processor_cc_imp::stop: pid " << party_id << std::endl;
 	return 0;
@@ -375,9 +396,13 @@ int spdz_ext_processor_cc_imp::pop_task()
 }
 
 //***********************************************************************************************//
-int spdz_ext_processor_cc_imp::offline(const int offline_size, const time_t timeout_sec)
+int spdz_ext_processor_cc_imp::offline(const int /*offline_size*/, const time_t timeout_sec)
 {
-	size_of_offline = offline_size;
+	/*
+	 * In BIU implementation the offline size is set at the protocol construction
+	 * the call to offline will reallocate the same size of offline
+	 */
+	offline_success = false;
 	if(0 != push_task(spdz_ext_processor_cc_imp::op_code_offline))
 	{
 		std::cerr << "spdz_ext_processor_cc_imp::offline: failed pushing an offline task to queue." << std::endl;
@@ -397,13 +422,13 @@ int spdz_ext_processor_cc_imp::offline(const int offline_size, const time_t time
 		return -1;
 	}
 
-	return 0;
+	return (offline_success)? 0: -1;
 }
 
 //***********************************************************************************************//
 void spdz_ext_processor_cc_imp::exec_offline()
 {
-	//the_party->offline(size_of_offline);
+	offline_success = the_party->offline();
 	sem_post(&offline_done);
 }
 
@@ -416,6 +441,7 @@ int spdz_ext_processor_cc_imp::start_open(const size_t share_count, const u_int6
 		return -1;
 	}
 	start_open_on = true;
+	open_success = false;
 
 	shares.assign(share_values, share_values + share_count);
 	do_verify = (verify != 0)? true: false;
@@ -426,7 +452,6 @@ int spdz_ext_processor_cc_imp::start_open(const size_t share_count, const u_int6
 		return -1;
 	}
 
-	std::cout << "spdz_ext_processor_cc_imp::start_open: exit" << std::endl;
 	return 0;
 }
 
@@ -456,15 +481,21 @@ int spdz_ext_processor_cc_imp::stop_open(size_t * open_count, u_int64_t ** open_
 		return -1;
 	}
 
-	if(!opens.empty())
+	if(open_success)
 	{
-		*open_values = new u_int64_t[*open_count = opens.size()];
-		memcpy(*open_values, &opens[0], (*open_count)*sizeof(u_int64_t));
-		opens.clear();
+		if(!opens.empty())
+		{
+			*open_values = new u_int64_t[*open_count = opens.size()];
+			memcpy(*open_values, &opens[0], (*open_count)*sizeof(u_int64_t));
+			opens.clear();
+		}
+		return 0;
 	}
-
-	std::cout << "spdz_ext_processor_cc_imp::stop_open: exit" << std::endl;
-	return 0;
+	else
+	{
+		std::cerr << "spdz_ext_processor_cc_imp::stop_open: open failed." << std::endl;
+		return -1;
+	}
 }
 
 //***********************************************************************************************//
@@ -477,27 +508,32 @@ void spdz_ext_processor_cc_imp::exec_open()
 	}
 	ext_opens.resize(ext_shares.size());
 	shares.clear();
+	opens.clear();
 
 	std::cout << "spdz_ext_processor_cc_imp::exec_open: calling open for " << ext_shares.size() << std::endl;
 
-	the_party->openShare((int)ext_shares.size(), ext_shares, ext_opens);
-
-	opens.clear();
-
-	if(!do_verify || the_party->verify())
+	if(open_success = the_party->openShare((int)ext_shares.size(), ext_shares, ext_opens))
 	{
-		std::cout << "spdz_ext_processor_cc_imp::exec_open: verify open for " << ext_opens.size() << std::endl;
-		for(std::vector<ZpMersenneLongElement>::const_iterator i = ext_opens.begin(); i != ext_opens.end(); ++i)
+		do_verify = false;
+		if(!do_verify || the_party->verify())
 		{
-			opens.push_back(i->elem);
+			std::cout << "spdz_ext_processor_cc_imp::exec_open: verify open for " << ext_opens.size() << std::endl;
+			for(std::vector<ZpMersenneLongElement>::const_iterator i = ext_opens.begin(); i != ext_opens.end(); ++i)
+			{
+				opens.push_back(i->elem);
+			}
+		}
+		else
+		{
+			std::cerr << "spdz_ext_processor_cc_imp::exec_open: verify failure." << std::endl;
 		}
 	}
 	else
 	{
-		std::cerr << "spdz_ext_processor_cc_imp::exec_open: verify failed - no open values returned." << std::endl;
+		std::cerr << "spdz_ext_processor_cc_imp::exec_open: openShare failure." << std::endl;
+		ext_shares.clear();
+		ext_opens.clear();
 	}
-
-	std::cout << "spdz_ext_processor_cc_imp::exec_open: posting open done." << std::endl;
 	sem_post(&open_done);
 }
 
@@ -507,6 +543,7 @@ int spdz_ext_processor_cc_imp::triple(u_int64_t * a, u_int64_t * b, u_int64_t * 
 	pa = a;
 	pb = b;
 	pc = c;
+	triple_success = false;
 
 	if(0 != push_task(spdz_ext_processor_cc_imp::op_code_triple))
 	{
@@ -528,25 +565,28 @@ int spdz_ext_processor_cc_imp::triple(u_int64_t * a, u_int64_t * b, u_int64_t * 
 	}
 
 	pa = pb = pc = NULL;
-	return 0;
+	return (triple_success)? 0: -1;
 }
 
 //***********************************************************************************************//
 void spdz_ext_processor_cc_imp::exec_triple()
 {
-	//ZpMersenneLongElement A, B, C;
-	//the_party->triple(A, B, C);		//<--- not yet implemented
-	*pa = 0;//A.elem;
-	*pb = 0;//B.elem;
-	*pc = 0;//C.elem;
+	vector<ZpMersenneLongElement> triple(3);
+	if(triple_success = the_party->triples(1, triple))
+	{
+		*pa = triple[0].elem;
+		*pb = triple[1].elem;
+		*pc = triple[2].elem;
+	}
 	sem_post(&triple_done);
 }
 
 //***********************************************************************************************//
 int spdz_ext_processor_cc_imp::input(const int input_of_pid, u_int64_t * input_value)
 {
-	p_intput_value = input_value;
-	intput_party_id = input_of_pid;
+	p_input_value = input_value;
+	input_party_id = input_of_pid;
+	input_success = false;
 
 	if(0 != push_task(spdz_ext_processor_cc_imp::op_code_input))
 	{
@@ -565,17 +605,24 @@ int spdz_ext_processor_cc_imp::input(const int input_of_pid, u_int64_t * input_v
 		return -1;
 	}
 
-	p_intput_value = NULL;
-	intput_party_id = -1;
-	return 0;
+	p_input_value = NULL;
+	input_party_id = -1;
+
+	return (input_success)? 0: -1;
 }
 
 //***********************************************************************************************//
 void spdz_ext_processor_cc_imp::exec_input()
 {
-	//ZpMersenneLongElement input_value;
-	//the_party->input(input_party_id, input_value);		//<--- not yet implemented
-	*p_intput_value = 0;//input_value.elem;
+	std::vector<ZpMersenneLongElement> input_value(1);
+	if(input_success = the_party->input(input_party_id, input_value))
+	{
+		*p_input_value = input_value[0].elem;
+	}
+	else
+	{
+		std::cerr << "spdz_ext_processor_cc_imp::exec_input: protocol input failure." << std::endl;
+	}
 	sem_post(&input_done);
 }
 
@@ -588,7 +635,7 @@ int spdz_ext_processor_cc_imp::start_verify(int * error)
 		return -1;
 	}
 	verification_on = true;
-
+	verify_success = false;
 	verification_error = error;
 	if(0 != push_task(spdz_ext_processor_cc_imp::op_code_verify))
 	{
@@ -621,13 +668,16 @@ int spdz_ext_processor_cc_imp::stop_verify(const time_t timeout_sec)
 		return -1;
 	}
 
-	return 0;
+	verification_error = NULL;
+	return (verify_success)? 0: -1;
 }
 
 //***********************************************************************************************//
 void spdz_ext_processor_cc_imp::exec_verify()
 {
-	*verification_error = (the_party->verify())? 0: -1;
+	//*verification_error = (verify_success = the_party->verify())? 0: -1;
+	*verification_error = 0;
+	verify_success = true;
 	sem_post(&verify_done);
 }
 
@@ -640,7 +690,7 @@ int spdz_ext_processor_cc_imp::start_input(const int input_of_pid, const size_t 
 		return -1;
 	}
 	input_asynch_on = true;
-
+	input_asynch_success = false;
 	intput_asynch_party_id = input_of_pid;
 	num_of_inputs = num_of_inputs_;
 
@@ -671,28 +721,39 @@ int spdz_ext_processor_cc_imp::stop_input(size_t * input_count, u_int64_t ** inp
 		return -1;
 	}
 
-	if(!input_values.empty())
+	if(input_asynch_success)
 	{
-		*inputs = new u_int64_t[*input_count = input_values.size()];
-		memcpy(*inputs, &input_values[0], *input_count * sizeof(u_int64_t));
+		if(!input_values.empty())
+		{
+			*inputs = new u_int64_t[*input_count = input_values.size()];
+			memcpy(*inputs, &input_values[0], *input_count * sizeof(u_int64_t));
+		}
+		return 0;
 	}
-
-	return 0;
+	else
+	{
+		return -1;
+	}
 }
 
 //***********************************************************************************************//
 void spdz_ext_processor_cc_imp::exec_input_asynch()
 {
-	input_values.resize(num_of_inputs, 0);
-	/*
 	input_values.clear();
+	input_values.resize(num_of_inputs, 0);
+
 	std::vector<ZpMersenneLongElement> ext_inputs(num_of_inputs);
-	the_party->inputs(num_of_inputs, ext_inputs);						//<--- not yet implemented
-	for(std::vector<ZpMersenneLongElement>::const_iterator i = ext_inputs.begin(); i != ext_inputs.end(); ++i)
+	if(input_asynch_success = the_party->input(intput_asynch_party_id, ext_inputs))
 	{
-		input_values.push_back(i->elem);
+		for(std::vector<ZpMersenneLongElement>::const_iterator i = ext_inputs.begin(); i != ext_inputs.end(); ++i)
+		{
+			input_values.push_back(i->elem);
+		}
 	}
-	*/
+	else
+	{
+		std::cerr << "spdz_ext_processor_cc_imp::exec_input_asynch: protocol input failure." << std::endl;
+	}
 	sem_post(&input_asynch_done);
 }
 
