@@ -1,4 +1,5 @@
 
+#include <stdio.h>
 #include <iostream>
 #include <string.h>
 #include <errno.h>
@@ -240,13 +241,19 @@ int spdz_ext_processor_cc_imp::start(const int pid, const int num_of_parties, co
 		return -1;
 	}
 
+	std::string input_file;
+	{
+		char sz[64];
+		snprintf(sz, 64, "party_%d_input.txt", pid);
+		input_file = sz;
+	}
 	party_id = pid;
 	offline_size = offline;
 	the_field = new TemplateField<ZpMersenneLongElement>(0);
-	the_party = new Protocol<ZpMersenneLongElement>(num_of_parties, pid, offline, the_field);
+	the_party = new Protocol<ZpMersenneLongElement>(num_of_parties, pid, offline, the_field, input_file);
 	if(!the_party->offline())
 	{
-		std::cerr << "spdz_ext_processor_cc_imp::start: protocol offline failure." << std::endl;
+		std::cerr << "spdz_ext_processor_cc_imp::start: protocol library initialization failure." << std::endl;
 		return -1;
 	}
 
