@@ -4,6 +4,7 @@
 #include <string.h>
 #include <errno.h>
 #include <deque>
+#include <syslog.h>
 
 #include "spdz_ext_processor.h"
 #include "Protocol.h"
@@ -217,6 +218,8 @@ spdz_ext_processor_cc_imp::spdz_ext_processor_cc_imp()
 	sem_init(&input_done, 0, 0);
 	sem_init(&verify_done, 0, 0);
 	sem_init(&input_asynch_done, 0, 0);
+	openlog("spdz_ext_biu", LOG_NDELAY|LOG_PID, LOG_USER);
+	setlogmask(LOG_UPTO(LOG_DEBUG));
 }
 
 //***********************************************************************************************//
@@ -230,6 +233,7 @@ spdz_ext_processor_cc_imp::~spdz_ext_processor_cc_imp()
 	sem_destroy(&input_done);
 	sem_destroy(&verify_done);
 	sem_destroy(&input_asynch_done);
+	closelog();
 }
 
 //***********************************************************************************************//
@@ -237,7 +241,7 @@ int spdz_ext_processor_cc_imp::start(const int pid, const int num_of_parties, co
 {
 	if(run_flag)
 	{
-		std::cerr << "spdz_ext_processor_cc_imp::start: this processor is already started" << std::endl;
+		syslog(LOG_ERR, "spdz_ext_processor_cc_imp::start: this processor is already started");
 		return -1;
 	}
 
@@ -253,7 +257,7 @@ int spdz_ext_processor_cc_imp::start(const int pid, const int num_of_parties, co
 	the_party = new Protocol<ZpMersenneLongElement>(num_of_parties, pid, offline, the_field, input_file);
 	if(!the_party->offline())
 	{
-		std::cerr << "spdz_ext_processor_cc_imp::start: protocol library initialization failure." << std::endl;
+		syslog(LOG_ERR, "spdz_ext_processor_cc_imp::start: protocol library initialization failure.");
 		return -1;
 	}
 
@@ -262,12 +266,12 @@ int spdz_ext_processor_cc_imp::start(const int pid, const int num_of_parties, co
 	if(0 != result)
 	{
 		char errmsg[512];
-		std::cerr << "spdz_ext_processor_cc_imp::start: pthread_create() failed with error " << result << " : " << strerror_r(result, errmsg, 512) << std::endl;
+		syslog(LOG_ERR, "spdz_ext_processor_cc_imp::start: pthread_create() failed with error %d : %s", result, strerror_r(result, errmsg, 512));
 		run_flag = false;
 		return -1;
 	}
 
-	std::cout << "spdz_ext_processor_cc_imp::start: pid " << party_id << std::endl;
+	syslog(LOG_NOTICE, "spdz_ext_processor_cc_imp::start: pid %d", party_id);
 	return 0;
 }
 
@@ -276,7 +280,7 @@ int spdz_ext_processor_cc_imp::stop(const time_t timeout_sec)
 {
 	if(!run_flag)
 	{
-		std::cerr << "spdz_ext_processor_cc_imp::stop this processor is not running." << std::endl;
+		syslog(LOG_ERR, "spdz_ext_processor_cc_imp::stop this processor is not running.");
 		return -1;
 	}
 
@@ -291,7 +295,7 @@ int spdz_ext_processor_cc_imp::stop(const time_t timeout_sec)
 	if(0 != result)
 	{
 		char errmsg[512];
-		std::cerr << "spdz_ext_processor_cc_imp::stop: pthread_timedjoin_np() failed with error " << result << " : " << strerror_r(result, errmsg, 512) << std::endl;
+		syslog(LOG_ERR, "spdz_ext_processor_cc_imp::stop: pthread_timedjoin_np() failed with error %d : %s", result, strerror_r(result, errmsg, 512));
 		return -1;
 	}
 
@@ -301,7 +305,7 @@ int spdz_ext_processor_cc_imp::stop(const time_t timeout_sec)
 	delete the_field;
 	the_field = NULL;
 
-	std::cout << "spdz_ext_processor_cc_imp::stop: pid " << party_id << std::endl;
+	syslog(LOG_NOTICE, "spdz_ext_processor_cc_imp::stop: pid %d", party_id);
 	return 0;
 }
 
@@ -321,7 +325,7 @@ void spdz_ext_processor_cc_imp::run()
 		if(0 == result)
 		{
 			int op_code = pop_task();
-			std::cout << "spdz_ext_processor_cc_imp::run: op_code " << op_code << std::endl;
+			syslog(LOG_NOTICE, "spdz_ext_processor_cc_imp::run: op_code %d", op_code);
 			switch(op_code)
 			{
 			case op_code_open:
@@ -343,7 +347,7 @@ void spdz_ext_processor_cc_imp::run()
 				exec_input_asynch();
 				break;
 			default:
-				std::cerr << "spdz_ext_processor_cc_imp::run: unsupported op code " << op_code << std::endl;
+				syslog(LOG_WARNING, "spdz_ext_processor_cc_imp::run: unsupported op_code %d", op_code);
 				break;
 			}
 		}
@@ -357,7 +361,7 @@ int spdz_ext_processor_cc_imp::push_task(const int op_code)
 	if(0 != result)
 	{
 		char errmsg[512];
-		std::cerr << "spdz_ext_processor_cc_imp::push_task: pthread_mutex_lock() failed with error " << result << " : " << strerror_r(result, errmsg, 512) << std::endl;
+		syslog(LOG_ERR, "spdz_ext_processor_cc_imp::push_task: pthread_mutex_lock() failed with error %d : %s", result, strerror_r(result, errmsg, 512));
 		return -1;
 	}
 	task_q.push_back(op_code);
@@ -366,9 +370,9 @@ int spdz_ext_processor_cc_imp::push_task(const int op_code)
 	if(0 != result)
 	{
 		char errmsg[512];
-		std::cerr << "spdz_ext_processor_cc_imp::push_task: pthread_mutex_unlock() failed with error " << result << " : " << strerror_r(result, errmsg, 512) << std::endl;
+		syslog(LOG_ERR, "spdz_ext_processor_cc_imp::push_task: pthread_mutex_unlock() failed with error %d : %s", result, strerror_r(result, errmsg, 512));
 	}
-	std::cout << "spdz_ext_processor_cc_imp::push_task: op_code " << op_code << std::endl;
+	syslog(LOG_NOTICE, "spdz_ext_processor_cc_imp::push_task: op_code %d", op_code);
 	return 0;
 }
 
@@ -389,16 +393,16 @@ int spdz_ext_processor_cc_imp::pop_task()
 		if(0 != result)
 		{
 			char errmsg[512];
-			std::cerr << "spdz_ext_processor_cc_imp::pop_task: pthread_mutex_unlock() failed with error " << result << " : " << strerror_r(result, errmsg, 512) << std::endl;
+			syslog(LOG_ERR, "spdz_ext_processor_cc_imp::pop_task: pthread_mutex_unlock() failed with error %d : %s", result, strerror_r(result, errmsg, 512));
 		}
 	}
 	else
 	{
 		char errmsg[512];
-		std::cerr << "spdz_ext_processor_cc_imp::pop_task: pthread_mutex_lock() failed with error " << result << " : " << strerror_r(result, errmsg, 512) << std::endl;
+		syslog(LOG_ERR, "spdz_ext_processor_cc_imp::pop_task: pthread_mutex_lock() failed with error %d : %s", result, strerror_r(result, errmsg, 512));
 	}
 
-	std::cout << "spdz_ext_processor_cc_imp::pop_task: op_code " << op_code << std::endl;
+	syslog(LOG_NOTICE, "spdz_ext_processor_cc_imp::pop_task: op_code %d", op_code);
 	return op_code;
 }
 
@@ -412,7 +416,7 @@ int spdz_ext_processor_cc_imp::offline(const int /*offline_size*/, const time_t 
 	offline_success = false;
 	if(0 != push_task(spdz_ext_processor_cc_imp::op_code_offline))
 	{
-		std::cerr << "spdz_ext_processor_cc_imp::offline: failed pushing an offline task to queue." << std::endl;
+		syslog(LOG_ERR, "spdz_ext_processor_cc_imp::offline: failed pushing an offline task to queue.");
 		return -1;
 	}
 
@@ -425,7 +429,7 @@ int spdz_ext_processor_cc_imp::offline(const int /*offline_size*/, const time_t 
 	{
 		result = errno;
 		char errmsg[512];
-		std::cerr << "spdz_ext_processor_cc_imp::offline: sem_timedwait() failed with error " << result << " : " << strerror_r(result, errmsg, 512) << std::endl;
+		syslog(LOG_ERR, "spdz_ext_processor_cc_imp::offline: sem_timedwait() failed with error %d : %s", result, strerror_r(result, errmsg, 512));
 		return -1;
 	}
 
@@ -444,7 +448,7 @@ int spdz_ext_processor_cc_imp::start_open(const size_t share_count, const u_int6
 {
 	if(start_open_on)
 	{
-		std::cerr << "spdz_ext_processor_cc_imp::start_open: open is already started (a stop_open() call is required)." << std::endl;
+		syslog(LOG_ERR, "spdz_ext_processor_cc_imp::start_open: open is already started (a stop_open() call is required).");
 		return -1;
 	}
 	start_open_on = true;
@@ -454,7 +458,7 @@ int spdz_ext_processor_cc_imp::start_open(const size_t share_count, const u_int6
 	do_verify = (verify != 0)? true: false;
 	if(0 != push_task(spdz_ext_processor_cc_imp::op_code_open))
 	{
-		std::cerr << "spdz_ext_processor_cc_imp::start_open: failed pushing an open task to queue." << std::endl;
+		syslog(LOG_ERR, "spdz_ext_processor_cc_imp::start_open: failed pushing an open task to queue.");
 		start_open_on = false;
 		return -1;
 	}
@@ -467,7 +471,7 @@ int spdz_ext_processor_cc_imp::stop_open(size_t * open_count, u_int64_t ** open_
 {
 	if(!start_open_on)
 	{
-		std::cerr << "spdz_ext_processor_cc_imp::stop_open: open is not started." << std::endl;
+		syslog(LOG_ERR, "spdz_ext_processor_cc_imp::stop_open: open is not started.");
 		return -1;
 	}
 	start_open_on = false;
@@ -484,7 +488,7 @@ int spdz_ext_processor_cc_imp::stop_open(size_t * open_count, u_int64_t ** open_
 	{
 		result = errno;
 		char errmsg[512];
-		std::cerr << "spdz_ext_processor_cc_imp::stop_open: sem_timedwait() failed with error " << result << " : " << strerror_r(result, errmsg, 512) << std::endl;
+		syslog(LOG_ERR, "spdz_ext_processor_cc_imp::stop_open: sem_timedwait() failed with error %d : %s", result, strerror_r(result, errmsg, 512));
 		return -1;
 	}
 
@@ -500,7 +504,7 @@ int spdz_ext_processor_cc_imp::stop_open(size_t * open_count, u_int64_t ** open_
 	}
 	else
 	{
-		std::cerr << "spdz_ext_processor_cc_imp::stop_open: open failed." << std::endl;
+		syslog(LOG_ERR, "spdz_ext_processor_cc_imp::stop_open: open failed.");
 		return -1;
 	}
 }
@@ -509,35 +513,36 @@ int spdz_ext_processor_cc_imp::stop_open(size_t * open_count, u_int64_t ** open_
 void spdz_ext_processor_cc_imp::exec_open()
 {
 	std::vector<ZpMersenneLongElement> ext_shares, ext_opens;
+	syslog(LOG_INFO, "spdz_ext_processor_cc_imp::exec_open: calling open for %u shares", (u_int32_t)shares.size());
 	for(std::vector<u_int64_t>::const_iterator i = shares.begin(); i != shares.end(); ++i)
 	{
 		ext_shares.push_back(ZpMersenneLongElement(*i));
+		syslog(LOG_DEBUG, "spdz_ext_processor_cc_imp::exec_open() share value %lu", *i);
 	}
 	ext_opens.resize(ext_shares.size());
 	shares.clear();
 	opens.clear();
-
-	std::cout << "spdz_ext_processor_cc_imp::exec_open: calling open for " << ext_shares.size() << std::endl;
 
 	if(open_success = the_party->openShare((int)ext_shares.size(), ext_shares, ext_opens))
 	{
 		do_verify = false;
 		if(!do_verify || the_party->verify())
 		{
-			std::cout << "spdz_ext_processor_cc_imp::exec_open: verify open for " << ext_opens.size() << std::endl;
+			syslog(LOG_INFO, "spdz_ext_processor_cc_imp::exec_open: verify open for %u opens", (u_int32_t)ext_opens.size());
 			for(std::vector<ZpMersenneLongElement>::const_iterator i = ext_opens.begin(); i != ext_opens.end(); ++i)
 			{
+				syslog(LOG_DEBUG, "spdz_ext_processor_cc_imp::exec_open() open value %lu", (u_int64_t)i->elem);
 				opens.push_back(i->elem);
 			}
 		}
 		else
 		{
-			std::cerr << "spdz_ext_processor_cc_imp::exec_open: verify failure." << std::endl;
+			syslog(LOG_ERR, "spdz_ext_processor_cc_imp::exec_open: verify failure.");
 		}
 	}
 	else
 	{
-		std::cerr << "spdz_ext_processor_cc_imp::exec_open: openShare failure." << std::endl;
+		syslog(LOG_ERR, "spdz_ext_processor_cc_imp::exec_open: openShare failure.");
 		ext_shares.clear();
 		ext_opens.clear();
 	}
@@ -554,7 +559,7 @@ int spdz_ext_processor_cc_imp::triple(u_int64_t * a, u_int64_t * b, u_int64_t * 
 
 	if(0 != push_task(spdz_ext_processor_cc_imp::op_code_triple))
 	{
-		std::cerr << "spdz_ext_processor_cc_imp::triple: failed pushing a triple task to queue." << std::endl;
+		syslog(LOG_ERR, "spdz_ext_processor_cc_imp::triple: failed pushing a triple task to queue.");
 		return -1;
 	}
 
@@ -567,7 +572,7 @@ int spdz_ext_processor_cc_imp::triple(u_int64_t * a, u_int64_t * b, u_int64_t * 
 	{
 		result = errno;
 		char errmsg[512];
-		std::cerr << "spdz_ext_processor_cc_imp::triple: sem_timedwait() failed with error " << result << " : " << strerror_r(result, errmsg, 512) << std::endl;
+		syslog(LOG_ERR, "spdz_ext_processor_cc_imp::triple: sem_timedwait() failed with error %d : %s", result, strerror_r(result, errmsg, 512));
 		return -1;
 	}
 
@@ -584,6 +589,7 @@ void spdz_ext_processor_cc_imp::exec_triple()
 		*pa = triple[0].elem;
 		*pb = triple[1].elem;
 		*pc = triple[2].elem;
+		syslog(LOG_DEBUG, "spdz_ext_processor_cc_imp::exec_triple: a = %lu; b = %lu; c = %lu;", *pa, *pb, *pc);
 	}
 	sem_post(&triple_done);
 }
@@ -597,7 +603,7 @@ int spdz_ext_processor_cc_imp::input(const int input_of_pid, u_int64_t * input_v
 
 	if(0 != push_task(spdz_ext_processor_cc_imp::op_code_input))
 	{
-		std::cerr << "spdz_ext_processor_cc_imp::input: failed pushing an input task to queue." << std::endl;
+		syslog(LOG_ERR, "spdz_ext_processor_cc_imp::input: failed pushing an input task to queue.");
 		return -1;
 	}
 
@@ -608,7 +614,7 @@ int spdz_ext_processor_cc_imp::input(const int input_of_pid, u_int64_t * input_v
 	{
 		result = errno;
 		char errmsg[512];
-		std::cerr << "spdz_ext_processor_cc_imp::input: sem_wait() failed with error " << result << " : " << strerror_r(result, errmsg, 512) << std::endl;
+		syslog(LOG_ERR, "spdz_ext_processor_cc_imp::input: sem_wait() failed with error %d : %s", result, strerror_r(result, errmsg, 512));
 		return -1;
 	}
 
@@ -628,7 +634,7 @@ void spdz_ext_processor_cc_imp::exec_input()
 	}
 	else
 	{
-		std::cerr << "spdz_ext_processor_cc_imp::exec_input: protocol input failure." << std::endl;
+		syslog(LOG_ERR, "spdz_ext_processor_cc_imp::exec_input: protocol input failure.");
 	}
 	sem_post(&input_done);
 }
@@ -638,7 +644,7 @@ int spdz_ext_processor_cc_imp::start_verify(int * error)
 {
 	if(verification_on)
 	{
-		std::cerr << "spdz_ext_processor_cc_imp::start_verify: verify is already started (a stop_verify() call is required)." << std::endl;
+		syslog(LOG_ERR, "spdz_ext_processor_cc_imp::start_verify: verify is already started (a stop_verify() call is required).");
 		return -1;
 	}
 	verification_on = true;
@@ -646,7 +652,7 @@ int spdz_ext_processor_cc_imp::start_verify(int * error)
 	verification_error = error;
 	if(0 != push_task(spdz_ext_processor_cc_imp::op_code_verify))
 	{
-		std::cerr << "spdz_ext_processor_cc_imp::start_verify: failed pushing a verify start task to queue." << std::endl;
+		syslog(LOG_ERR, "spdz_ext_processor_cc_imp::start_verify: failed pushing a verify start task to queue.");
 		return -1;
 	}
 	return 0;
@@ -657,7 +663,7 @@ int spdz_ext_processor_cc_imp::stop_verify(const time_t timeout_sec)
 {
 	if(!verification_on)
 	{
-		std::cerr << "spdz_ext_processor_cc_imp::stop_verify: verify is not started." << std::endl;
+		syslog(LOG_ERR, "spdz_ext_processor_cc_imp::stop_verify: verify is not started.");
 		return -1;
 	}
 	verification_on = false;
@@ -671,7 +677,7 @@ int spdz_ext_processor_cc_imp::stop_verify(const time_t timeout_sec)
 	{
 		result = errno;
 		char errmsg[512];
-		std::cerr << "spdz_ext_processor_cc_imp::stop_verify: sem_timedwait() failed with error " << result << " : " << strerror_r(result, errmsg, 512) << std::endl;
+		syslog(LOG_ERR, "spdz_ext_processor_cc_imp::stop_verify: sem_timedwait() failed with error %d : %s", result, strerror_r(result, errmsg, 512));
 		return -1;
 	}
 
@@ -693,7 +699,7 @@ int spdz_ext_processor_cc_imp::start_input(const int input_of_pid, const size_t 
 {
 	if(input_asynch_on)
 	{
-		std::cerr << "spdz_ext_processor_cc_imp::start_input: asynch input is already started (a stop_input() call is required)." << std::endl;
+		syslog(LOG_ERR, "spdz_ext_processor_cc_imp::start_input: asynch input is already started (a stop_input() call is required).");
 		return -1;
 	}
 	input_asynch_on = true;
@@ -703,7 +709,7 @@ int spdz_ext_processor_cc_imp::start_input(const int input_of_pid, const size_t 
 
 	if(0 != push_task(spdz_ext_processor_cc_imp::op_code_input_asynch))
 	{
-		std::cerr << "spdz_ext_processor_cc_imp::start_input: failed pushing an input start task to queue." << std::endl;
+		syslog(LOG_ERR, "spdz_ext_processor_cc_imp::start_input: failed pushing an input start task to queue.");
 		return -1;
 	}
 	return 0;
@@ -714,7 +720,7 @@ int spdz_ext_processor_cc_imp::stop_input(size_t * input_count, u_int64_t ** inp
 {
 	if(!input_asynch_on)
 	{
-		std::cerr << "spdz_ext_processor_cc_imp::stop_input: asynch input is not started." << std::endl;
+		syslog(LOG_ERR, "spdz_ext_processor_cc_imp::stop_input: asynch input is not started.");
 		return -1;
 	}
 	input_asynch_on = false;
@@ -724,7 +730,7 @@ int spdz_ext_processor_cc_imp::stop_input(size_t * input_count, u_int64_t ** inp
 	{
 		result = errno;
 		char errmsg[512];
-		std::cerr << "spdz_ext_processor_cc_imp::stop_input: sem_wait() failed with error " << result << " : " << strerror_r(result, errmsg, 512) << std::endl;
+		syslog(LOG_ERR, "spdz_ext_processor_cc_imp::stop_input: sem_wait() failed with error %d : %s", result, strerror_r(result, errmsg, 512));
 		return -1;
 	}
 
@@ -759,7 +765,7 @@ void spdz_ext_processor_cc_imp::exec_input_asynch()
 	}
 	else
 	{
-		std::cerr << "spdz_ext_processor_cc_imp::exec_input_asynch: protocol input failure." << std::endl;
+		syslog(LOG_ERR, "spdz_ext_processor_cc_imp::exec_input_asynch: protocol input failure.");
 	}
 	sem_post(&input_asynch_done);
 }

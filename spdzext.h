@@ -119,6 +119,10 @@ extern "C"
      * @return The value restored from the converted value
      */
 	SPDZEXT_VALTYPE test_conversion(const SPDZEXT_VALTYPE value);
+
+	SPDZEXT_VALTYPE add(SPDZEXT_VALTYPE, SPDZEXT_VALTYPE);
+	SPDZEXT_VALTYPE sub(SPDZEXT_VALTYPE, SPDZEXT_VALTYPE);
+	SPDZEXT_VALTYPE mult(SPDZEXT_VALTYPE, SPDZEXT_VALTYPE);
 }
 
 #endif /* SPDZEXT_H_ */
