@@ -72,6 +72,16 @@ int stop_input(void * handle, size_t * input_count, u_int64_t ** inputs)
 	return ((spdz_ext_processor_ifc *)handle)->stop_input(input_count, inputs);
 }
 //-------------------------------------------------------------------------------------------//
+int start_mult(void * handle, const size_t share_count, const u_int64_t * shares, int verify)
+{
+	return ((spdz_ext_processor_ifc *)handle)->start_mult(share_count, shares, verify);
+}
+//-------------------------------------------------------------------------------------------//
+int stop_mult(void * handle, size_t * product_count, u_int64_t ** products)
+{
+	return ((spdz_ext_processor_ifc *)handle)->stop_mult(product_count, products);
+}
+//-------------------------------------------------------------------------------------------//
 u_int64_t test_conversion(const u_int64_t value)
 {
 	ZpMersenneLongElement element(value);

@@ -75,6 +75,14 @@ class spdz_ext_processor_cc_imp
 	bool input_asynch_success;
 	//---------------------------------------------------
 
+	//--mult---------------------------------------------
+	bool mult_on;
+	std::vector<u_int64_t> mult_values, products;
+	sem_t mult_done;
+	void exec_mult();
+	bool mult_success;
+	//---------------------------------------------------
+
 public:
 	spdz_ext_processor_cc_imp();
 	~spdz_ext_processor_cc_imp();
@@ -97,6 +105,9 @@ public:
     int start_input(const int input_of_pid, const size_t num_of_inputs);
     int stop_input(size_t * input_count, u_int64_t ** inputs);
 
+    int start_mult(const size_t share_count, const u_int64_t * shares, int verify);
+    int stop_mult(size_t * product_count, u_int64_t ** products);
+
     friend void * cc_proc(void * arg);
 
 	static const int op_code_open;
@@ -105,6 +116,7 @@ public:
 	static const int op_code_input;
 	static const int op_code_verify;
 	static const int op_code_input_asynch;
+	static const int op_code_mult;
 };
 
 //***********************************************************************************************//
@@ -186,6 +198,18 @@ int spdz_ext_processor_ifc::stop_input(size_t * input_count, u_int64_t ** inputs
 }
 
 //***********************************************************************************************//
+int spdz_ext_processor_ifc::start_mult(const size_t share_count, const u_int64_t * shares, int verify)
+{
+	return impl->start_mult(share_count, shares, verify);
+}
+
+//***********************************************************************************************//
+int spdz_ext_processor_ifc::stop_mult(size_t * product_count, u_int64_t ** products)
+{
+	return impl->stop_mult(product_count, products);
+}
+
+//***********************************************************************************************//
 void * cc_proc(void * arg)
 {
 	spdz_ext_processor_cc_imp * processor = (spdz_ext_processor_cc_imp *)arg;
@@ -199,6 +223,7 @@ const int spdz_ext_processor_cc_imp::op_code_offline = 102;
 const int spdz_ext_processor_cc_imp::op_code_input = 103;
 const int spdz_ext_processor_cc_imp::op_code_verify = 104;
 const int spdz_ext_processor_cc_imp::op_code_input_asynch = 105;
+const int spdz_ext_processor_cc_imp::op_code_mult = 106;
 
 //***********************************************************************************************//
 spdz_ext_processor_cc_imp::spdz_ext_processor_cc_imp()
@@ -209,6 +234,7 @@ spdz_ext_processor_cc_imp::spdz_ext_processor_cc_imp()
  , input_party_id(-1), input_success(false), p_input_value(NULL)
  , verification_error(NULL), verification_on(false), verify_success(false)
  , input_asynch_on(false), intput_asynch_party_id(-1), num_of_inputs(0), input_asynch_success(false)
+ , mult_on(false), mult_success(false)
 {
 	pthread_mutex_init(&q_lock, NULL);
 	sem_init(&task, 0, 0);
@@ -218,6 +244,7 @@ spdz_ext_processor_cc_imp::spdz_ext_processor_cc_imp()
 	sem_init(&input_done, 0, 0);
 	sem_init(&verify_done, 0, 0);
 	sem_init(&input_asynch_done, 0, 0);
+	sem_init(&mult_done, 0, 0);
 	openlog("spdz_ext_biu", LOG_NDELAY|LOG_PID, LOG_USER);
 	setlogmask(LOG_UPTO(LOG_DEBUG));
 }
@@ -233,6 +260,7 @@ spdz_ext_processor_cc_imp::~spdz_ext_processor_cc_imp()
 	sem_destroy(&input_done);
 	sem_destroy(&verify_done);
 	sem_destroy(&input_asynch_done);
+	sem_destroy(&mult_done);
 	closelog();
 }
 
@@ -254,7 +282,7 @@ int spdz_ext_processor_cc_imp::start(const int pid, const int num_of_parties, co
 	party_id = pid;
 	offline_size = offline;
 	the_field = new TemplateField<ZpMersenneLongElement>(0);
-	the_party = new Protocol<ZpMersenneLongElement>(num_of_parties, pid, offline, the_field, input_file);
+	the_party = new Protocol<ZpMersenneLongElement>(num_of_parties, pid, offline, offline, the_field, input_file);
 	if(!the_party->offline())
 	{
 		syslog(LOG_ERR, "spdz_ext_processor_cc_imp::start: protocol library initialization failure.");
@@ -345,6 +373,9 @@ void spdz_ext_processor_cc_imp::run()
 				break;
 			case op_code_input_asynch:
 				exec_input_asynch();
+				break;
+			case op_code_mult:
+				exec_mult();
 				break;
 			default:
 				syslog(LOG_WARNING, "spdz_ext_processor_cc_imp::run: unsupported op_code %d", op_code);
@@ -589,7 +620,24 @@ void spdz_ext_processor_cc_imp::exec_triple()
 		*pa = triple[0].elem;
 		*pb = triple[1].elem;
 		*pc = triple[2].elem;
-		syslog(LOG_DEBUG, "spdz_ext_processor_cc_imp::exec_triple: a = %lu; b = %lu; c = %lu;", *pa, *pb, *pc);
+		syslog(LOG_DEBUG, "spdz_ext_processor_cc_imp::exec_triple: share a = %lu; share b = %lu; share c = %lu;", *pa, *pb, *pc);
+	}
+
+	{//test the triple with open
+		std::vector<ZpMersenneLongElement> ext_shares(3), ext_opens(3);
+		ext_shares[0].elem = *pa;
+		ext_shares[1].elem = *pb;
+		ext_shares[2].elem = *pc;
+
+		if(open_success = the_party->openShare((int)ext_shares.size(), ext_shares, ext_opens))
+		{
+			syslog(LOG_INFO, "spdz_ext_processor_cc_imp::exec_triple: test open of triple success");
+			syslog(LOG_INFO, "spdz_ext_processor_cc_imp::exec_triple: open a = %lu, open b = %lu, open c = %lu", ext_opens[0].elem, ext_opens[1].elem, ext_opens[2].elem);
+		}
+		else
+		{
+			syslog(LOG_ERR, "spdz_ext_processor_cc_imp::exec_triple: test open of triple failure");
+		}
 	}
 	sem_post(&triple_done);
 }
@@ -631,6 +679,22 @@ void spdz_ext_processor_cc_imp::exec_input()
 	if(input_success = the_party->input(input_party_id, input_value))
 	{
 		*p_input_value = input_value[0].elem;
+		syslog(LOG_INFO, "spdz_ext_processor_cc_imp::exec_input: input value %lu", *p_input_value);
+
+		{//test the input with open
+			std::vector<ZpMersenneLongElement> ext_shares(1), ext_opens(1);
+			ext_shares[0].elem = *p_input_value;
+
+			if(open_success = the_party->openShare((int)ext_shares.size(), ext_shares, ext_opens))
+			{
+				syslog(LOG_INFO, "spdz_ext_processor_cc_imp::exec_input: test open of triple success");
+				syslog(LOG_INFO, "spdz_ext_processor_cc_imp::exec_input: open input = %lu", ext_opens[0].elem);
+			}
+			else
+			{
+				syslog(LOG_ERR, "spdz_ext_processor_cc_imp::exec_input: test open of input failure");
+			}
+		}
 	}
 	else
 	{
@@ -768,6 +832,98 @@ void spdz_ext_processor_cc_imp::exec_input_asynch()
 		syslog(LOG_ERR, "spdz_ext_processor_cc_imp::exec_input_asynch: protocol input failure.");
 	}
 	sem_post(&input_asynch_done);
+}
+
+//***********************************************************************************************//
+int spdz_ext_processor_cc_imp::start_mult(const size_t share_count, const u_int64_t * shares, int verify)
+{
+	if(mult_on)
+	{
+		syslog(LOG_ERR, "spdz_ext_processor_cc_imp::start_mult: mult is already started (a stop_mult() call is required).");
+		return -1;
+	}
+	mult_on = true;
+	mult_success = false;
+	mult_values.assign(shares, shares + share_count);
+	products.clear();
+
+	if(0 != push_task(spdz_ext_processor_cc_imp::op_code_mult))
+	{
+		syslog(LOG_ERR, "spdz_ext_processor_cc_imp::start_mult: failed pushing a mult start task to queue.");
+		return -1;
+	}
+	return 0;
+
+}
+
+//***********************************************************************************************//
+int spdz_ext_processor_cc_imp::stop_mult(size_t * product_count, u_int64_t ** product_values)
+{
+	if(!mult_on)
+	{
+		syslog(LOG_ERR, "spdz_ext_processor_cc_imp::stop_mult: mult is not started.");
+		return -1;
+	}
+	mult_on = false;
+
+	int result = sem_wait(&mult_done);
+	if(0 != result)
+	{
+		result = errno;
+		char errmsg[512];
+		syslog(LOG_ERR, "spdz_ext_processor_cc_imp::stop_mult: sem_wait() failed with error %d : %s", result, strerror_r(result, errmsg, 512));
+		return -1;
+	}
+
+	if(mult_success)
+	{
+		if(!products.empty())
+		{
+			*product_values = new u_int64_t[*product_count = products.size()];
+			memcpy(*product_values, &products[0], *product_count * sizeof(u_int64_t));
+		}
+		return 0;
+	}
+	else
+	{
+		return -1;
+	}
+
+}
+
+//***********************************************************************************************//
+void spdz_ext_processor_cc_imp::exec_mult()
+{
+	size_t xy_pair_count =  mult_values.size()/2;
+	std::vector<ZpMersenneLongElement> x_shares(xy_pair_count), y_shares(xy_pair_count), xy_shares(xy_pair_count);
+
+	for(size_t i = 0; i < xy_pair_count; ++i)
+	{
+		x_shares[i].elem = mult_values[2*i];
+		y_shares[i].elem = mult_values[2*i+1];
+		syslog(LOG_DEBUG, "spdz_ext_processor_cc_imp::exec_mult: X-Y pair %lu: X=%lu Y=%lu", i, x_shares[i].elem, y_shares[i].elem);
+	}
+
+	if(mult_success = the_party->multShares(xy_pair_count, x_shares, y_shares, xy_shares))
+	{
+		for(size_t i = 0; i < xy_pair_count; ++i)
+		{
+			products.push_back(xy_shares[i].elem);
+			syslog(LOG_DEBUG, "spdz_ext_processor_cc_imp::exec_mult: X-Y product %lu: X*Y=%lu", i, products[i]);
+		}
+		/*
+		for(std::vector<ZpMersenneLongElement>::const_iterator i = xy_shares.begin(); i != xy_shares.end(); ++i)
+		{
+			products.push_back(i->elem);
+			syslog(LOG_DEBUG, "spdz_ext_processor_cc_imp::exec_mult: X-Y product %lu: X*Y=%lu", i, (u_int64_t)i->elem);
+		}
+		*/
+	}
+	else
+	{
+		syslog(LOG_ERR, "spdz_ext_processor_cc_imp::exec_mult: protocol mult failure.");
+	}
+	sem_post(&mult_done);
 }
 
 //***********************************************************************************************//

@@ -113,6 +113,27 @@ extern "C"
     int stop_input(void * handle, size_t * input_count, SPDZEXT_VALTYPE ** inputs);
 
     /**
+     * Start an asynchronous multiply operation
+	 * Must be followed by a call to stop mult
+	 * @param[in] handle An initialized session handle
+	 * @param[in] share_count Number of the shared values
+	 * @param[in] shares The shared values
+	 * @param[in] verify Verification flag
+	 * @return 0 on success, -1 otherwise
+     */
+    int start_mult(void * handle, const size_t share_count, const SPDZEXT_VALTYPE * shares, int verify);
+
+	/**
+	 * Complete an asynchronous multiply operation
+	 * Will fail if no start mult was called before
+	 * @param[in] handle An initialized session handle
+	 * @param[out] product_count Number of the product values
+	 * @param[out] products The product results
+	 * @return 0 on success, -1 otherwise
+	 */
+    int stop_mult(void * handle, size_t * product_count, SPDZEXT_VALTYPE ** products);
+
+    /**
      * Test the library value conversion from integer (32/64) to internal representation
      * The returned value should be equal to the provided value
      * @param value The test value to convert

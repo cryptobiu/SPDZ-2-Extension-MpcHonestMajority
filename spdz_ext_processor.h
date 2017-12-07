@@ -31,6 +31,9 @@ public:
 
     int start_input(const int input_of_pid, const size_t num_of_inputs);
     int stop_input(size_t * input_count, u_int64_t ** inputs);
+
+    int start_mult(const size_t share_count, const u_int64_t * shares, int verify);
+    int stop_mult(size_t * product_count, u_int64_t ** products);
 };
 
 
