@@ -134,6 +134,33 @@ extern "C"
     int stop_mult(void * handle, size_t * product_count, SPDZEXT_VALTYPE ** products);
 
     /**
+     * Addition of a share value with a scalar value
+     * @param[in] handle An initialized session handle
+     * @param[in/out] share The share value to which the scalar value is added
+     * @param[in] scalar A scalar value to add to the share
+	 * @return 0 on success, -1 otherwise
+     */
+    int mix_add(void * handle, SPDZEXT_VALTYPE * share, SPDZEXT_VALTYPE scalar);
+
+    /**
+     * Subtraction of a scalar value from a share
+     * @param[in] handle An initialized session handle
+     * @param[in/out] share The share value from which the scalar value is subtracted
+     * @param[in] scalar A scalar value to subtract from the share
+	 * @return 0 on success, -1 otherwise
+     */
+    int mix_sub_scalar(void * handle, SPDZEXT_VALTYPE * share, SPDZEXT_VALTYPE scalar);
+
+    /**
+     * Subtraction of a share value from a scalar
+     * @param[in] handle An initialized session handle
+     * @param[in/out] share The share value to subtract from the scalar
+     * @param[in] scalar A scalar from which the share value is subtracted
+	 * @return 0 on success, -1 otherwise
+     */
+    int mix_sub_share(void * handle, SPDZEXT_VALTYPE scalar, SPDZEXT_VALTYPE * share);
+
+    /**
      * Test the library value conversion from integer (32/64) to internal representation
      * The returned value should be equal to the provided value
      * @param value The test value to convert
