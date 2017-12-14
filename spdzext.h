@@ -125,7 +125,7 @@ extern "C"
 
 	/**
 	 * Complete an asynchronous multiply operation
-	 * Will fail if no start mult was called before
+	 * Will fail if no start mult was previously called
 	 * @param[in] handle An initialized session handle
 	 * @param[out] product_count Number of the product values
 	 * @param[out] products The product results
@@ -159,6 +159,36 @@ extern "C"
 	 * @return 0 on success, -1 otherwise
      */
     int mix_sub_share(void * handle, SPDZEXT_VALTYPE scalar, SPDZEXT_VALTYPE * share);
+
+    /**
+     * Start an asynchronous operation of sharing given values
+	 * Must be followed by a stop call to share_immediates
+	 * @param[in] handle An initialized session handle
+	 * @param[in] input_of_pid The party identifier that will initiate the share (by simulating input)
+	 * @param[in] value_count The number of the values to share
+	 * @param[in] values An array of values to share
+	 * @return 0 on success, -1 otherwise
+     */
+    int start_share_immediates(void * handle, const int input_of_pid, const size_t value_count, const SPDZEXT_VALTYPE * values);
+
+	/**
+	 * Complete an asynchronous value sharing operation
+	 * Will fail if no start share_immediates was previously called
+	 * @param[in] handle An initialized session handle
+	 * @param[out] share_count Number of the shared values
+	 * @param[out] shares The shared values
+	 * @return 0 on success, -1 otherwise
+	 */
+    int stop_share_immediates(void * handle, size_t * share_count, SPDZEXT_VALTYPE ** shares);
+
+    /**
+     * Synchrnous load share from immediate
+	 * @param[in] handle An initialized session handle
+	 * @param[in] value A value to share
+	 * @param[out] share A share to fill
+	 * @return 0 on success, -1 otherwise
+     */
+    int share_immediate(void * handle, const SPDZEXT_VALTYPE value, SPDZEXT_VALTYPE * share);
 
     /**
      * Test the library value conversion from integer (32/64) to internal representation

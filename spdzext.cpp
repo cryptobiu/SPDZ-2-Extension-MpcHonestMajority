@@ -85,6 +85,22 @@ class spdz_ext_processor
 	bool mult_success;
 	//---------------------------------------------------
 
+	//--share_immediates---------------------------------
+	bool share_immediates_on;
+	std::vector<u_int64_t> immediates_values, immediates_shares;
+	sem_t share_immediates_done;
+	void exec_share_immediates();
+	bool share_immediates_success;
+	//---------------------------------------------------
+
+	//--share_immediate----------------------------------
+	std::vector<u_int64_t> immediate_value;
+	u_int64_t * p_immediate_share;
+	sem_t share_immediate_done;
+	void exec_share_immediate();
+	bool share_immediate_success;
+	//---------------------------------------------------
+
 public:
 	spdz_ext_processor();
 	~spdz_ext_processor();
@@ -114,6 +130,11 @@ public:
     int mix_sub_scalar(u_int64_t * share, u_int64_t scalar);
     int mix_sub_share(u_int64_t scalar, u_int64_t * share);
 
+    int start_share_immediates(const int input_of_pid, const size_t value_count, const u_int64_t * values);
+    int stop_share_immediates(size_t * share_count, u_int64_t ** shares, const time_t timeout_sec = 5);
+
+    int share_immediate(const u_int64_t value, u_int64_t * share, const time_t timeout_sec = 5);
+
     friend void * cc_proc(void * arg);
 
 	static const int op_code_open;
@@ -123,6 +144,8 @@ public:
 	static const int op_code_verify;
 	static const int op_code_input_asynch;
 	static const int op_code_mult;
+	static const int op_code_share_immediates;
+	static const int op_code_share_immediate;
 };
 
 //***********************************************************************************************//
@@ -218,6 +241,21 @@ int mix_sub_share(void * handle, u_int64_t scalar, u_int64_t * share)
 	return ((spdz_ext_processor *)handle)->mix_sub_share(scalar, share);
 }
 //-------------------------------------------------------------------------------------------//
+int start_share_immediates(void * handle, const int input_of_pid, const size_t value_count, const u_int64_t * values)
+{
+	return ((spdz_ext_processor *)handle)->start_share_immediates(input_of_pid, value_count, values);
+}
+//-------------------------------------------------------------------------------------------//
+int stop_share_immediates(void * handle, size_t * share_count, u_int64_t ** shares)
+{
+	return ((spdz_ext_processor *)handle)->stop_share_immediates(share_count, shares);
+}
+//-------------------------------------------------------------------------------------------//
+int share_immediate(void * handle, const u_int64_t value, u_int64_t * share)
+{
+	return ((spdz_ext_processor *)handle)->share_immediate(value, share);
+}
+//-------------------------------------------------------------------------------------------//
 u_int64_t test_conversion(const u_int64_t value)
 {
 	ZpMersenneLongElement element(value);
@@ -258,6 +296,8 @@ const int spdz_ext_processor::op_code_input = 103;
 const int spdz_ext_processor::op_code_verify = 104;
 const int spdz_ext_processor::op_code_input_asynch = 105;
 const int spdz_ext_processor::op_code_mult = 106;
+const int spdz_ext_processor::op_code_share_immediates = 107;
+const int spdz_ext_processor::op_code_share_immediate = 108;
 
 //***********************************************************************************************//
 spdz_ext_processor::spdz_ext_processor()
@@ -269,6 +309,8 @@ spdz_ext_processor::spdz_ext_processor()
  , verification_error(NULL), verification_on(false), verify_success(false)
  , input_asynch_on(false), intput_asynch_party_id(-1), num_of_inputs(0), input_asynch_success(false)
  , mult_on(false), mult_success(false)
+ , share_immediates_on(false), share_immediates_success(false)
+ , p_immediate_share(NULL), share_immediate_success(false)
 {
 	pthread_mutex_init(&q_lock, NULL);
 	sem_init(&task, 0, 0);
@@ -279,6 +321,9 @@ spdz_ext_processor::spdz_ext_processor()
 	sem_init(&verify_done, 0, 0);
 	sem_init(&input_asynch_done, 0, 0);
 	sem_init(&mult_done, 0, 0);
+	sem_init(&share_immediates_done, 0, 0);
+	sem_init(&share_immediate_done, 0, 0);
+
 	openlog("spdz_ext_biu", LOG_NDELAY|LOG_PID, LOG_USER);
 	setlogmask(LOG_UPTO(LOG_DEBUG));
 }
@@ -295,6 +340,9 @@ spdz_ext_processor::~spdz_ext_processor()
 	sem_destroy(&verify_done);
 	sem_destroy(&input_asynch_done);
 	sem_destroy(&mult_done);
+	sem_destroy(&share_immediates_done);
+	sem_destroy(&share_immediate_done);
+
 	closelog();
 }
 
@@ -410,6 +458,12 @@ void spdz_ext_processor::run()
 				break;
 			case op_code_mult:
 				exec_mult();
+				break;
+			case op_code_share_immediates:
+				exec_share_immediates();
+				break;
+			case op_code_share_immediate:
+				exec_share_immediate();
 				break;
 			default:
 				syslog(LOG_WARNING, "spdz_ext_processor::run: unsupported op_code %d", op_code);
@@ -657,6 +711,7 @@ void spdz_ext_processor::exec_triple()
 		syslog(LOG_DEBUG, "spdz_ext_processor::exec_triple: share a = %lu; share b = %lu; share c = %lu;", *pa, *pb, *pc);
 	}
 
+	/*
 	{//test the triple with open
 		std::vector<ZpMersenneLongElement> ext_shares(3), ext_opens(3);
 		ext_shares[0].elem = *pa;
@@ -672,7 +727,7 @@ void spdz_ext_processor::exec_triple()
 		{
 			syslog(LOG_ERR, "spdz_ext_processor::exec_triple: test open of triple failure");
 		}
-	}
+	}*/
 	sem_post(&triple_done);
 }
 
@@ -715,6 +770,7 @@ void spdz_ext_processor::exec_input()
 		*p_input_value = input_value[0].elem;
 		syslog(LOG_INFO, "spdz_ext_processor::exec_input: input value %lu", *p_input_value);
 
+		/*
 		{//test the input with open
 			std::vector<ZpMersenneLongElement> ext_shares(1), ext_opens(1);
 			ext_shares[0].elem = *p_input_value;
@@ -728,7 +784,7 @@ void spdz_ext_processor::exec_input()
 			{
 				syslog(LOG_ERR, "spdz_ext_processor::exec_input: test open of input failure");
 			}
-		}
+		}*/
 	}
 	else
 	{
@@ -750,7 +806,7 @@ int spdz_ext_processor::start_verify(int * error)
 	verification_error = error;
 	if(0 != push_task(spdz_ext_processor::op_code_verify))
 	{
-		syslog(LOG_ERR, "spdz_ext_processor::start_verify: failed pushing a verify start task to queue.");
+		syslog(LOG_ERR, "spdz_ext_processor::start_verify: failed pushing a verify task to queue.");
 		return -1;
 	}
 	return 0;
@@ -786,7 +842,6 @@ int spdz_ext_processor::stop_verify(const time_t timeout_sec)
 //***********************************************************************************************//
 void spdz_ext_processor::exec_verify()
 {
-	//*verification_error = (verify_success = the_party->verify())? 0: -1;
 	*verification_error = 0;
 	verify_success = true;
 	sem_post(&verify_done);
@@ -807,7 +862,7 @@ int spdz_ext_processor::start_input(const int input_of_pid, const size_t num_of_
 
 	if(0 != push_task(spdz_ext_processor::op_code_input_asynch))
 	{
-		syslog(LOG_ERR, "spdz_ext_processor::start_input: failed pushing an input start task to queue.");
+		syslog(LOG_ERR, "spdz_ext_processor::start_input: failed pushing an input task to queue.");
 		return -1;
 	}
 	return 0;
@@ -883,11 +938,10 @@ int spdz_ext_processor::start_mult(const size_t share_count, const u_int64_t * s
 
 	if(0 != push_task(spdz_ext_processor::op_code_mult))
 	{
-		syslog(LOG_ERR, "spdz_ext_processor::start_mult: failed pushing a mult start task to queue.");
+		syslog(LOG_ERR, "spdz_ext_processor::start_mult: failed pushing a mult task to queue.");
 		return -1;
 	}
 	return 0;
-
 }
 
 //***********************************************************************************************//
@@ -922,7 +976,6 @@ int spdz_ext_processor::stop_mult(size_t * product_count, u_int64_t ** product_v
 	{
 		return -1;
 	}
-
 }
 
 //***********************************************************************************************//
@@ -1002,6 +1055,152 @@ int spdz_ext_processor::mix_sub_share(u_int64_t scalar, u_int64_t * share)
 	}
 	syslog(LOG_ERR, "spdz_ext_processor::mix_sub_share: protocol shareSubScalar failure.");
 	return -1;
+}
+
+//***********************************************************************************************//
+int spdz_ext_processor::start_share_immediates(const int input_of_pid, const size_t value_count, const u_int64_t * values)
+{
+	if(share_immediates_on)
+	{
+		syslog(LOG_ERR, "spdz_ext_processor::start_share_immediates: share_immediates is already started (a stop_share_immediates() call is required).");
+		return -1;
+	}
+	share_immediates_on = true;
+	share_immediates_success = false;
+	immediates_values.assign(values, values + value_count);
+	immediates_shares.clear();
+
+	if(0 != push_task(spdz_ext_processor::op_code_share_immediates))
+	{
+		syslog(LOG_ERR, "spdz_ext_processor::start_share_immediates: failed pushing a share_immediates task to queue.");
+		return -1;
+	}
+	return 0;
+}
+
+//***********************************************************************************************//
+int spdz_ext_processor::stop_share_immediates(size_t * share_count, u_int64_t ** shares, const time_t timeout_sec)
+{
+	if(!share_immediates_on)
+	{
+		syslog(LOG_ERR, "spdz_ext_processor::stop_share_immediates: share_immediates is not started.");
+		return -1;
+	}
+	share_immediates_on = false;
+
+	struct timespec timeout;
+	clock_gettime(CLOCK_REALTIME, &timeout);
+	timeout.tv_sec += timeout_sec;
+
+	int result = sem_timedwait(&share_immediates_done, &timeout);
+	if(0 != result)
+	{
+		result = errno;
+		char errmsg[512];
+		syslog(LOG_ERR, "spdz_ext_processor::stop_share_immediates: sem_wait() failed with error %d : %s", result, strerror_r(result, errmsg, 512));
+		return -1;
+	}
+
+	if(share_immediates_success)
+	{
+		if(!immediates_shares.empty())
+		{
+			*shares = new u_int64_t[*share_count = immediates_shares.size()];
+			memcpy(*shares, &immediates_shares[0], *share_count * sizeof(u_int64_t));
+		}
+		return 0;
+	}
+	else
+	{
+		return -1;
+	}
+}
+
+//***********************************************************************************************//
+void spdz_ext_processor::exec_share_immediates()
+{
+	size_t value_count =  immediates_values.size();
+	std::vector<ZpMersenneLongElement> shares(value_count);
+
+	if(share_immediates_success = the_party->load_share_immediates(0, shares, immediates_values))
+	{
+		for(size_t i = 0; i < value_count; ++i)
+		{
+			immediates_shares.push_back(shares[i].elem);
+			syslog(LOG_DEBUG, "spdz_ext_processor::exec_share_immediates: share[%lu] = %lu", i, immediates_shares[i]);
+		}
+	}
+	else
+	{
+		syslog(LOG_ERR, "spdz_ext_processor::exec_share_immediates: protocol share_immediates failure.");
+	}
+	sem_post(&share_immediates_done);
+}
+
+//***********************************************************************************************//
+int spdz_ext_processor::share_immediate(const u_int64_t value, u_int64_t * share, const time_t timeout_sec)
+{
+	p_immediate_share = share;
+	immediate_value.clear();
+	immediate_value.push_back(value);
+	share_immediate_success = false;
+
+	if(0 != push_task(spdz_ext_processor::op_code_share_immediate))
+	{
+		syslog(LOG_ERR, "spdz_ext_processor::share_immediate: failed pushing a share_immediate task to queue.");
+		return -1;
+	}
+
+	struct timespec timeout;
+	clock_gettime(CLOCK_REALTIME, &timeout);
+	timeout.tv_sec += timeout_sec;
+
+	int result = sem_timedwait(&share_immediate_done, &timeout);
+	if(0 != result)
+	{
+		result = errno;
+		char errmsg[512];
+		syslog(LOG_ERR, "spdz_ext_processor::share_immediate: sem_wait() failed with error %d : %s", result, strerror_r(result, errmsg, 512));
+		return -1;
+	}
+
+	p_immediate_share = NULL;
+	immediate_value.clear();
+
+	return (share_immediate_success)? 0: -1;
+
+}
+
+//***********************************************************************************************//
+void spdz_ext_processor::exec_share_immediate()
+{
+	std::vector<ZpMersenneLongElement> shares(1);
+	if(share_immediate_success = the_party->load_share_immediates(0, shares, immediate_value))
+	{
+		*p_immediate_share = shares[0].elem;
+		syslog(LOG_INFO, "spdz_ext_processor::exec_share_immediate: share value %lu", *p_immediate_share);
+
+		/*
+		{//test the input with open
+			std::vector<ZpMersenneLongElement> ext_shares(1), ext_opens(1);
+			ext_shares[0].elem = *p_input_value;
+
+			if(open_success = the_party->openShare((int)ext_shares.size(), ext_shares, ext_opens))
+			{
+				syslog(LOG_INFO, "spdz_ext_processor::exec_input: test open of triple success");
+				syslog(LOG_INFO, "spdz_ext_processor::exec_input: open input = %lu", ext_opens[0].elem);
+			}
+			else
+			{
+				syslog(LOG_ERR, "spdz_ext_processor::exec_input: test open of input failure");
+			}
+		}*/
+	}
+	else
+	{
+		syslog(LOG_ERR, "spdz_ext_processor::exec_share_immediate: protocol load_share_immediates failure.");
+	}
+	sem_post(&share_immediate_done);
 }
 
 //***********************************************************************************************//
