@@ -12,6 +12,10 @@ INCLUDE_DIRECTORIES(	$ENV{HOME}/MPCHonestMajorityForSpdz
 set(SOURCE_FILES
 	spdzext.h
 	spdzext.cpp
+	spdz2_ext_processor_base.h
+	spdz2_ext_processor_base.cpp
+	spdz2_ext_processor_mersenne61.h
+	spdz2_ext_processor_mersenne61.cpp
 )
 
 add_library(spdz_ext_biu SHARED ${SOURCE_FILES})
