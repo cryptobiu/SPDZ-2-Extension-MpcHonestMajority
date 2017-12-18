@@ -2,42 +2,38 @@
 #include "spdzext.h"
 #include "spdz2_ext_processor_base.h"
 #include "spdz2_ext_processor_mersenne61.h"
+#include "spdz2_ext_processor_gf2n.h"
 
-/*
-#include <iostream>
-#include <vector>
-#include <stdio.h>
-#include <string.h>
-#include <errno.h>
-#include <deque>
 #include <syslog.h>
-#include <semaphore.h>
-*/
+
 //***********************************************************************************************//
 
 //-------------------------------------------------------------------------------------------//
 int init(void ** handle, const int pid, const int num_of_parties, const char * field, const int offline_size)
 {
-	if(strcmp(field, "gfp") == 0)
+	spdz2_ext_processor_base * proc = NULL;
+	if(strncmp(field, "gfp", 3) == 0)
 	{
-		spdz2_ext_processor_base * proc = new spdz2_ext_processor_mersenne61;
-		if(0 != proc->start(pid, num_of_parties, field, offline_size))
-		{
-			delete proc;
-			return -1;
-		}
-		*handle = proc;
-		return 0;
+		proc = new spdz2_ext_processor_mersenne61;
 	}
-	/*
-	else if(strcmp(field, "gf2n") == 0)
+	else if(strncmp(field, "gf2n", 4) == 0)
 	{
-		//
-	}*/
+		long numbits = strtol(field + 4, NULL, 10);
+		proc = new spdz2_ext_processor_gf2n(numbits);
+	}
 	else
 	{
+		syslog(LOG_ERR, "SPDZ-2 extension library init: invalid field type [%s]", field);
 		return -1;
 	}
+
+	if(0 != proc->start(pid, num_of_parties, field, offline_size))
+	{
+		delete proc;
+		return -1;
+	}
+	*handle = proc;
+	return 0;
 }
 //-------------------------------------------------------------------------------------------//
 int term(void * handle)
