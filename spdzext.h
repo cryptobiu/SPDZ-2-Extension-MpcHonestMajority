@@ -190,17 +190,15 @@ extern "C"
      */
     int share_immediate(void * handle, const SPDZEXT_VALTYPE value, SPDZEXT_VALTYPE * share);
 
-    /**
-     * Test the library value conversion from integer (32/64) to internal representation
-     * The returned value should be equal to the provided value
-     * @param value The test value to convert
-     * @return The value restored from the converted value
-     */
-	SPDZEXT_VALTYPE test_conversion(const SPDZEXT_VALTYPE value);
+	SPDZEXT_VALTYPE gfp_conversion(const SPDZEXT_VALTYPE value);
+	SPDZEXT_VALTYPE gfp_add(SPDZEXT_VALTYPE, SPDZEXT_VALTYPE);
+	SPDZEXT_VALTYPE gfp_sub(SPDZEXT_VALTYPE, SPDZEXT_VALTYPE);
+	SPDZEXT_VALTYPE gfp_mult(SPDZEXT_VALTYPE, SPDZEXT_VALTYPE);
 
-	SPDZEXT_VALTYPE add(SPDZEXT_VALTYPE, SPDZEXT_VALTYPE);
-	SPDZEXT_VALTYPE sub(SPDZEXT_VALTYPE, SPDZEXT_VALTYPE);
-	SPDZEXT_VALTYPE mult(SPDZEXT_VALTYPE, SPDZEXT_VALTYPE);
+	SPDZEXT_VALTYPE gf2n_conversion(const SPDZEXT_VALTYPE value);
+	SPDZEXT_VALTYPE gf2n_add(SPDZEXT_VALTYPE, SPDZEXT_VALTYPE);
+	SPDZEXT_VALTYPE gf2n_sub(SPDZEXT_VALTYPE, SPDZEXT_VALTYPE);
+	SPDZEXT_VALTYPE gf2n_mult(SPDZEXT_VALTYPE, SPDZEXT_VALTYPE);
 }
 
 #endif /* SPDZEXT_H_ */

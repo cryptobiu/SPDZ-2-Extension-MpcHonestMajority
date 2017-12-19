@@ -129,27 +129,62 @@ int share_immediate(void * handle, const u_int64_t value, u_int64_t * share)
 	return ((spdz2_ext_processor_base *)handle)->share_immediate(value, share);
 }
 //-------------------------------------------------------------------------------------------//
-u_int64_t test_conversion(const u_int64_t value)
+u_int64_t gfp_conversion(const u_int64_t value)
 {
 	ZpMersenneLongElement element(value);
 	return element.elem;
 }
 //-------------------------------------------------------------------------------------------//
-u_int64_t add(u_int64_t v1, u_int64_t v2)
+u_int64_t gfp_add(u_int64_t v1, u_int64_t v2)
 {
 	ZpMersenneLongElement e1(v1), e2(v2);
 	return (e1 + e2).elem;
 }
 //-------------------------------------------------------------------------------------------//
-u_int64_t sub(u_int64_t v1, u_int64_t v2)
+u_int64_t gfp_sub(u_int64_t v1, u_int64_t v2)
 {
 	ZpMersenneLongElement e1(v1), e2(v2);
 	return (e1 - e2).elem;
 }
 //-------------------------------------------------------------------------------------------//
-u_int64_t mult(u_int64_t v1, u_int64_t v2)
+u_int64_t gfp_mult(u_int64_t v1, u_int64_t v2)
 {
 	ZpMersenneLongElement e1(v1), e2(v2);
 	return (e1 * e2).elem;
+}
+//-------------------------------------------------------------------------------------------//
+u_int64_t gf2n_conversion(const u_int64_t value)
+{
+	GF2E element = to_GF2E(value);
+	u_int64_t result;
+	conv(element, result);
+	return result;
+}
+//-------------------------------------------------------------------------------------------//
+u_int64_t gf2n_add(u_int64_t v1_, u_int64_t v2_)
+{
+	u_int64_t result;
+	GF2E v1 = to_GF2E(v1_), v2 = to_GF2E(v2_), sum;
+	add(sum, v1, v2);
+	conv(sum, result);
+	return result;
+}
+//-------------------------------------------------------------------------------------------//
+u_int64_t gf2n_sub(u_int64_t v1_, u_int64_t v2_)
+{
+	u_int64_t result;
+	GF2E v1 = to_GF2E(v1_), v2 = to_GF2E(v2_), diff;
+	sub(diff, v1, v2);
+	conv(diff, result);
+	return result;
+}
+//-------------------------------------------------------------------------------------------//
+u_int64_t gf2n_mult(u_int64_t v1_, u_int64_t v2_)
+{
+	u_int64_t result;
+	GF2E v1 = to_GF2E(v1_), v2 = to_GF2E(v2_), product;
+	mul(product, v1, v2);
+	conv(product, result);
+	return result;
 }
 //-------------------------------------------------------------------------------------------//

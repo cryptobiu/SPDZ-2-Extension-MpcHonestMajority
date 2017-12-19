@@ -134,6 +134,8 @@ bool spdz2_ext_processor_gf2n::protocol_triple()
 	std::vector<GF2E> triple(3);
 	if(op_triple_success = the_party->triples(1, triple))
 	{
+		syslog(LOG_DEBUG, "spdz2_ext_processor_gf2n::protocol_triple: gf2n_a=%lu; gf2n_b=%lu; gf2n_c=%lu;",
+				trace(triple[0])._GF2__rep, trace(triple[1])._GF2__rep, trace(triple[2])._GF2__rep);
 		conv(triple[0], *pa);
 		conv(triple[1], *pb);
 		conv(triple[2], *pc);
@@ -282,7 +284,7 @@ bool spdz2_ext_processor_gf2n::protocol_share_immediate()
 	if(op_share_immediate_success = the_party->load_share_immediates(0, shares, immediate_value))
 	{
 		conv(shares[0], *p_immediate_share);
-		syslog(LOG_INFO, "spdz2_ext_processor_gf2n::protocol_share_immediate: share value %lu", *p_immediate_share);
+		syslog(LOG_INFO, "spdz2_ext_processor_gf2n::protocol_share_immediate: immediate %lu / share value %lu", immediate_value[0], *p_immediate_share);
 
 		/*
 		{//test the input with open
