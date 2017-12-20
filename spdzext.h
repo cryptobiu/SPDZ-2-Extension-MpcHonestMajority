@@ -4,9 +4,6 @@
 
 #include <stdlib.h>
 
-//#define SPDZEXT_VALTYPE	u_int32_t
-#define SPDZEXT_VALTYPE	u_int64_t
-
 extern "C"
 {
 	/**
@@ -44,7 +41,7 @@ extern "C"
 	 * @param[in] verify Whether the opened values are to be verified, 0 for false
 	 * @return 0 on success, -1 otherwise
 	 */
-	int start_open(void * handle, const size_t share_count, const SPDZEXT_VALTYPE * shares, int verify);
+	int start_open(void * handle, const size_t share_count, const u_int64_t * shares, int verify);
 
 	/**
 	 * Complete an asynchronous opening of shared values
@@ -54,7 +51,7 @@ extern "C"
 	 * @param[out] opens The opened values - the memory will be allocated by the function
 	 * @return 0 on success, -1 otherwise
 	 */
-	int stop_open(void * handle, size_t * open_count, SPDZEXT_VALTYPE ** opens);
+	int stop_open(void * handle, size_t * open_count, u_int64_t ** opens);
 
 	/**
 	 * Retrieve a triple of values
@@ -64,7 +61,7 @@ extern "C"
 	 * @param[out] c The third value
 	 * @return 0 on success, -1 otherwise
 	 */
-	int triple(void * handle, SPDZEXT_VALTYPE * a, SPDZEXT_VALTYPE * b, SPDZEXT_VALTYPE * c);
+	int triple(void * handle, u_int64_t * a, u_int64_t * b, u_int64_t * c);
 
 	/**
 	 * Retrieve an input value from a party
@@ -73,7 +70,7 @@ extern "C"
 	 * @param[out] input_value The input value
 	 * @return 0 on success, -1 otherwise
 	 */
-	int input(void * handle, const int input_of_pid, SPDZEXT_VALTYPE * input_value);
+	int input(void * handle, const int input_of_pid, u_int64_t * input_value);
 
 	/**
 	 * Start an asynchronous verification operation
@@ -110,7 +107,7 @@ extern "C"
 	 * @param[out] inputs The input values - the memory will be allocated by the function
 	 * @return 0 on success, -1 otherwise
 	 */
-    int stop_input(void * handle, size_t * input_count, SPDZEXT_VALTYPE ** inputs);
+    int stop_input(void * handle, size_t * input_count, u_int64_t ** inputs);
 
     /**
      * Start an asynchronous multiply operation
@@ -121,7 +118,7 @@ extern "C"
 	 * @param[in] verify Verification flag
 	 * @return 0 on success, -1 otherwise
      */
-    int start_mult(void * handle, const size_t share_count, const SPDZEXT_VALTYPE * shares, int verify);
+    int start_mult(void * handle, const size_t share_count, const u_int64_t * shares, int verify);
 
 	/**
 	 * Complete an asynchronous multiply operation
@@ -131,7 +128,7 @@ extern "C"
 	 * @param[out] products The product results
 	 * @return 0 on success, -1 otherwise
 	 */
-    int stop_mult(void * handle, size_t * product_count, SPDZEXT_VALTYPE ** products);
+    int stop_mult(void * handle, size_t * product_count, u_int64_t ** products);
 
     /**
      * Addition of a share value with a scalar value
@@ -140,7 +137,7 @@ extern "C"
      * @param[in] scalar A scalar value to add to the share
 	 * @return 0 on success, -1 otherwise
      */
-    int mix_add(void * handle, SPDZEXT_VALTYPE * share, SPDZEXT_VALTYPE scalar);
+    int mix_add(void * handle, u_int64_t * share, u_int64_t scalar);
 
     /**
      * Subtraction of a scalar value from a share
@@ -149,7 +146,7 @@ extern "C"
      * @param[in] scalar A scalar value to subtract from the share
 	 * @return 0 on success, -1 otherwise
      */
-    int mix_sub_scalar(void * handle, SPDZEXT_VALTYPE * share, SPDZEXT_VALTYPE scalar);
+    int mix_sub_scalar(void * handle, u_int64_t * share, u_int64_t scalar);
 
     /**
      * Subtraction of a share value from a scalar
@@ -158,7 +155,7 @@ extern "C"
      * @param[in] scalar A scalar from which the share value is subtracted
 	 * @return 0 on success, -1 otherwise
      */
-    int mix_sub_share(void * handle, SPDZEXT_VALTYPE scalar, SPDZEXT_VALTYPE * share);
+    int mix_sub_share(void * handle, u_int64_t scalar, u_int64_t * share);
 
     /**
      * Start an asynchronous operation of sharing given values
@@ -169,7 +166,7 @@ extern "C"
 	 * @param[in] values An array of values to share
 	 * @return 0 on success, -1 otherwise
      */
-    int start_share_immediates(void * handle, const int input_of_pid, const size_t value_count, const SPDZEXT_VALTYPE * values);
+    int start_share_immediates(void * handle, const int input_of_pid, const size_t value_count, const u_int64_t * values);
 
 	/**
 	 * Complete an asynchronous value sharing operation
@@ -179,7 +176,7 @@ extern "C"
 	 * @param[out] shares The shared values
 	 * @return 0 on success, -1 otherwise
 	 */
-    int stop_share_immediates(void * handle, size_t * share_count, SPDZEXT_VALTYPE ** shares);
+    int stop_share_immediates(void * handle, size_t * share_count, u_int64_t ** shares);
 
     /**
      * Synchrnous load share from immediate
@@ -188,17 +185,17 @@ extern "C"
 	 * @param[out] share A share to fill
 	 * @return 0 on success, -1 otherwise
      */
-    int share_immediate(void * handle, const SPDZEXT_VALTYPE value, SPDZEXT_VALTYPE * share);
+    int share_immediate(void * handle, const u_int64_t value, u_int64_t * share);
 
-	SPDZEXT_VALTYPE gfp_conversion(const SPDZEXT_VALTYPE value);
-	SPDZEXT_VALTYPE gfp_add(SPDZEXT_VALTYPE, SPDZEXT_VALTYPE);
-	SPDZEXT_VALTYPE gfp_sub(SPDZEXT_VALTYPE, SPDZEXT_VALTYPE);
-	SPDZEXT_VALTYPE gfp_mult(SPDZEXT_VALTYPE, SPDZEXT_VALTYPE);
+	u_int64_t gfp_conversion(const u_int64_t value);
+	u_int64_t gfp_add(u_int64_t, u_int64_t);
+	u_int64_t gfp_sub(u_int64_t, u_int64_t);
+	u_int64_t gfp_mult(u_int64_t, u_int64_t);
 
-	SPDZEXT_VALTYPE gf2n_conversion(const SPDZEXT_VALTYPE value);
-	SPDZEXT_VALTYPE gf2n_add(SPDZEXT_VALTYPE, SPDZEXT_VALTYPE);
-	SPDZEXT_VALTYPE gf2n_sub(SPDZEXT_VALTYPE, SPDZEXT_VALTYPE);
-	SPDZEXT_VALTYPE gf2n_mult(SPDZEXT_VALTYPE, SPDZEXT_VALTYPE);
+	u_int64_t gf2n_conversion(const u_int64_t value);
+	u_int64_t gf2n_add(u_int64_t, u_int64_t);
+	u_int64_t gf2n_sub(u_int64_t, u_int64_t);
+	u_int64_t gf2n_mult(u_int64_t, u_int64_t);
 }
 
 #endif /* SPDZEXT_H_ */

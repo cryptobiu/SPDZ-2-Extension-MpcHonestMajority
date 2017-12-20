@@ -9,6 +9,10 @@ class spdz2_ext_processor_gf2n : public spdz2_ext_processor_base
 	int gf2n_bits;
 	TemplateField<GF2E> * the_field;
 	Protocol<GF2E> * the_party;
+
+	GF2E uint2gf2e(const u_int64_t & value);
+	u_int64_t gf2e2uint(GF2E & value);
+	std::string trace(GF2E & value);
 protected:
 
 	virtual int init_protocol();
