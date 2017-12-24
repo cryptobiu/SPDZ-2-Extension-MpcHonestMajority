@@ -187,6 +187,14 @@ extern "C"
      */
     int share_immediate(void * handle, const u_int64_t value, u_int64_t * share);
 
+    /**
+     * Get a shared input bit value
+     * @param[in] handle An initialized session handle
+     * @param[out] share A share to fill
+	 * @return 0 on success, -1 otherwise
+     */
+    int input_bit(void * handle, u_int64_t * share);
+
 	u_int64_t gfp_conversion(const u_int64_t value);
 	u_int64_t gfp_add(u_int64_t, u_int64_t);
 	u_int64_t gfp_sub(u_int64_t, u_int64_t);
