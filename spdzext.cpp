@@ -129,9 +129,9 @@ int share_immediate(void * handle, const u_int64_t value, u_int64_t * share)
 	return ((spdz2_ext_processor_base *)handle)->share_immediate(value, share);
 }
 //-------------------------------------------------------------------------------------------//
-int input_bit(void * handle, u_int64_t * share)
+int bit(void * handle, u_int64_t * share)
 {
-	return ((spdz2_ext_processor_base *)handle)->input_bit(share);
+	return ((spdz2_ext_processor_base *)handle)->bit(share);
 }
 //-------------------------------------------------------------------------------------------//
 u_int64_t gfp_conversion(const u_int64_t value)

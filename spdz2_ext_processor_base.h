@@ -161,7 +161,7 @@ public:
 
     int share_immediate(const u_int64_t value, u_int64_t * share, const time_t timeout_sec = 5);
 
-    int input_bit(u_int64_t * share, const time_t timeout_sec = 5);
+    int bit(u_int64_t * share, const time_t timeout_sec = 5);
 
     friend void * spdz2_ext_processor_proc(void * arg);
 

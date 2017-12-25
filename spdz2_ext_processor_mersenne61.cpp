@@ -138,7 +138,7 @@ bool spdz2_ext_processor_mersenne61::protocol_triple()
 		syslog(LOG_DEBUG, "spdz2_ext_processor_mersenne61::protocol_triple: share a = %lu; share b = %lu; share c = %lu;", *pa, *pb, *pc);
 	}
 
-	/*
+	/**/
 	{//test the triple with open
 		std::vector<ZpMersenneLongElement> ext_shares(3), ext_opens(3);
 		ext_shares[0].elem = *pa;
@@ -147,14 +147,13 @@ bool spdz2_ext_processor_mersenne61::protocol_triple()
 
 		if(the_party->openShare((int)ext_shares.size(), ext_shares, ext_opens))
 		{
-			syslog(LOG_INFO, "spdz2_ext_processor_mersenne61::protocol_triple: test open of triple success");
-			syslog(LOG_INFO, "spdz2_ext_processor_mersenne61::protocol_triple: open a = %lu, open b = %lu, open c = %lu", ext_opens[0].elem, ext_opens[1].elem, ext_opens[2].elem);
+			syslog(LOG_INFO, "spdz2_ext_processor_mersenne61::protocol_triple: test open of triple a = %lu, open b = %lu, open c = %lu", ext_opens[0].elem, ext_opens[1].elem, ext_opens[2].elem);
 		}
 		else
 		{
 			syslog(LOG_ERR, "spdz2_ext_processor_mersenne61::protocol_triple: test open of triple failure");
 		}
-	}*/
+	}
 
 	return op_triple_success;
 }
@@ -168,21 +167,20 @@ bool spdz2_ext_processor_mersenne61::protocol_input()
 		*p_input_value = input_value[0].elem;
 		syslog(LOG_INFO, "spdz2_ext_processor_mersenne61::protocol_input: input value %lu", *p_input_value);
 
-		/*
+		/**/
 		{//test the input with open
 			std::vector<ZpMersenneLongElement> ext_shares(1), ext_opens(1);
 			ext_shares[0].elem = *p_input_value;
 
 			if(the_party->openShare((int)ext_shares.size(), ext_shares, ext_opens))
 			{
-				syslog(LOG_INFO, "spdz2_ext_processor_mersenne61::protocol_input: test open of input success");
-				syslog(LOG_INFO, "spdz2_ext_processor_mersenne61::protocol_input: open input = %lu", ext_opens[0].elem);
+				syslog(LOG_INFO, "spdz2_ext_processor_mersenne61::protocol_input: test open input = %lu", ext_opens[0].elem);
 			}
 			else
 			{
 				syslog(LOG_ERR, "spdz2_ext_processor_mersenne61::protocol_input: test open of input failure");
 			}
-		}*/
+		}
 	}
 	else
 	{
@@ -270,10 +268,10 @@ bool spdz2_ext_processor_mersenne61::protocol_share_immediate()
 		*p_immediate_share = shares[0].elem;
 		syslog(LOG_INFO, "spdz2_ext_processor_mersenne61::protocol_share_immediate: share value %lu", *p_immediate_share);
 
-		/*
+		/**/
 		{//test the input with open
 			std::vector<ZpMersenneLongElement> ext_shares(1), ext_opens(1);
-			ext_shares[0].elem = *p_input_value;
+			ext_shares[0].elem = *p_immediate_share;
 
 			if(the_party->openShare((int)ext_shares.size(), ext_shares, ext_opens))
 			{
@@ -284,7 +282,7 @@ bool spdz2_ext_processor_mersenne61::protocol_share_immediate()
 			{
 				syslog(LOG_ERR, "spdz2_ext_processor_mersenne61::protocol_share_immediate: test open of share_immediate failure");
 			}
-		}*/
+		}
 	}
 	else
 	{

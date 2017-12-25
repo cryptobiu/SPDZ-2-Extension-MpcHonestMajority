@@ -715,7 +715,7 @@ void spdz2_ext_processor_base::exec_share_immediate()
 }
 
 //***********************************************************************************************//
-int spdz2_ext_processor_base::input_bit(u_int64_t * share, const time_t timeout_sec)
+int spdz2_ext_processor_base::bit(u_int64_t * share, const time_t timeout_sec)
 {
 	return share_immediate(rand()%2, share, timeout_sec);
 }

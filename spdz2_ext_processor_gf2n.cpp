@@ -89,9 +89,6 @@ int spdz2_ext_processor_gf2n::init_protocol()
 		syslog(LOG_ERR, "spdz2_ext_processor_gf2n::init_protocol: protocol offline() failure.");
 		return -1;
 	}
-	GF2E x = this->the_field->GetElement(25);
-	u_int64_t nx = gf2e2uint(x);
-	syslog(LOG_DEBUG, "spdz2_ext_processor_gf2n::init_protocol: there and back again 25 -> %lu", nx);
 	return 0;
 }
 
@@ -307,7 +304,7 @@ bool spdz2_ext_processor_gf2n::protocol_share_immediate()
 		*p_immediate_share = gf2e2uint(shares[0]);
 		syslog(LOG_INFO, "spdz2_ext_processor_gf2n::protocol_share_immediate: immediate %lu / share value %lu", immediate_value[0], *p_immediate_share);
 
-		/*
+		/**/
 		{//test the input with open
 			std::vector<GF2E> ext_shares(1), ext_opens(1);
 			ext_shares[0] = uint2gf2e(*p_immediate_share);
@@ -323,7 +320,7 @@ bool spdz2_ext_processor_gf2n::protocol_share_immediate()
 			{
 				syslog(LOG_ERR, "spdz2_ext_processor_gf2n::protocol_share_immediate: test open of share_immediate failure");
 			}
-		}*/
+		}
 	}
 	else
 	{
