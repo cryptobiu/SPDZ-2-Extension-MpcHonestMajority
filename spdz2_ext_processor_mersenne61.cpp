@@ -3,10 +3,13 @@
 
 #include <syslog.h>
 
+const u_int64_t spdz2_ext_processor_mersenne61::mersenne61 = 0x1FFFFFFFFFFFFFFF;
+
 spdz2_ext_processor_mersenne61::spdz2_ext_processor_mersenne61()
  : spdz2_ext_processor_base()
  , the_field(NULL), the_party(NULL)
 {
+	gmp_randinit_mt(the_gmp_rstate);
 }
 
 spdz2_ext_processor_mersenne61::~spdz2_ext_processor_mersenne61()
@@ -147,7 +150,7 @@ bool spdz2_ext_processor_mersenne61::protocol_triple()
 
 		if(the_party->openShare((int)ext_shares.size(), ext_shares, ext_opens))
 		{
-			syslog(LOG_INFO, "spdz2_ext_processor_mersenne61::protocol_triple: test open of triple a = %lu, open b = %lu, open c = %lu", ext_opens[0].elem, ext_opens[1].elem, ext_opens[2].elem);
+			syslog(LOG_DEBUG, "spdz2_ext_processor_mersenne61::protocol_triple: test open of triple a = %lu, open b = %lu, open c = %lu", ext_opens[0].elem, ext_opens[1].elem, ext_opens[2].elem);
 		}
 		else
 		{
@@ -174,7 +177,7 @@ bool spdz2_ext_processor_mersenne61::protocol_input()
 
 			if(the_party->openShare((int)ext_shares.size(), ext_shares, ext_opens))
 			{
-				syslog(LOG_INFO, "spdz2_ext_processor_mersenne61::protocol_input: test open input = %lu", ext_opens[0].elem);
+				syslog(LOG_DEBUG, "spdz2_ext_processor_mersenne61::protocol_input: test open input = %lu", ext_opens[0].elem);
 			}
 			else
 			{
@@ -275,8 +278,7 @@ bool spdz2_ext_processor_mersenne61::protocol_share_immediate()
 
 			if(the_party->openShare((int)ext_shares.size(), ext_shares, ext_opens))
 			{
-				syslog(LOG_INFO, "spdz2_ext_processor_mersenne61::protocol_share_immediate: test open of share_immediate success");
-				syslog(LOG_INFO, "spdz2_ext_processor_mersenne61::protocol_share_immediate: open share_immediate = %lu", ext_opens[0].elem);
+				syslog(LOG_DEBUG, "spdz2_ext_processor_mersenne61::protocol_share_immediate: test open share_immediate = %lu", ext_opens[0].elem);
 			}
 			else
 			{
@@ -289,4 +291,53 @@ bool spdz2_ext_processor_mersenne61::protocol_share_immediate()
 		syslog(LOG_ERR, "spdz2_ext_processor_mersenne61::protocol_share_immediate: protocol load_share_immediates failure.");
 	}
 	return op_share_immediate_success;
+}
+
+bool spdz2_ext_processor_mersenne61::protocol_random_value(u_int64_t * value)
+{
+	mpz_t max_num;
+	mpz_init(max_num);
+	mpz_set_ui(max_num, spdz2_ext_processor_mersenne61::mersenne61);
+
+	mpz_t random_num;
+	mpz_init(random_num);
+
+	mpz_urandomm(random_num, the_gmp_rstate, max_num);
+	*value = mpz_get_ui(random_num);
+
+	mpz_clear(max_num);
+	mpz_clear(random_num);
+
+	syslog(LOG_DEBUG, "spdz2_ext_processor_mersenne61::protocol_random_value: random value = %lu", *value);
+
+	return true;
+}
+
+bool spdz2_ext_processor_mersenne61::protocol_value_inverse(const u_int64_t value, u_int64_t * inverse)
+{
+	mpz_t gcd, x, y, A, P;
+
+	mpz_init ( gcd );
+    mpz_init ( x );
+    mpz_init ( y );
+    mpz_init ( A );
+    mpz_init ( P );
+
+    mpz_set_ui(A, value);
+    mpz_set_ui(P, spdz2_ext_processor_mersenne61::mersenne61);
+
+    mpz_gcdext(gcd, x, y, A, P);
+    int64_t s_inverse = mpz_get_si(x);
+    if(s_inverse < 0) s_inverse += spdz2_ext_processor_mersenne61::mersenne61;
+    *inverse = (u_int64_t)s_inverse;
+
+    mpz_clear(gcd);
+    mpz_clear(x);
+    mpz_clear(y);
+    mpz_clear(A);
+    mpz_clear(P);
+
+    syslog(LOG_DEBUG, "spdz2_ext_processor_mersenne61::protocol_value_inverse: value = %lu; inverse = %lu;", value, *inverse);
+
+	return true;
 }

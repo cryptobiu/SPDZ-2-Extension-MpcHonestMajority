@@ -721,3 +721,17 @@ int spdz2_ext_processor_base::bit(u_int64_t * share, const time_t timeout_sec)
 }
 
 //***********************************************************************************************//
+int spdz2_ext_processor_base::inverse(u_int64_t * share_value, u_int64_t * share_inverse, const time_t timeout_sec)
+{
+	u_int64_t value, inverse;
+	if(protocol_random_value(&value) && protocol_value_inverse(value, &inverse))
+	{
+		if(0 == share_immediate(value, share_value, timeout_sec) && 0 == share_immediate(inverse, share_inverse, timeout_sec))
+		{
+			return 0;
+		}
+	}
+	return -1;
+}
+
+//***********************************************************************************************//

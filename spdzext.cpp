@@ -134,6 +134,11 @@ int bit(void * handle, u_int64_t * share)
 	return ((spdz2_ext_processor_base *)handle)->bit(share);
 }
 //-------------------------------------------------------------------------------------------//
+int inverse(void * handle, u_int64_t * share_value, u_int64_t * share_inverse)
+{
+	return ((spdz2_ext_processor_base *)handle)->inverse(share_value, share_inverse);
+}
+//-------------------------------------------------------------------------------------------//
 u_int64_t gfp_conversion(const u_int64_t value)
 {
 	ZpMersenneLongElement element(value);

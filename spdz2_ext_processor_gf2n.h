@@ -25,6 +25,8 @@ protected:
 	virtual bool protocol_mult();
 	virtual bool protocol_share_immediates();
 	virtual bool protocol_share_immediate();
+	virtual bool protocol_random_value(u_int64_t * value);
+	virtual bool protocol_value_inverse(const u_int64_t value, u_int64_t * inverse);
 
 public:
 	spdz2_ext_processor_gf2n(const int bits);

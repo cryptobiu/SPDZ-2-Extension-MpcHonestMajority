@@ -195,6 +195,15 @@ extern "C"
      */
     int bit(void * handle, u_int64_t * share);
 
+    /**
+     * Get a shared value and its inverse
+     * @param[in] handle An initialized session handle
+     * @param[out] share_value A shared value to fill
+     * @param[out] share_inverse A shared value-inverse to fill
+	 * @return 0 on success, -1 otherwise
+     */
+    int inverse(void * handle, u_int64_t * share_value, u_int64_t * share_inverse);
+
 	u_int64_t gfp_conversion(const u_int64_t value);
 	u_int64_t gfp_add(u_int64_t, u_int64_t);
 	u_int64_t gfp_sub(u_int64_t, u_int64_t);

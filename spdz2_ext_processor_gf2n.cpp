@@ -329,3 +329,13 @@ bool spdz2_ext_processor_gf2n::protocol_share_immediate()
 	return op_share_immediate_success;
 }
 
+
+bool spdz2_ext_processor_gf2n::protocol_random_value(u_int64_t * value)
+{
+	return false;
+}
+
+bool spdz2_ext_processor_gf2n::protocol_value_inverse(const u_int64_t value, u_int64_t * inverse)
+{
+	return false;
+}

@@ -90,6 +90,8 @@ protected:
 	virtual bool protocol_mult() = 0;
 	virtual bool protocol_share_immediates() = 0;
 	virtual bool protocol_share_immediate() = 0;
+	virtual bool protocol_random_value(u_int64_t * value) = 0;
+	virtual bool protocol_value_inverse(const u_int64_t value, u_int64_t * inverse) = 0;
 
 	//--open---------------------------------------------
 	std::vector<u_int64_t> shares, opens;
@@ -162,6 +164,7 @@ public:
     int share_immediate(const u_int64_t value, u_int64_t * share, const time_t timeout_sec = 5);
 
     int bit(u_int64_t * share, const time_t timeout_sec = 5);
+    int inverse(u_int64_t * share_value, u_int64_t * share_inverse, const time_t timeout_sec = 5);
 
     friend void * spdz2_ext_processor_proc(void * arg);
 
