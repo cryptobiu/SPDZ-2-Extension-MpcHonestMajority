@@ -3,6 +3,7 @@
 #define SPDZEXT_H_
 
 #include <stdlib.h>
+#include <gmp.h>
 
 extern "C"
 {
@@ -38,20 +39,19 @@ extern "C"
 	 * @param[in] handle An initialized session handle
 	 * @param[in] share_count The number of shared values to be opened
 	 * @param[in] shares An array of share values to be opened
+	 * @param[out] opens An array of opened values
 	 * @param[in] verify Whether the opened values are to be verified, 0 for false
 	 * @return 0 on success, -1 otherwise
 	 */
-	int start_open(void * handle, const size_t share_count, const u_int64_t * shares, int verify);
+	int start_open(void * handle, const size_t share_count, const mpz_t * shares, mpz_t * opens, int verify);
 
 	/**
 	 * Complete an asynchronous opening of shared values
 	 * Will fail if no open start was called before
 	 * @param[in] handle An initialized session handle
-	 * @param[out] open_count The number of the opened values
-	 * @param[out] opens The opened values - the memory will be allocated by the function
 	 * @return 0 on success, -1 otherwise
 	 */
-	int stop_open(void * handle, size_t * open_count, u_int64_t ** opens);
+	int stop_open(void * handle);
 
 	/**
 	 * Retrieve a triple of values
@@ -61,7 +61,7 @@ extern "C"
 	 * @param[out] c The third value
 	 * @return 0 on success, -1 otherwise
 	 */
-	int triple(void * handle, u_int64_t * a, u_int64_t * b, u_int64_t * c);
+	int triple(void * handle, mpz_t * a, mpz_t * b, mpz_t * c);
 
 	/**
 	 * Retrieve an input value from a party
@@ -70,7 +70,7 @@ extern "C"
 	 * @param[out] input_value The input value
 	 * @return 0 on success, -1 otherwise
 	 */
-	int input(void * handle, const int input_of_pid, u_int64_t * input_value);
+	int input(void * handle, const int input_of_pid, mpz_t * input_value);
 
 	/**
 	 * Start an asynchronous verification operation
@@ -95,19 +95,18 @@ extern "C"
 	 * @param[in] handle An initialized session handle
 	 * @param[in] input_of_pid The party identifier from which input is required
 	 * @param[in] num_of_inputs The number of required input values
+	 * @param[out] inputs The input values
 	 * @return 0 on success, -1 otherwise
 	 */
-    int start_input(void * handle, const int input_of_pid, const size_t num_of_inputs);
+    int start_input(void * handle, const int input_of_pid, const size_t num_of_inputs, mpz_t * inputs);
 
 	/**
 	 * Complete an asynchronous multiple input values operation
 	 * Will fail if no input start was called before
 	 * @param[in] handle An initialized session handle
-	 * @param[out] input_count Number of the input values
-	 * @param[out] inputs The input values - the memory will be allocated by the function
 	 * @return 0 on success, -1 otherwise
 	 */
-    int stop_input(void * handle, size_t * input_count, u_int64_t ** inputs);
+    int stop_input(void * handle);
 
     /**
      * Start an asynchronous multiply operation
@@ -115,20 +114,19 @@ extern "C"
 	 * @param[in] handle An initialized session handle
 	 * @param[in] share_count Number of the shared values
 	 * @param[in] shares The shared values
+	 * @param[out] products The product results
 	 * @param[in] verify Verification flag
 	 * @return 0 on success, -1 otherwise
      */
-    int start_mult(void * handle, const size_t share_count, const u_int64_t * shares, int verify);
+    int start_mult(void * handle, const size_t share_count, const mpz_t * shares, mpz_t * products, int verify);
 
 	/**
 	 * Complete an asynchronous multiply operation
 	 * Will fail if no start mult was previously called
 	 * @param[in] handle An initialized session handle
-	 * @param[out] product_count Number of the product values
-	 * @param[out] products The product results
 	 * @return 0 on success, -1 otherwise
 	 */
-    int stop_mult(void * handle, size_t * product_count, u_int64_t ** products);
+    int stop_mult(void * handle);
 
     /**
      * Addition of a share value with a scalar value
@@ -137,7 +135,7 @@ extern "C"
      * @param[in] scalar A scalar value to add to the share
 	 * @return 0 on success, -1 otherwise
      */
-    int mix_add(void * handle, u_int64_t * share, u_int64_t scalar);
+    int mix_add(void * handle, mpz_t * share, const mpz_t * scalar);
 
     /**
      * Subtraction of a scalar value from a share
@@ -146,7 +144,7 @@ extern "C"
      * @param[in] scalar A scalar value to subtract from the share
 	 * @return 0 on success, -1 otherwise
      */
-    int mix_sub_scalar(void * handle, u_int64_t * share, u_int64_t scalar);
+    int mix_sub_scalar(void * handle, mpz_t * share, const mpz_t * scalar);
 
     /**
      * Subtraction of a share value from a scalar
@@ -155,28 +153,26 @@ extern "C"
      * @param[in] scalar A scalar from which the share value is subtracted
 	 * @return 0 on success, -1 otherwise
      */
-    int mix_sub_share(void * handle, u_int64_t scalar, u_int64_t * share);
+    int mix_sub_share(void * handle, const mpz_t * scalar, mpz_t * share);
 
     /**
      * Start an asynchronous operation of sharing given values
 	 * Must be followed by a stop call to share_immediates
 	 * @param[in] handle An initialized session handle
-	 * @param[in] input_of_pid The party identifier that will initiate the share (by simulating input)
 	 * @param[in] value_count The number of the values to share
 	 * @param[in] values An array of values to share
+	 * @param[out] shares The shared values
 	 * @return 0 on success, -1 otherwise
      */
-    int start_share_immediates(void * handle, const int input_of_pid, const size_t value_count, const u_int64_t * values);
+    int start_share_immediates(void * handle, const size_t value_count, const mpz_t * values, mpz_t * shares);
 
 	/**
 	 * Complete an asynchronous value sharing operation
 	 * Will fail if no start share_immediates was previously called
 	 * @param[in] handle An initialized session handle
-	 * @param[out] share_count Number of the shared values
-	 * @param[out] shares The shared values
 	 * @return 0 on success, -1 otherwise
 	 */
-    int stop_share_immediates(void * handle, size_t * share_count, u_int64_t ** shares);
+    int stop_share_immediates(void * handle);
 
     /**
      * Synchrnous load share from immediate
@@ -185,7 +181,7 @@ extern "C"
 	 * @param[out] share A share to fill
 	 * @return 0 on success, -1 otherwise
      */
-    int share_immediate(void * handle, const u_int64_t value, u_int64_t * share);
+    int share_immediate(void * handle, const mpz_t * value, mpz_t * share);
 
     /**
      * Get a shared input bit value
@@ -193,7 +189,7 @@ extern "C"
      * @param[out] share A share to fill
 	 * @return 0 on success, -1 otherwise
      */
-    int bit(void * handle, u_int64_t * share);
+    int bit(void * handle, mpz_t * share);
 
     /**
      * Get a shared value and its inverse
@@ -202,17 +198,19 @@ extern "C"
      * @param[out] share_inverse A shared value-inverse to fill
 	 * @return 0 on success, -1 otherwise
      */
-    int inverse(void * handle, u_int64_t * share_value, u_int64_t * share_inverse);
+    int inverse(void * handle, mpz_t * share_value, mpz_t * share_inverse);
 
-	u_int64_t gfp_conversion(const u_int64_t value);
-	u_int64_t gfp_add(u_int64_t, u_int64_t);
-	u_int64_t gfp_sub(u_int64_t, u_int64_t);
-	u_int64_t gfp_mult(u_int64_t, u_int64_t);
+    /*
+    mpz_t gfp_conversion(const mpz_t * value);
+    mpz_t gfp_add(const mpz_t *, const mpz_t *);
+    mpz_t gfp_sub(const mpz_t *, const mpz_t *);
+    mpz_t gfp_mult(const mpz_t *, const mpz_t *);
 
-	u_int64_t gf2n_conversion(const u_int64_t value);
-	u_int64_t gf2n_add(u_int64_t, u_int64_t);
-	u_int64_t gf2n_sub(u_int64_t, u_int64_t);
-	u_int64_t gf2n_mult(u_int64_t, u_int64_t);
+    mpz_t gf2n_conversion(const mpz_t value);
+    mpz_t gf2n_add(const mpz_t *, const mpz_t *);
+    mpz_t gf2n_sub(const mpz_t *, const mpz_t *);
+    mpz_t gf2n_mult(const mpz_t *, const mpz_t *);
+    */
 }
 
 #endif /* SPDZEXT_H_ */

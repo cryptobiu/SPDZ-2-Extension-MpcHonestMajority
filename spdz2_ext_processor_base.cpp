@@ -28,14 +28,14 @@ const int spdz2_ext_processor_base::op_code_share_immediate = 108;
 spdz2_ext_processor_base::spdz2_ext_processor_base()
  : runner(0), run_flag(false), party_id(-1), offline_size(-1), num_of_parties(0)
  , offline_success(false)
- , start_open_on(false), do_verify_open(false), open_success(false)
+ , open_success(false), start_open_on(false), to_open_share_values(NULL), open_share_value_count(0), opened_share_values(NULL), do_verify_open(false)
  , pa(NULL), pb(NULL), pc(NULL), triple_success(false)
  , input_party_id(-1), input_success(false), p_input_value(NULL)
  , verification_error(NULL), verification_on(false), verify_success(false)
- , input_asynch_on(false), intput_asynch_party_id(-1), num_of_inputs(0), input_asynch_success(false)
- , mult_on(false), mult_success(false)
- , share_immediates_on(false), share_immediates_success(false)
- , p_immediate_share(NULL), share_immediate_success(false)
+ , input_asynch_on(false), intput_asynch_party_id(-1), intput_asynch_count(0), input_asynch_success(false), intput_asynch_values(NULL)
+ , mult_on(false), mult_success(false), mult_shares(NULL), mult_share_count(0), mult_products(NULL)
+ , share_immediates_on(false), share_immediates_success(false), immediates_values(NULL), immediates_count(0), immediates_shares(NULL)
+ , immediate_value(NULL), immediate_share(NULL), share_immediate_success(false)
 {
 	pthread_mutex_init(&q_lock, NULL);
 	sem_init(&task, 0, 0);
@@ -282,7 +282,7 @@ void spdz2_ext_processor_base::exec_offline()
 }
 
 //***********************************************************************************************//
-int spdz2_ext_processor_base::start_open(const size_t share_count, const u_int64_t * share_values, int verify)
+int spdz2_ext_processor_base::start_open(const size_t share_count, const mpz_t * share_values, mpz_t * opens, int verify)
 {
 	if(start_open_on)
 	{
@@ -291,9 +291,12 @@ int spdz2_ext_processor_base::start_open(const size_t share_count, const u_int64
 	}
 	start_open_on = true;
 	open_success = false;
-
-	shares.assign(share_values, share_values + share_count);
 	do_verify_open = (verify != 0)? true: false;
+
+	to_open_share_values = share_values;
+	opened_share_values = opens;
+	open_share_value_count = share_count;
+
 	if(0 != push_task(spdz2_ext_processor_base::op_code_open))
 	{
 		syslog(LOG_ERR, "spdz2_ext_processor_base::start_open: failed pushing an open task to queue.");
@@ -305,7 +308,7 @@ int spdz2_ext_processor_base::start_open(const size_t share_count, const u_int64
 }
 
 //***********************************************************************************************//
-int spdz2_ext_processor_base::stop_open(size_t * open_count, u_int64_t ** open_values, const time_t timeout_sec)
+int spdz2_ext_processor_base::stop_open(const time_t timeout_sec)
 {
 	if(!start_open_on)
 	{
@@ -313,9 +316,6 @@ int spdz2_ext_processor_base::stop_open(size_t * open_count, u_int64_t ** open_v
 		return -1;
 	}
 	start_open_on = false;
-
-	*open_count = 0;
-	*open_values = NULL;
 
 	struct timespec timeout;
 	clock_gettime(CLOCK_REALTIME, &timeout);
@@ -330,21 +330,7 @@ int spdz2_ext_processor_base::stop_open(size_t * open_count, u_int64_t ** open_v
 		return -1;
 	}
 
-	if(open_success)
-	{
-		if(!opens.empty())
-		{
-			*open_values = new u_int64_t[*open_count = opens.size()];
-			memcpy(*open_values, &opens[0], (*open_count)*sizeof(u_int64_t));
-			opens.clear();
-		}
-		return 0;
-	}
-	else
-	{
-		syslog(LOG_ERR, "spdz2_ext_processor_base::stop_open: open failed.");
-		return -1;
-	}
+	return (open_success)? 0: -1;
 }
 
 //***********************************************************************************************//
@@ -355,7 +341,7 @@ void spdz2_ext_processor_base::exec_open()
 }
 
 //***********************************************************************************************//
-int spdz2_ext_processor_base::triple(u_int64_t * a, u_int64_t * b, u_int64_t * c, const time_t timeout_sec)
+int spdz2_ext_processor_base::triple(mpz_t * a, mpz_t * b, mpz_t * c, const time_t timeout_sec)
 {
 	pa = a;
 	pb = b;
@@ -393,7 +379,7 @@ void spdz2_ext_processor_base::exec_triple()
 }
 
 //***********************************************************************************************//
-int spdz2_ext_processor_base::input(const int input_of_pid, u_int64_t * input_value)
+int spdz2_ext_processor_base::input(const int input_of_pid, mpz_t * input_value)
 {
 	p_input_value = input_value;
 	input_party_id = input_of_pid;
@@ -484,7 +470,7 @@ void spdz2_ext_processor_base::exec_verify()
 }
 
 //***********************************************************************************************//
-int spdz2_ext_processor_base::start_input(const int input_of_pid, const size_t num_of_inputs_)
+int spdz2_ext_processor_base::start_input(const int input_of_pid, const size_t num_of_inputs, mpz_t * inputs)
 {
 	if(input_asynch_on)
 	{
@@ -494,7 +480,8 @@ int spdz2_ext_processor_base::start_input(const int input_of_pid, const size_t n
 	input_asynch_on = true;
 	input_asynch_success = false;
 	intput_asynch_party_id = input_of_pid;
-	num_of_inputs = num_of_inputs_;
+	intput_asynch_count = num_of_inputs;
+	intput_asynch_values = inputs;
 
 	if(0 != push_task(spdz2_ext_processor_base::op_code_input_asynch))
 	{
@@ -505,7 +492,7 @@ int spdz2_ext_processor_base::start_input(const int input_of_pid, const size_t n
 }
 
 //***********************************************************************************************//
-int spdz2_ext_processor_base::stop_input(size_t * input_count, u_int64_t ** inputs)
+int spdz2_ext_processor_base::stop_input()
 {
 	if(!input_asynch_on)
 	{
@@ -523,19 +510,7 @@ int spdz2_ext_processor_base::stop_input(size_t * input_count, u_int64_t ** inpu
 		return -1;
 	}
 
-	if(input_asynch_success)
-	{
-		if(!input_values.empty())
-		{
-			*inputs = new u_int64_t[*input_count = input_values.size()];
-			memcpy(*inputs, &input_values[0], *input_count * sizeof(u_int64_t));
-		}
-		return 0;
-	}
-	else
-	{
-		return -1;
-	}
+	return (input_asynch_success)? 0: -1;
 }
 
 //***********************************************************************************************//
@@ -546,7 +521,7 @@ void spdz2_ext_processor_base::exec_input_asynch()
 }
 
 //***********************************************************************************************//
-int spdz2_ext_processor_base::start_mult(const size_t share_count, const u_int64_t * shares, int verify)
+int spdz2_ext_processor_base::start_mult(const size_t share_count, const mpz_t * shares, mpz_t * products, int verify)
 {
 	if(mult_on)
 	{
@@ -555,8 +530,9 @@ int spdz2_ext_processor_base::start_mult(const size_t share_count, const u_int64
 	}
 	mult_on = true;
 	mult_success = false;
-	mult_values.assign(shares, shares + share_count);
-	products.clear();
+	mult_shares = shares;
+	mult_share_count = share_count;
+	mult_products = products;
 
 	if(0 != push_task(spdz2_ext_processor_base::op_code_mult))
 	{
@@ -567,7 +543,7 @@ int spdz2_ext_processor_base::start_mult(const size_t share_count, const u_int64
 }
 
 //***********************************************************************************************//
-int spdz2_ext_processor_base::stop_mult(size_t * product_count, u_int64_t ** product_values)
+int spdz2_ext_processor_base::stop_mult(const time_t timeout_sec)
 {
 	if(!mult_on)
 	{
@@ -576,7 +552,11 @@ int spdz2_ext_processor_base::stop_mult(size_t * product_count, u_int64_t ** pro
 	}
 	mult_on = false;
 
-	int result = sem_wait(&mult_done);
+	struct timespec timeout;
+	clock_gettime(CLOCK_REALTIME, &timeout);
+	timeout.tv_sec += timeout_sec;
+
+	int result = sem_timedwait(&mult_done, &timeout);
 	if(0 != result)
 	{
 		result = errno;
@@ -585,19 +565,7 @@ int spdz2_ext_processor_base::stop_mult(size_t * product_count, u_int64_t ** pro
 		return -1;
 	}
 
-	if(mult_success)
-	{
-		if(!products.empty())
-		{
-			*product_values = new u_int64_t[*product_count = products.size()];
-			memcpy(*product_values, &products[0], *product_count * sizeof(u_int64_t));
-		}
-		return 0;
-	}
-	else
-	{
-		return -1;
-	}
+	return (mult_success)? 0: -1;
 }
 
 //***********************************************************************************************//
@@ -608,7 +576,7 @@ void spdz2_ext_processor_base::exec_mult()
 }
 
 //***********************************************************************************************//
-int spdz2_ext_processor_base::start_share_immediates(const int input_of_pid, const size_t value_count, const u_int64_t * values)
+int spdz2_ext_processor_base::start_share_immediates(const size_t value_count, const mpz_t * values, mpz_t * shares)
 {
 	if(share_immediates_on)
 	{
@@ -617,8 +585,9 @@ int spdz2_ext_processor_base::start_share_immediates(const int input_of_pid, con
 	}
 	share_immediates_on = true;
 	share_immediates_success = false;
-	immediates_values.assign(values, values + value_count);
-	immediates_shares.clear();
+	immediates_values = values;
+	immediates_count = value_count;
+	immediates_shares = shares;
 
 	if(0 != push_task(spdz2_ext_processor_base::op_code_share_immediates))
 	{
@@ -629,7 +598,7 @@ int spdz2_ext_processor_base::start_share_immediates(const int input_of_pid, con
 }
 
 //***********************************************************************************************//
-int spdz2_ext_processor_base::stop_share_immediates(size_t * share_count, u_int64_t ** shares, const time_t timeout_sec)
+int spdz2_ext_processor_base::stop_share_immediates(const time_t timeout_sec)
 {
 	if(!share_immediates_on)
 	{
@@ -651,19 +620,7 @@ int spdz2_ext_processor_base::stop_share_immediates(size_t * share_count, u_int6
 		return -1;
 	}
 
-	if(share_immediates_success)
-	{
-		if(!immediates_shares.empty())
-		{
-			*shares = new u_int64_t[*share_count = immediates_shares.size()];
-			memcpy(*shares, &immediates_shares[0], *share_count * sizeof(u_int64_t));
-		}
-		return 0;
-	}
-	else
-	{
-		return -1;
-	}
+	return(share_immediates_success)? 0: -1;
 }
 
 //***********************************************************************************************//
@@ -674,11 +631,10 @@ void spdz2_ext_processor_base::exec_share_immediates()
 }
 
 //***********************************************************************************************//
-int spdz2_ext_processor_base::share_immediate(const u_int64_t value, u_int64_t * share, const time_t timeout_sec)
+int spdz2_ext_processor_base::share_immediate(const mpz_t * value, mpz_t * share, const time_t timeout_sec)
 {
-	p_immediate_share = share;
-	immediate_value.clear();
-	immediate_value.push_back(value);
+	immediate_value = value;
+	immediate_share = share;
 	share_immediate_success = false;
 
 	if(0 != push_task(spdz2_ext_processor_base::op_code_share_immediate))
@@ -700,8 +656,8 @@ int spdz2_ext_processor_base::share_immediate(const u_int64_t value, u_int64_t *
 		return -1;
 	}
 
-	p_immediate_share = NULL;
-	immediate_value.clear();
+	immediate_value = NULL;
+	immediate_share = NULL;
 
 	return (share_immediate_success)? 0: -1;
 
@@ -715,18 +671,23 @@ void spdz2_ext_processor_base::exec_share_immediate()
 }
 
 //***********************************************************************************************//
-int spdz2_ext_processor_base::bit(u_int64_t * share, const time_t timeout_sec)
+int spdz2_ext_processor_base::bit(mpz_t * share, const time_t timeout_sec)
 {
-	return share_immediate(rand()%2, share, timeout_sec);
+	mpz_t bit;
+	mpz_init(bit);
+	mpz_set_ui(bit, rand()%2);
+	return share_immediate(&bit, share, timeout_sec);
 }
 
 //***********************************************************************************************//
-int spdz2_ext_processor_base::inverse(u_int64_t * share_value, u_int64_t * share_inverse, const time_t timeout_sec)
+int spdz2_ext_processor_base::inverse(mpz_t * share_value, mpz_t * share_inverse, const time_t timeout_sec)
 {
-	u_int64_t value, inverse;
-	if(protocol_random_value(&value) && protocol_value_inverse(value, &inverse))
+	mpz_t value, inverse;
+	mpz_init(value);
+	mpz_init(inverse);
+	if(protocol_random_value(&value) && protocol_value_inverse(&value, &inverse))
 	{
-		if(0 == share_immediate(value, share_value, timeout_sec) && 0 == share_immediate(inverse, share_inverse, timeout_sec))
+		if(0 == share_immediate(&value, share_value, timeout_sec) && 0 == share_immediate(&inverse, share_inverse, timeout_sec))
 		{
 			return 0;
 		}

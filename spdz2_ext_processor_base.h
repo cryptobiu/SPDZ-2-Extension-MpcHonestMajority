@@ -5,6 +5,7 @@
 #include <deque>
 #include <vector>
 #include <string>
+#include <gmp.h>
 
 class spdz2_ext_processor_base
 {
@@ -90,43 +91,49 @@ protected:
 	virtual bool protocol_mult() = 0;
 	virtual bool protocol_share_immediates() = 0;
 	virtual bool protocol_share_immediate() = 0;
-	virtual bool protocol_random_value(u_int64_t * value) = 0;
-	virtual bool protocol_value_inverse(const u_int64_t value, u_int64_t * inverse) = 0;
+	virtual bool protocol_random_value(mpz_t * value) const = 0;
+	virtual bool protocol_value_inverse(const mpz_t * value, mpz_t * inverse) const = 0;
 
 	//--open---------------------------------------------
-	std::vector<u_int64_t> shares, opens;
+	const mpz_t * to_open_share_values;
+	mpz_t * opened_share_values;
+	size_t open_share_value_count;
 	bool do_verify_open;
 	//---------------------------------------------------
 
 	//--triple-------------------------------------------
-	u_int64_t * pa, * pb, * pc;
+	mpz_t * pa, * pb, * pc;
 	//---------------------------------------------------
 
 	//--input--------------------------------------------
 	int input_party_id;
-	u_int64_t * p_input_value;
+	mpz_t * p_input_value;
 	//---------------------------------------------------
 
 	//--input_asynch-------------------------------------
 	bool input_asynch_on;
 	int intput_asynch_party_id;
-	size_t num_of_inputs;
-	std::vector<u_int64_t> input_values;
+	size_t intput_asynch_count;
+	mpz_t * intput_asynch_values;
 	//---------------------------------------------------
 
 	//--mult---------------------------------------------
 	bool mult_on;
-	std::vector<u_int64_t> mult_values, products;
+	const mpz_t * mult_shares;
+	size_t mult_share_count;
+	mpz_t * mult_products;
 	//---------------------------------------------------
 
 	//--share_immediates---------------------------------
 	bool share_immediates_on;
-	std::vector<u_int64_t> immediates_values, immediates_shares;
+	const mpz_t * immediates_values;
+	size_t immediates_count;
+	mpz_t * immediates_shares;
 	//---------------------------------------------------
 
 	//--share_immediate----------------------------------
-	std::vector<u_int64_t> immediate_value;
-	u_int64_t * p_immediate_share;
+	const mpz_t * immediate_value;
+	mpz_t * immediate_share;
 	//---------------------------------------------------
 
 public:
@@ -138,33 +145,33 @@ public:
 
 	int offline(const int offline_size, const time_t timeout_sec = 5);
 
-	int start_open(const size_t share_count, const u_int64_t * share_values, int verify);
-	int stop_open(size_t * open_count, u_int64_t ** open_values, const time_t timeout_sec = 5);
+	int start_open(const size_t share_count, const mpz_t * share_values, mpz_t * opens, int verify);
+	int stop_open(const time_t timeout_sec = 5);
 
-	int triple(u_int64_t * a, u_int64_t * b, u_int64_t * c, const time_t timeout_sec = 5);
+	int triple(mpz_t * a, mpz_t * b, mpz_t * c, const time_t timeout_sec = 5);
 
-	int input(const int input_of_pid, u_int64_t * input_value);
+	int input(const int input_of_pid, mpz_t * input_value);
 
 	int start_verify(int * error);
 	int stop_verify(const time_t timeout_sec = 5);
 
-    int start_input(const int input_of_pid, const size_t num_of_inputs);
-    int stop_input(size_t * input_count, u_int64_t ** inputs);
+    int start_input(const int input_of_pid, const size_t num_of_inputs, mpz_t * inputs);
+    int stop_input();
 
-    int start_mult(const size_t share_count, const u_int64_t * shares, int verify);
-    int stop_mult(size_t * product_count, u_int64_t ** products);
+    int start_mult(const size_t share_count, const mpz_t * shares, mpz_t * products, int verify);
+    int stop_mult(const time_t timeout_sec = 5);
 
-    virtual int mix_add(u_int64_t * share, u_int64_t scalar) = 0;
-    virtual int mix_sub_scalar(u_int64_t * share, u_int64_t scalar) = 0;
-    virtual int mix_sub_share(u_int64_t scalar, u_int64_t * share) = 0;
+    virtual int mix_add(mpz_t * share, const mpz_t * scalar) = 0;
+    virtual int mix_sub_scalar(mpz_t * share, const mpz_t * scalar) = 0;
+    virtual int mix_sub_share(const mpz_t * scalar, mpz_t * share) = 0;
 
-    int start_share_immediates(const int input_of_pid, const size_t value_count, const u_int64_t * values);
-    int stop_share_immediates(size_t * share_count, u_int64_t ** shares, const time_t timeout_sec = 5);
+    int start_share_immediates(const size_t value_count, const mpz_t * values, mpz_t * shares);
+    int stop_share_immediates(const time_t timeout_sec = 5);
 
-    int share_immediate(const u_int64_t value, u_int64_t * share, const time_t timeout_sec = 5);
+    int share_immediate(const mpz_t * value, mpz_t * share, const time_t timeout_sec = 5);
 
-    int bit(u_int64_t * share, const time_t timeout_sec = 5);
-    int inverse(u_int64_t * share_value, u_int64_t * share_inverse, const time_t timeout_sec = 5);
+    int bit(mpz_t * share, const time_t timeout_sec = 5);
+    int inverse(mpz_t * share_value, mpz_t * share_inverse, const time_t timeout_sec = 5);
 
     friend void * spdz2_ext_processor_proc(void * arg);
 
