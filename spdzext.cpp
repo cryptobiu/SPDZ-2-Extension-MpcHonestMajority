@@ -3,6 +3,7 @@
 #include "spdz2_ext_processor_base.h"
 #include "spdz2_ext_processor_mersenne61.h"
 #include "spdz2_ext_processor_gf2n.h"
+#include "spdz2_ext_processor_mersenne127.h"
 
 #include <syslog.h>
 
@@ -14,7 +15,20 @@ int init(void ** handle, const int pid, const int num_of_parties, const char * f
 	spdz2_ext_processor_base * proc = NULL;
 	if(strncmp(field, "gfp", 3) == 0)
 	{
-		proc = new spdz2_ext_processor_mersenne61;
+		long numbits = strtol(field + 4, NULL, 10);
+		if(61 == numbits)
+		{
+			proc = new spdz2_ext_processor_mersenne61;
+		}
+		else if(127 == numbits)
+		{
+			proc = new spdz2_ext_processor_mersenne127;
+		}
+		else
+		{
+			syslog(LOG_ERR, "SPDZ-2 extension library init: invalid GFP number of bits [%ld]", numbits);
+			return -1;
+		}
 	}
 	else if(strncmp(field, "gf2n", 4) == 0)
 	{

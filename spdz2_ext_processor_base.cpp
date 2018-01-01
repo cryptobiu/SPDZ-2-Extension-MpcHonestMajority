@@ -245,6 +245,17 @@ int spdz2_ext_processor_base::pop_task()
 }
 
 //***********************************************************************************************//
+void spdz2_ext_processor_base::load_share_immediates_strings(std::vector<std::string>& si_str) const
+{
+	char sz[128];
+	si_str.resize(immediates_count);
+	for(size_t i = 0; i < immediates_count; ++i)
+	{
+		si_str[i] = mpz_get_str(sz, 10, immediates_values[i]);
+	}
+}
+
+//***********************************************************************************************//
 int spdz2_ext_processor_base::offline(const int /*offline_size*/, const time_t timeout_sec)
 {
 	/*

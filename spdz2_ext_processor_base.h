@@ -136,6 +136,7 @@ protected:
 	mpz_t * immediate_share;
 	//---------------------------------------------------
 
+	void load_share_immediates_strings(std::vector<std::string>&) const;
 public:
 	spdz2_ext_processor_base();
 	~spdz2_ext_processor_base();

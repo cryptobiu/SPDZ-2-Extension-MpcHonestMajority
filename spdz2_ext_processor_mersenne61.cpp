@@ -242,13 +242,10 @@ bool spdz2_ext_processor_mersenne61::protocol_share_immediates()
 {
 	bool op_share_immediates_success = false;
 	std::vector<ZpMersenneLongElement> shares(immediates_count);
-	vector<u_int64_t> ui_immediates_values(immediates_count);
-	for(size_t i = 0; i < immediates_count; ++i)
-	{
-		ui_immediates_values[i] = mpz_get_ui(immediates_values[i]);
-	}
+	vector<std::string> str_immediates_values;
+	load_share_immediates_strings(str_immediates_values);
 
-	if(op_share_immediates_success = the_party->load_share_immediates(0, shares, ui_immediates_values))
+	if(op_share_immediates_success = the_party->load_share_immediates(0, shares, str_immediates_values))
 	{
 		for(size_t i = 0; i < immediates_count; ++i)
 		{
@@ -266,11 +263,12 @@ bool spdz2_ext_processor_mersenne61::protocol_share_immediates()
 bool spdz2_ext_processor_mersenne61::protocol_share_immediate()
 {
 	bool op_share_immediate_success = false;
+	char sz[128];
 	std::vector<ZpMersenneLongElement> shares(1);
-	vector<u_int64_t> ui_immediates_value(1);
-	ui_immediates_value[0] = mpz_get_ui(*immediate_value);
+	vector<std::string> str_immediates_value(1);
+	str_immediates_value[0] = mpz_get_str(sz, 10, *immediate_value);
 
-	if(op_share_immediate_success = the_party->load_share_immediates(0, shares, ui_immediates_value))
+	if(op_share_immediate_success = the_party->load_share_immediates(0, shares, str_immediates_value))
 	{
 		mpz_set_ui(*immediate_share, shares[0].elem);
 		syslog(LOG_INFO, "spdz2_ext_processor_mersenne61::protocol_share_immediate: share value %lu", shares[0].elem);
@@ -333,7 +331,8 @@ bool spdz2_ext_processor_mersenne61::protocol_value_inverse(const mpz_t * value,
     mpz_clear(P);
 
     char szv[128], szi[128];
-    syslog(LOG_DEBUG, "spdz2_ext_processor_mersenne61::protocol_value_inverse: value = %s; inverse = %s;", mpz_get_str(szv, 10, *value), mpz_get_str(szi, 10, *inverse));
+    syslog(LOG_DEBUG, "spdz2_ext_processor_mersenne61::protocol_value_inverse: value = %s; inverse = %s;", mpz_get_str(szv, 10, *value),
+    		mpz_get_str(szi, 10, *inverse));
 
 	return true;
 }

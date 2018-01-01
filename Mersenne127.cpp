@@ -1,4 +1,5 @@
 #include "Mersenne127.h"
+#include <string>
 
 const char Mersenne127::M127[] = "170141183460469231731687303715884105727";
 
@@ -41,6 +42,11 @@ Mersenne127::Mersenne127(const Mersenne127 & other)
 {
 	mpz_init(m_value);
 	mpz_mod(m_value, other.m_value, the_help.m_M127);
+}
+
+Mersenne127::Mersenne127(int)
+{
+	mpz_init(m_value);
 }
 
 Mersenne127::~Mersenne127()
@@ -111,4 +117,17 @@ const Mersenne127 & Mersenne127::operator *= (const Mersenne127 & rha)
 	return *this;
 }
 
+std::ostream& operator << (std::ostream& s, const Mersenne127 & m127)
+{
+	char sz[128];
+	mpz_get_str(sz, 10, m127.m_value);
+	return s << sz;
+};
 
+std::istream& operator >> (std::istream& s, Mersenne127 & m127)
+{
+	std::string str_m127;
+	s >> str_m127;
+	mpz_set_str(m127.m_value, str_m127.c_str(), 10);
+	return s;
+}

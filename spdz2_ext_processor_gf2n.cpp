@@ -277,13 +277,10 @@ bool spdz2_ext_processor_gf2n::protocol_share_immediates()
 {
 	bool op_share_immediates_success = false;
 	std::vector<GF2E> shares(immediates_count);
-	vector<u_int64_t> ui_immediates_values(immediates_count);
-	for(size_t i = 0; i < immediates_count; ++i)
-	{
-		ui_immediates_values[i] = mpz_get_ui(immediates_values[i]);
-	}
+	vector<std::string> str_immediates_values;
+	load_share_immediates_strings(str_immediates_values);
 
-	if(op_share_immediates_success = the_party->load_share_immediates(0, shares, ui_immediates_values))
+	if(op_share_immediates_success = the_party->load_share_immediates(0, shares, str_immediates_values))
 	{
 		for(size_t i = 0; i < immediates_count; ++i)
 		{
@@ -304,14 +301,14 @@ bool spdz2_ext_processor_gf2n::protocol_share_immediate()
 	bool op_share_immediate_success = false;
 	char sz[128];
 	std::vector<GF2E> shares(1);
-	vector<u_int64_t> ui_immediate_value(1);
-	ui_immediate_value[0] = mpz_get_ui(*immediate_value);
+	vector<std::string> str_immediates_value(1);
+	str_immediates_value[0] = mpz_get_str(sz, 10, *immediate_value);
 
-	if(op_share_immediate_success = the_party->load_share_immediates(0, shares, ui_immediate_value))
+	if(op_share_immediate_success = the_party->load_share_immediates(0, shares, str_immediates_value))
 	{
 		gf2e2mpz(shares[0], immediate_share);
-		syslog(LOG_INFO, "spdz2_ext_processor_gf2n::protocol_share_immediate: immediate %lu / share value %s",
-				ui_immediate_value[0], mpz_get_str(sz, 10, *immediate_share));
+		syslog(LOG_INFO, "spdz2_ext_processor_gf2n::protocol_share_immediate: immediate %s / share value %s",
+				str_immediates_value[0].c_str(), mpz_get_str(sz, 10, *immediate_share));
 
 		/**/
 		{//test the input with open

@@ -14,6 +14,8 @@ set(SOURCE_FILES
 	spdzext.cpp
 	spdz2_ext_processor_base.h
 	spdz2_ext_processor_base.cpp
+	spdz2_ext_processor_mersenne127.h
+	spdz2_ext_processor_mersenne127.cpp
 	spdz2_ext_processor_mersenne61.h
 	spdz2_ext_processor_mersenne61.cpp
 	spdz2_ext_processor_gf2n.h
