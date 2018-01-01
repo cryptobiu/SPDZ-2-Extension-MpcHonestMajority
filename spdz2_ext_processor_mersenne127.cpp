@@ -2,6 +2,50 @@
 
 #include <syslog.h>
 
+template <>
+TemplateField<Mersenne127>::TemplateField(long fieldParam)
+{
+    this->elementSizeInBytes = 16;//round up to the next byte
+    this->elementSizeInBits = 127;
+
+    auto randomKey = prg.generateKey(128);
+    prg.setKey(randomKey);
+
+    m_ZERO = new Mersenne127(0);
+    m_ONE = new Mersenne127(1);
+}
+
+template <>
+void TemplateField<Mersenne127>::elementToBytes(unsigned char* elemenetInBytes, Mersenne127& element)
+{
+	size_t count = 0;
+	u_int8_t buffer[16];
+	mpz_export((void *)buffer, &count, 1, 1, 1, 0, *element.get_mpz_t());
+	memcpy(elemenetInBytes, buffer, 16);
+}
+
+template <>
+Mersenne127 TemplateField<Mersenne127>::bytesToElement(unsigned char* elemenetInBytes)
+{
+	mpz_t value;
+	mpz_init(value);
+	mpz_import(value, 16, 1, 1, 1, 0, (const void *)elemenetInBytes);
+	Mersenne127 element(value);
+    return element;
+}
+
+template <>
+Mersenne127 TemplateField<Mersenne127>::GetElement(long b)
+{
+	if(b == 1)		return *m_ONE;
+    if(b == 0)		return *m_ZERO;
+    else
+    {
+    	Mersenne127 element(b);
+        return element;
+    }
+}
+
 spdz2_ext_processor_mersenne127::spdz2_ext_processor_mersenne127()
  : spdz2_ext_processor_base()
  , the_field(NULL), the_party(NULL)
@@ -336,4 +380,3 @@ bool spdz2_ext_processor_mersenne127::protocol_value_inverse(const mpz_t * value
 
 	return true;
 }
-

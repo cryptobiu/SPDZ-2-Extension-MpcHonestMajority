@@ -44,9 +44,10 @@ Mersenne127::Mersenne127(const Mersenne127 & other)
 	mpz_mod(m_value, other.m_value, the_help.m_M127);
 }
 
-Mersenne127::Mersenne127(int)
+Mersenne127::Mersenne127(int i)
 {
 	mpz_init(m_value);
+	mpz_set_si(m_value, i);
 }
 
 Mersenne127::~Mersenne127()

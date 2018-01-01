@@ -15,7 +15,7 @@ int init(void ** handle, const int pid, const int num_of_parties, const char * f
 	spdz2_ext_processor_base * proc = NULL;
 	if(strncmp(field, "gfp", 3) == 0)
 	{
-		long numbits = strtol(field + 4, NULL, 10);
+		long numbits = strtol(field + 3, NULL, 10);
 		if(61 == numbits)
 		{
 			proc = new spdz2_ext_processor_mersenne61;
