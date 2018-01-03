@@ -35,7 +35,7 @@ spdz2_ext_processor_base::spdz2_ext_processor_base()
  , input_asynch_on(false), intput_asynch_party_id(-1), intput_asynch_count(0), input_asynch_success(false), intput_asynch_values(NULL)
  , mult_on(false), mult_success(false), mult_shares(NULL), mult_share_count(0), mult_products(NULL)
  , share_immediates_on(false), share_immediates_success(false), immediates_values(NULL), immediates_count(0), immediates_shares(NULL)
- , immediate_value(NULL), immediate_share(NULL), share_immediate_success(false)
+ , m_immediate_value(NULL), m_immediate_share(NULL), share_immediate_success(false)
 {
 	pthread_mutex_init(&q_lock, NULL);
 	sem_init(&task, 0, 0);
@@ -699,8 +699,8 @@ void spdz2_ext_processor_base::exec_share_immediates()
 //***********************************************************************************************//
 int spdz2_ext_processor_base::share_immediate(const mpz_t * value, mpz_t * share, const time_t timeout_sec)
 {
-	immediate_value = value;
-	immediate_share = share;
+	m_immediate_value = value;
+	m_immediate_share = share;
 	share_immediate_success = false;
 
 	if(0 != push_task(spdz2_ext_processor_base::sm_op_code_share_immediate))
@@ -722,8 +722,8 @@ int spdz2_ext_processor_base::share_immediate(const mpz_t * value, mpz_t * share
 		return -1;
 	}
 
-	immediate_value = NULL;
-	immediate_share = NULL;
+	m_immediate_value = NULL;
+	m_immediate_share = NULL;
 
 	return (share_immediate_success)? 0: -1;
 

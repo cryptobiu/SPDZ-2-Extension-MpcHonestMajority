@@ -266,17 +266,17 @@ bool spdz2_ext_processor_mersenne61::protocol_share_immediate()
 	char sz[128];
 	std::vector<ZpMersenneLongElement> shares(1);
 	vector<std::string> str_immediates_value(1);
-	str_immediates_value[0] = mpz_get_str(sz, 10, *immediate_value);
+	str_immediates_value[0] = mpz_get_str(sz, 10, *m_immediate_value);
 
 	if(op_share_immediate_success = the_party->load_share_immediates(0, shares, str_immediates_value))
 	{
-		mpz_set_ui(*immediate_share, shares[0].elem);
+		mpz_set_ui(*m_immediate_share, shares[0].elem);
 		syslog(LOG_INFO, "spdz2_ext_processor_mersenne61::protocol_share_immediate: share value %lu", shares[0].elem);
 
 		/**/
 		{//test the input with open
 			std::vector<ZpMersenneLongElement> ext_shares(1), ext_opens(1);
-			ext_shares[0].elem = mpz_get_ui(*immediate_share);
+			ext_shares[0].elem = mpz_get_ui(*m_immediate_share);
 
 			if(the_party->openShare((int)ext_shares.size(), ext_shares, ext_opens))
 			{

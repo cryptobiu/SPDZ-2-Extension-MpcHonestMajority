@@ -302,18 +302,18 @@ bool spdz2_ext_processor_gf2n::protocol_share_immediate()
 	char sz[128];
 	std::vector<GF2E> shares(1);
 	vector<std::string> str_immediates_value(1);
-	str_immediates_value[0] = mpz_get_str(sz, 10, *immediate_value);
+	str_immediates_value[0] = mpz_get_str(sz, 10, *m_immediate_value);
 
 	if(op_share_immediate_success = the_party->load_share_immediates(0, shares, str_immediates_value))
 	{
-		gf2e2mpz(shares[0], immediate_share);
+		gf2e2mpz(shares[0], m_immediate_share);
 		syslog(LOG_INFO, "spdz2_ext_processor_gf2n::protocol_share_immediate: immediate %s / share value %s",
-				str_immediates_value[0].c_str(), mpz_get_str(sz, 10, *immediate_share));
+				str_immediates_value[0].c_str(), mpz_get_str(sz, 10, *m_immediate_share));
 
 		/**/
 		{//test the input with open
 			std::vector<GF2E> ext_shares(1), ext_opens(1);
-			mpz2gf2e(immediate_share, ext_shares[0]);
+			mpz2gf2e(m_immediate_share, ext_shares[0]);
 
 			if(the_party->openShare((int)ext_shares.size(), ext_shares, ext_opens))
 			{

@@ -142,8 +142,8 @@ protected:
 	//---------------------------------------------------
 
 	//--share_immediate----------------------------------
-	const mpz_t * immediate_value;
-	mpz_t * immediate_share;
+	const mpz_t * m_immediate_value;
+	mpz_t * m_immediate_share;
 	//---------------------------------------------------
 
 	void load_share_immediates_strings(std::vector<std::string>&) const;
