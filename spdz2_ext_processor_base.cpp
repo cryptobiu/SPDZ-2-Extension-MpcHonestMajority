@@ -14,15 +14,15 @@ void * spdz2_ext_processor_proc(void * arg)
 	processor->run();
 }
 //***********************************************************************************************//
-const int spdz2_ext_processor_base::op_code_open = 100;
-const int spdz2_ext_processor_base::op_code_triple = 101;
-const int spdz2_ext_processor_base::op_code_offline = 102;
-const int spdz2_ext_processor_base::op_code_input = 103;
-const int spdz2_ext_processor_base::op_code_verify = 104;
-const int spdz2_ext_processor_base::op_code_input_asynch = 105;
-const int spdz2_ext_processor_base::op_code_mult = 106;
-const int spdz2_ext_processor_base::op_code_share_immediates = 107;
-const int spdz2_ext_processor_base::op_code_share_immediate = 108;
+const int spdz2_ext_processor_base::sm_op_code_open = 100;
+const int spdz2_ext_processor_base::sm_op_code_triple = 101;
+const int spdz2_ext_processor_base::sm_op_code_offline = 102;
+const int spdz2_ext_processor_base::sm_op_code_input = 103;
+const int spdz2_ext_processor_base::sm_op_code_verify = 104;
+const int spdz2_ext_processor_base::sm_op_code_input_asynch = 105;
+const int spdz2_ext_processor_base::sm_op_code_mult = 106;
+const int spdz2_ext_processor_base::sm_op_code_share_immediates = 107;
+const int spdz2_ext_processor_base::sm_op_code_share_immediate = 108;
 
 //***********************************************************************************************//
 spdz2_ext_processor_base::spdz2_ext_processor_base()
@@ -160,31 +160,31 @@ void spdz2_ext_processor_base::run()
 			syslog(LOG_NOTICE, "spdz2_ext_processor_base::run: op_code %d", op_code);
 			switch(op_code)
 			{
-			case op_code_open:
+			case sm_op_code_open:
 				exec_open();
 				break;
-			case op_code_triple:
+			case sm_op_code_triple:
 				exec_triple();
 				break;
-			case op_code_offline:
+			case sm_op_code_offline:
 				exec_offline();
 				break;
-			case op_code_input:
+			case sm_op_code_input:
 				exec_input();
 				break;
-			case op_code_verify:
+			case sm_op_code_verify:
 				exec_verify();
 				break;
-			case op_code_input_asynch:
+			case sm_op_code_input_asynch:
 				exec_input_asynch();
 				break;
-			case op_code_mult:
+			case sm_op_code_mult:
 				exec_mult();
 				break;
-			case op_code_share_immediates:
+			case sm_op_code_share_immediates:
 				exec_share_immediates();
 				break;
-			case op_code_share_immediate:
+			case sm_op_code_share_immediate:
 				exec_share_immediate();
 				break;
 			default:
@@ -318,7 +318,7 @@ int spdz2_ext_processor_base::offline(const int /*offline_size*/, const time_t t
 	 * the call to offline will reallocate the same size of offline
 	 */
 	offline_success = false;
-	if(0 != push_task(spdz2_ext_processor_base::op_code_offline))
+	if(0 != push_task(spdz2_ext_processor_base::sm_op_code_offline))
 	{
 		syslog(LOG_ERR, "spdz2_ext_processor_base::offline: failed pushing an offline task to queue.");
 		return -1;
@@ -363,7 +363,7 @@ int spdz2_ext_processor_base::start_open(const size_t share_count, const mpz_t *
 	opened_share_values = opens;
 	open_share_value_count = share_count;
 
-	if(0 != push_task(spdz2_ext_processor_base::op_code_open))
+	if(0 != push_task(spdz2_ext_processor_base::sm_op_code_open))
 	{
 		syslog(LOG_ERR, "spdz2_ext_processor_base::start_open: failed pushing an open task to queue.");
 		start_open_on = false;
@@ -414,7 +414,7 @@ int spdz2_ext_processor_base::triple(mpz_t * a, mpz_t * b, mpz_t * c, const time
 	pc = c;
 	triple_success = false;
 
-	if(0 != push_task(spdz2_ext_processor_base::op_code_triple))
+	if(0 != push_task(spdz2_ext_processor_base::sm_op_code_triple))
 	{
 		syslog(LOG_ERR, "spdz2_ext_processor_base::triple: failed pushing a triple task to queue.");
 		return -1;
@@ -451,7 +451,7 @@ int spdz2_ext_processor_base::input(const int input_of_pid, mpz_t * input_value)
 	input_party_id = input_of_pid;
 	input_success = false;
 
-	if(0 != push_task(spdz2_ext_processor_base::op_code_input))
+	if(0 != push_task(spdz2_ext_processor_base::sm_op_code_input))
 	{
 		syslog(LOG_ERR, "spdz2_ext_processor_base::input: failed pushing an input task to queue.");
 		return -1;
@@ -492,7 +492,7 @@ int spdz2_ext_processor_base::start_verify(int * error)
 	verification_on = true;
 	verify_success = false;
 	verification_error = error;
-	if(0 != push_task(spdz2_ext_processor_base::op_code_verify))
+	if(0 != push_task(spdz2_ext_processor_base::sm_op_code_verify))
 	{
 		syslog(LOG_ERR, "spdz2_ext_processor_base::start_verify: failed pushing a verify task to queue.");
 		return -1;
@@ -549,7 +549,7 @@ int spdz2_ext_processor_base::start_input(const int input_of_pid, const size_t n
 	intput_asynch_count = num_of_inputs;
 	intput_asynch_values = inputs;
 
-	if(0 != push_task(spdz2_ext_processor_base::op_code_input_asynch))
+	if(0 != push_task(spdz2_ext_processor_base::sm_op_code_input_asynch))
 	{
 		syslog(LOG_ERR, "spdz2_ext_processor_base::start_input: failed pushing an input task to queue.");
 		return -1;
@@ -600,7 +600,7 @@ int spdz2_ext_processor_base::start_mult(const size_t share_count, const mpz_t *
 	mult_share_count = share_count;
 	mult_products = products;
 
-	if(0 != push_task(spdz2_ext_processor_base::op_code_mult))
+	if(0 != push_task(spdz2_ext_processor_base::sm_op_code_mult))
 	{
 		syslog(LOG_ERR, "spdz2_ext_processor_base::start_mult: failed pushing a mult task to queue.");
 		return -1;
@@ -655,7 +655,7 @@ int spdz2_ext_processor_base::start_share_immediates(const size_t value_count, c
 	immediates_count = value_count;
 	immediates_shares = shares;
 
-	if(0 != push_task(spdz2_ext_processor_base::op_code_share_immediates))
+	if(0 != push_task(spdz2_ext_processor_base::sm_op_code_share_immediates))
 	{
 		syslog(LOG_ERR, "spdz2_ext_processor_base::start_share_immediates: failed pushing a share_immediates task to queue.");
 		return -1;
@@ -703,7 +703,7 @@ int spdz2_ext_processor_base::share_immediate(const mpz_t * value, mpz_t * share
 	immediate_share = share;
 	share_immediate_success = false;
 
-	if(0 != push_task(spdz2_ext_processor_base::op_code_share_immediate))
+	if(0 != push_task(spdz2_ext_processor_base::sm_op_code_share_immediate))
 	{
 		syslog(LOG_ERR, "spdz2_ext_processor_base::share_immediate: failed pushing a share_immediate task to queue.");
 		return -1;

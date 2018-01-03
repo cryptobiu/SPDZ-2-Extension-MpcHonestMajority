@@ -186,13 +186,13 @@ public:
 
     friend void * spdz2_ext_processor_proc(void * arg);
 
-	static const int op_code_open;
-	static const int op_code_triple;
-	static const int op_code_offline;
-	static const int op_code_input;
-	static const int op_code_verify;
-	static const int op_code_input_asynch;
-	static const int op_code_mult;
-	static const int op_code_share_immediates;
-	static const int op_code_share_immediate;
+	static const int sm_op_code_open;
+	static const int sm_op_code_triple;
+	static const int sm_op_code_offline;
+	static const int sm_op_code_input;
+	static const int sm_op_code_verify;
+	static const int sm_op_code_input_asynch;
+	static const int sm_op_code_mult;
+	static const int sm_op_code_share_immediates;
+	static const int sm_op_code_share_immediate;
 };
