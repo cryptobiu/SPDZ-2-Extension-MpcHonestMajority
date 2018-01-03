@@ -105,7 +105,7 @@ int spdz2_ext_processor_mersenne127::mix_sub_share(const mpz_t * scalar, mpz_t *
 int spdz2_ext_processor_mersenne127::init_protocol()
 {
 	the_field = new TemplateField<Mersenne127>(0);
-	the_party = new Protocol<Mersenne127>(num_of_parties, m_party_id, m_offline_size, m_offline_size, the_field, input_file, "Parties_gfp.txt");
+	the_party = new Protocol<Mersenne127>(m_num_of_parties, m_party_id, m_offline_size, m_offline_size, the_field, input_file, "Parties_gfp.txt");
 	if(!the_party->offline())
 	{
 		syslog(LOG_ERR, "spdz2_ext_processor_mersenne127::init_protocol: protocol offline() failure.");

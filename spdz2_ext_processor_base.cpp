@@ -26,7 +26,7 @@ const int spdz2_ext_processor_base::op_code_share_immediate = 108;
 
 //***********************************************************************************************//
 spdz2_ext_processor_base::spdz2_ext_processor_base()
- : runner(0), run_flag(false), m_party_id(-1), m_offline_size(-1), num_of_parties(0)
+ : runner(0), run_flag(false), m_party_id(-1), m_offline_size(-1), m_num_of_parties(0)
  , offline_success(false)
  , open_success(false), start_open_on(false), to_open_share_values(NULL), open_share_value_count(0), opened_share_values(NULL), do_verify_open(false)
  , pa(NULL), pb(NULL), pc(NULL), triple_success(false)
@@ -72,7 +72,7 @@ spdz2_ext_processor_base::~spdz2_ext_processor_base()
 }
 
 //***********************************************************************************************//
-int spdz2_ext_processor_base::start(const int pid, const int num_of_parties_, const char * field, const int offline_size)
+int spdz2_ext_processor_base::start(const int pid, const int num_of_parties, const char * field, const int offline_size)
 {
 	if(run_flag)
 	{
@@ -82,7 +82,7 @@ int spdz2_ext_processor_base::start(const int pid, const int num_of_parties_, co
 
 	m_party_id = pid;
 	m_offline_size = offline_size;
-	num_of_parties = num_of_parties_;
+	m_num_of_parties = num_of_parties;
 
 	char sz[64];
 	snprintf(sz, 64, "party_%d_input.txt", pid);

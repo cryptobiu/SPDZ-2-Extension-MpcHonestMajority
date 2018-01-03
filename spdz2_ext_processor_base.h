@@ -88,7 +88,7 @@ class spdz2_ext_processor_base
 
 protected:
 
-	int m_party_id, m_offline_size, num_of_parties;
+	int m_party_id, m_offline_size, m_num_of_parties;
 	std::string input_file;
 
 	virtual int init_protocol() = 0;

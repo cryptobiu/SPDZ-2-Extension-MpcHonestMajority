@@ -87,7 +87,7 @@ int spdz2_ext_processor_gf2n::mix_sub_share(const mpz_t * scalar, mpz_t * share)
 int spdz2_ext_processor_gf2n::init_protocol()
 {
 	the_field = new TemplateField<GF2E>(gf2n_bits);
-	the_party = new Protocol<GF2E>(num_of_parties, m_party_id, m_offline_size, m_offline_size, the_field, input_file, "Parties_gf2n.txt");
+	the_party = new Protocol<GF2E>(m_num_of_parties, m_party_id, m_offline_size, m_offline_size, the_field, input_file, "Parties_gf2n.txt");
 	if(!the_party->offline())
 	{
 		syslog(LOG_ERR, "spdz2_ext_processor_gf2n::init_protocol: protocol offline() failure.");
