@@ -26,7 +26,7 @@ const int spdz2_ext_processor_base::op_code_share_immediate = 108;
 
 //***********************************************************************************************//
 spdz2_ext_processor_base::spdz2_ext_processor_base()
- : runner(0), run_flag(false), party_id(-1), offline_size(-1), num_of_parties(0)
+ : runner(0), run_flag(false), m_party_id(-1), m_offline_size(-1), num_of_parties(0)
  , offline_success(false)
  , open_success(false), start_open_on(false), to_open_share_values(NULL), open_share_value_count(0), opened_share_values(NULL), do_verify_open(false)
  , pa(NULL), pb(NULL), pc(NULL), triple_success(false)
@@ -72,7 +72,7 @@ spdz2_ext_processor_base::~spdz2_ext_processor_base()
 }
 
 //***********************************************************************************************//
-int spdz2_ext_processor_base::start(const int pid, const int num_of_parties_, const char * field, const int offline)
+int spdz2_ext_processor_base::start(const int pid, const int num_of_parties_, const char * field, const int offline_size)
 {
 	if(run_flag)
 	{
@@ -80,13 +80,14 @@ int spdz2_ext_processor_base::start(const int pid, const int num_of_parties_, co
 		return -1;
 	}
 
+	m_party_id = pid;
+	m_offline_size = offline_size;
+	num_of_parties = num_of_parties_;
+
 	char sz[64];
 	snprintf(sz, 64, "party_%d_input.txt", pid);
 	input_file = sz;
-
-	party_id = pid;
-	offline_size = offline;
-	num_of_parties = num_of_parties_;
+	load_file_input();
 
 	if(0 != init_protocol())
 	{
@@ -104,7 +105,7 @@ int spdz2_ext_processor_base::start(const int pid, const int num_of_parties_, co
 		return -1;
 	}
 
-	syslog(LOG_NOTICE, "spdz2_ext_processor_base::start: pid %d", party_id);
+	syslog(LOG_NOTICE, "spdz2_ext_processor_base::start: pid %d", m_party_id);
 	return 0;
 }
 
@@ -134,7 +135,9 @@ int spdz2_ext_processor_base::stop(const time_t timeout_sec)
 
 	delete_protocol();
 
-	syslog(LOG_NOTICE, "spdz2_ext_processor_base::stop: pid %d", party_id);
+	clear_file_input();
+
+	syslog(LOG_NOTICE, "spdz2_ext_processor_base::stop: pid %d", m_party_id);
 	return 0;
 }
 
@@ -242,6 +245,58 @@ int spdz2_ext_processor_base::pop_task()
 
 	syslog(LOG_NOTICE, "spdz2_ext_processor_base::pop_task: op_code %d", op_code);
 	return op_code;
+}
+
+//***********************************************************************************************//
+void spdz2_ext_processor_base::load_file_input()
+{
+	char sz[128];
+	mpz_t v;
+	mpz_init(v);
+	snprintf(sz, 128, "party_%d_input.txt", m_party_id);
+	FILE * pf = fopen(sz, "r");
+	if(NULL != pf)
+	{
+		while(NULL != fgets(sz, 128, pf))
+		{
+			mpz_set_str(v, sz, 10);
+			m_file_input.push_back(v);
+		}
+		fclose(pf);
+	}
+	m_next_file_input = m_file_input.begin();
+	mpz_clear(v);
+}
+
+//***********************************************************************************************//
+void spdz2_ext_processor_base::clear_file_input()
+{
+	for(std::list<mpz_t>::iterator i = m_file_input.begin(); i != m_file_input.end(); i++)
+	{
+		mpz_clear(*i);
+	}
+	m_file_input.clear();
+}
+
+//***********************************************************************************************//
+int spdz2_ext_processor_base::get_input_from_file(mpz_t * value)
+{
+	if(m_file_input.empty()) return -1;
+	if(m_next_file_input == m_file_input.end()) m_next_file_input = m_file_input.begin();
+	mpz_set(*value, *(m_next_file_input++));
+	return 0;
+}
+
+//***********************************************************************************************//
+int spdz2_ext_processor_base::get_input_from_user(mpz_t * value)
+{
+	char sz[128];
+	if(NULL != fgets(sz, 128, stdin))
+	{
+		mpz_set_str(*value, sz, 10);
+		return 0;
+	}
+	return -1;
 }
 
 //***********************************************************************************************//

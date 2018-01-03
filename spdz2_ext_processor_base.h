@@ -4,6 +4,7 @@
 #include <semaphore.h>
 #include <deque>
 #include <vector>
+#include <list>
 #include <string>
 #include <gmp.h>
 
@@ -76,9 +77,18 @@ class spdz2_ext_processor_base
 	void exec_share_immediate();
 	bool share_immediate_success;
 	//---------------------------------------------------
+
+	std::list<mpz_t> m_file_input;
+	std::list<mpz_t>::iterator m_next_file_input;
+	void load_file_input();
+	void clear_file_input();
+	int get_input_from_file(mpz_t * value);
+	int get_input_from_user(mpz_t * value);
+	int get_input(mpz_t * value, bool from_user = false) { return (from_user)? get_input_from_user(value): get_input_from_file(value); }
+
 protected:
 
-	int party_id, offline_size, num_of_parties;
+	int m_party_id, m_offline_size, num_of_parties;
 	std::string input_file;
 
 	virtual int init_protocol() = 0;
