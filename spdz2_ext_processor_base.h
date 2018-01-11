@@ -10,73 +10,29 @@
 
 class spdz2_ext_processor_base
 {
-	pthread_t runner;
-	bool run_flag;
+	/* Operational Section */
+	pthread_t m_runner;
+	bool m_run_flag;
 
-	sem_t task;
-	std::deque<int> task_q;
-	pthread_mutex_t q_lock;
+	sem_t m_task;
+	std::deque<int> m_task_q;
+	pthread_mutex_t m_q_lock;
 
 	void run();
 	int push_task(const int op_code);
 	int pop_task();
 
-	//--offline------------------------------------------
-	sem_t offline_done;
-	void exec_offline();
-	bool offline_success;
-	//---------------------------------------------------
-
-	//--open---------------------------------------------
-	bool start_open_on;
-	sem_t open_done;
-	void exec_open();
-	bool open_success;
-	//---------------------------------------------------
-
-	//--triple-------------------------------------------
-	sem_t triple_done;
-	void exec_triple();
-	bool triple_success;
-	//---------------------------------------------------
-
-	//--input--------------------------------------------
-	sem_t input_done;
-	void exec_input();
-	bool input_success;
-	//---------------------------------------------------
-
-	//--verify-------------------------------------------
-	bool verification_on;
-	int * verification_error;
-	sem_t verify_done;
-	void exec_verify();
-	bool verify_success;
-	//---------------------------------------------------
-
-	//--input_asynch-------------------------------------
-	sem_t input_asynch_done;
-	void exec_input_asynch();
-	bool input_asynch_success;
-	//---------------------------------------------------
-
-	//--mult---------------------------------------------
-	sem_t mult_done;
-	void exec_mult();
-	bool mult_success;
-	//---------------------------------------------------
-
-	//--share_immediates---------------------------------
-	sem_t share_immediates_done;
-	void exec_share_immediates();
-	bool share_immediates_success;
-	//---------------------------------------------------
-
-	//--share_immediate----------------------------------
-	sem_t share_immediate_done;
-	void exec_share_immediate();
-	bool share_immediate_success;
-	//---------------------------------------------------
+	static const int sm_op_code_offline_synch;
+	static const int sm_op_code_input_synch;
+	static const int sm_op_code_triple_synch;
+	static const int sm_op_code_share_immediate_synch;
+	static const int sm_op_code_bit_synch;
+	static const int sm_op_code_inverse_synch;
+	static const int sm_op_code_open_asynch;
+	static const int sm_op_code_verify_asynch;
+	static const int sm_op_code_input_asynch;
+	static const int sm_op_code_mult_asynch;
+	static const int sm_op_code_share_immediates_asynch;
 
 	std::list<mpz_t> m_file_input;
 	std::list<mpz_t>::iterator m_next_file_input;
@@ -86,113 +42,149 @@ class spdz2_ext_processor_base
 	int get_input_from_user(mpz_t * value);
 	int get_input(mpz_t * value, bool from_user = false) { return (from_user)? get_input_from_user(value): get_input_from_file(value); }
 
-protected:
+	gmp_randstate_t m_random_state;
 
+	/* Services Section */
+	/*
+		offline_synch
+		input_synch
+		triple_synch
+		share_immediate_synch
+		bit_synch
+		inverse_synch
+
+		open_asynch
+		verify_asynch
+		input_asynch
+		mult_asynch
+		share_immediates_asynch
+	 */
+
+	void exec_offline_synch();
+	bool m_offline_synch_success;
+	sem_t m_offline_synch_done;
+
+	void exec_input_synch();
+	bool m_input_synch_success;
+	sem_t m_input_synch_done;
+	mpz_t m_input_synch_input;
+	mpz_t * m_input_synch_output;
+	int m_input_synch_pid;
+
+	void exec_triple_synch();
+	bool m_triple_synch_success;
+	sem_t m_triple_synch_done;
+	mpz_t * m_A, * m_B, * m_C;
+
+	void exec_share_immediate_synch();
+	bool m_share_immediate_synch_success;
+	sem_t m_share_immediate_synch_done;
+	const mpz_t * m_share_immediate_synch_value;
+	mpz_t * m_share_immediate_synch_share;
+
+	void exec_bit_synch();
+	bool m_bit_synch_success;
+	sem_t m_bit_synch_done;
+	mpz_t m_bit_synch_value, m_bit_synch_two, * m_bit_synch_share;
+
+	void exec_inverse_synch();
+	bool m_inverse_synch_success;
+	sem_t m_inverse_synch_done;
+	mpz_t m_inverse_synch_value, m_inverse_synch_inverse, * m_inverse_synch_value_share, * m_inverse_synch_inverse_share;
+
+	void exec_open_asynch();
+	bool m_open_asynch_on;
+	bool m_open_asynch_success;
+	sem_t m_open_asynch_done;
+	size_t m_open_asynch_count;
+	const mpz_t * m_open_asynch_input;
+	mpz_t * m_open_asynch_output;
+	bool m_open_asynch_verify;
+
+	void exec_verify_asynch();
+	bool m_verify_asynch_on;
+	bool m_verify_asynch_success;
+	sem_t m_verify_asynch_done;
+	int * m_verify_asynch_error;
+
+	void exec_input_asynch();
+	bool m_input_asynch_on;
+	bool m_input_asynch_success;
+	sem_t m_input_asynch_done;
+	int m_input_asynch_pid;
+	size_t m_input_asynch_count;
+	mpz_t * m_input_asynch_input;
+	mpz_t * m_input_asynch_output;
+
+	void exec_mult_asynch();
+	bool m_mult_asynch_on;
+	bool m_mult_asynch_success;
+	sem_t m_mult_asynch_done;
+	size_t m_mult_asynch_count;
+	const mpz_t * m_mult_asynch_input;
+	mpz_t * m_mult_asynch_output;
+	bool m_mult_asynch_verify;
+
+	void exec_share_immediates_asynch();
+	bool m_share_immediates_asynch_on;
+	bool m_share_immediates_asynch_success;
+	sem_t m_share_immediates_asynch_done;
+	size_t m_share_immediates_asynch_count;
+	const mpz_t * m_share_immediates_asynch_input;
+	mpz_t * m_share_immediates_asynch_output;
+
+protected:
 	int m_party_id, m_offline_size, m_num_of_parties;
 	std::string input_file;
 
 	virtual int init_protocol() = 0;
-	virtual void delete_protocol() = 0;
+	virtual int delete_protocol() = 0;
 	virtual bool protocol_offline() = 0;
-	virtual bool protocol_open() = 0;
-	virtual bool protocol_triple() = 0;
-	virtual bool protocol_input() = 0;
-	virtual bool protocol_input_asynch() = 0;
-	virtual bool protocol_mult() = 0;
-	virtual bool protocol_share_immediates() = 0;
-	virtual bool protocol_share_immediate() = 0;
-	virtual bool protocol_random_value(mpz_t * value) const = 0;
-	virtual bool protocol_value_inverse(const mpz_t * value, mpz_t * inverse) const = 0;
+	virtual bool protocol_share(const int pid, const size_t count, const mpz_t * input, mpz_t * output) = 0;
+	virtual bool protocol_triple(mpz_t * A, mpz_t * B, mpz_t * C) = 0;
+	virtual bool protocol_random_value(mpz_t * value) = 0;
+	virtual bool protocol_value_inverse(const mpz_t * value, mpz_t * inverse) = 0;
+	virtual bool protocol_open(const size_t value_count, const mpz_t * shares, mpz_t * opens, bool verify) = 0;
+	virtual bool protocol_verify(int * error) = 0;
+	virtual bool protocol_mult(const size_t count, const mpz_t * input, mpz_t * output, bool verify) = 0;
 
-	//--open---------------------------------------------
-	const mpz_t * to_open_share_values;
-	mpz_t * opened_share_values;
-	size_t open_share_value_count;
-	bool do_verify_open;
-	//---------------------------------------------------
-
-	//--triple-------------------------------------------
-	mpz_t * pa, * pb, * pc;
-	//---------------------------------------------------
-
-	//--input--------------------------------------------
-	int input_party_id;
-	mpz_t * p_input_value;
-	//---------------------------------------------------
-
-	//--input_asynch-------------------------------------
-	bool input_asynch_on;
-	int intput_asynch_party_id;
-	size_t intput_asynch_count;
-	mpz_t * intput_asynch_values;
-	//---------------------------------------------------
-
-	//--mult---------------------------------------------
-	bool mult_on;
-	const mpz_t * mult_shares;
-	size_t mult_share_count;
-	mpz_t * mult_products;
-	//---------------------------------------------------
-
-	//--share_immediates---------------------------------
-	bool share_immediates_on;
-	const mpz_t * immediates_values;
-	size_t immediates_count;
-	mpz_t * immediates_shares;
-	//---------------------------------------------------
-
-	//--share_immediate----------------------------------
-	const mpz_t * m_immediate_value;
-	mpz_t * m_immediate_share;
-	//---------------------------------------------------
-
-	void load_share_immediates_strings(std::vector<std::string>&) const;
 public:
 	spdz2_ext_processor_base();
-	~spdz2_ext_processor_base();
+	virtual ~spdz2_ext_processor_base();
 
 	int start(const int pid, const int num_of_parties, const char * field, const int offline_size = 0);
 	int stop(const time_t timeout_sec = 2);
 
 	int offline(const int offline_size, const time_t timeout_sec = 5);
 
-	int start_open(const size_t share_count, const mpz_t * share_values, mpz_t * opens, int verify);
-	int stop_open(const time_t timeout_sec = 5);
+	int input(const int input_of_pid, mpz_t * input_value, const time_t timeout_sec = 5);
 
 	int triple(mpz_t * a, mpz_t * b, mpz_t * c, const time_t timeout_sec = 5);
 
-	int input(const int input_of_pid, mpz_t * input_value);
+    int share_immediate(const mpz_t * value, mpz_t * share, const time_t timeout_sec = 5);
+
+    int bit(mpz_t * share, const time_t timeout_sec = 5);
+
+    int inverse(mpz_t * share_value, mpz_t * share_inverse, const time_t timeout_sec = 5);
+
+	int start_open(const size_t share_count, const mpz_t * share_values, mpz_t * opens, int verify);
+	int stop_open(const time_t timeout_sec = 5);
 
 	int start_verify(int * error);
 	int stop_verify(const time_t timeout_sec = 5);
 
     int start_input(const int input_of_pid, const size_t num_of_inputs, mpz_t * inputs);
-    int stop_input();
+    int stop_input(const time_t timeout_sec = 5);
 
     int start_mult(const size_t share_count, const mpz_t * shares, mpz_t * products, int verify);
     int stop_mult(const time_t timeout_sec = 5);
+
+    int start_share_immediates(const size_t value_count, const mpz_t * values, mpz_t * shares);
+    int stop_share_immediates(const time_t timeout_sec = 5);
 
     virtual int mix_add(mpz_t * share, const mpz_t * scalar) = 0;
     virtual int mix_sub_scalar(mpz_t * share, const mpz_t * scalar) = 0;
     virtual int mix_sub_share(const mpz_t * scalar, mpz_t * share) = 0;
 
-    int start_share_immediates(const size_t value_count, const mpz_t * values, mpz_t * shares);
-    int stop_share_immediates(const time_t timeout_sec = 5);
-
-    int share_immediate(const mpz_t * value, mpz_t * share, const time_t timeout_sec = 5);
-
-    int bit(mpz_t * share, const time_t timeout_sec = 5);
-    int inverse(mpz_t * share_value, mpz_t * share_inverse, const time_t timeout_sec = 5);
-
     friend void * spdz2_ext_processor_proc(void * arg);
-
-	static const int sm_op_code_open;
-	static const int sm_op_code_triple;
-	static const int sm_op_code_offline;
-	static const int sm_op_code_input;
-	static const int sm_op_code_verify;
-	static const int sm_op_code_input_asynch;
-	static const int sm_op_code_mult;
-	static const int sm_op_code_share_immediates;
-	static const int sm_op_code_share_immediate;
 };
