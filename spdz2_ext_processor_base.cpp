@@ -59,12 +59,8 @@ spdz2_ext_processor_base::spdz2_ext_processor_base()
 
 	mpz_init(m_input_synch_input);
 	mpz_init(m_bit_synch_value);
-	mpz_init(m_bit_synch_two);
 	mpz_init(m_inverse_synch_value);
 	mpz_init(m_inverse_synch_inverse);
-
-	gmp_randinit_default(m_random_state);
-	mpz_set_ui(m_bit_synch_two, 2);
 
 	openlog("spdz_ext_biu", LOG_NDELAY|LOG_PID, LOG_USER);
 	setlogmask(LOG_UPTO(LOG_DEBUG));
@@ -89,11 +85,8 @@ spdz2_ext_processor_base::~spdz2_ext_processor_base()
 
 	mpz_clear(m_input_synch_input);
 	mpz_clear(m_bit_synch_value);
-	mpz_clear(m_bit_synch_two);
 	mpz_clear(m_inverse_synch_value);
 	mpz_clear(m_inverse_synch_inverse);
-
-	gmp_randclear(m_random_state);
 
 	closelog();
 }
@@ -162,7 +155,7 @@ int spdz2_ext_processor_base::stop(const time_t timeout_sec)
 
 	delete_protocol();
 	clear_file_input();
-	syslog(LOG_NOTICE, "spdz2_ext_processor_base::stop: pid %d", m_party_id);
+	//syslog(LOG_NOTICE, "spdz2_ext_processor_base::stop: pid %d", m_party_id);
 	return 0;
 }
 
@@ -282,30 +275,22 @@ int spdz2_ext_processor_base::pop_task()
 void spdz2_ext_processor_base::load_file_input()
 {
 	char sz[128];
-	mpz_t v;
-	mpz_init(v);
 	snprintf(sz, 128, "party_%d_input.txt", m_party_id);
 	FILE * pf = fopen(sz, "r");
 	if(NULL != pf)
 	{
 		while(NULL != fgets(sz, 128, pf))
 		{
-			mpz_set_str(v, sz, 10);
-			m_file_input.push_back(v);
+			m_file_input.push_back(sz);
 		}
 		fclose(pf);
 	}
 	m_next_file_input = m_file_input.begin();
-	mpz_clear(v);
 }
 
 //***********************************************************************************************//
 void spdz2_ext_processor_base::clear_file_input()
 {
-	for(std::list<mpz_t>::iterator i = m_file_input.begin(); i != m_file_input.end(); i++)
-	{
-		mpz_clear(*i);
-	}
 	m_file_input.clear();
 }
 
@@ -314,7 +299,7 @@ int spdz2_ext_processor_base::get_input_from_file(mpz_t * value)
 {
 	if(m_file_input.empty()) return -1;
 	if(m_next_file_input == m_file_input.end()) m_next_file_input = m_file_input.begin();
-	mpz_set(*value, *(m_next_file_input++));
+	mpz_set_str(*value, (*(m_next_file_input++)).c_str(), 10);
 	return 0;
 }
 
@@ -486,7 +471,7 @@ int spdz2_ext_processor_base::bit(mpz_t * share, const time_t timeout_sec)
 {
 	m_bit_synch_success = false;
 
-	mpz_urandomm(m_bit_synch_value, m_random_state, m_bit_synch_two);
+	mpz_set_ui(m_bit_synch_value, rand()%2);
 	m_bit_synch_share = share;
 
 	if(0 != push_task(spdz2_ext_processor_base::sm_op_code_bit_synch))

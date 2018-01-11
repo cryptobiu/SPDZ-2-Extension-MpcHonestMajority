@@ -254,3 +254,8 @@ bool spdz2_ext_processor_gf2n::protocol_value_inverse(const mpz_t * value, mpz_t
 {
 	return false;
 }
+
+bool spdz2_ext_processor_gf2n::protocol_verify(int * error)
+{
+	*error = (the_party->verify())? 0: -1;
+}

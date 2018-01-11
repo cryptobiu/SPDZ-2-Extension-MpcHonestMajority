@@ -203,7 +203,7 @@ bool spdz2_ext_processor_mersenne61::protocol_share(const int pid, const size_t 
 		for(size_t i = 0; i < count; ++i)
 		{
 			mpz_set_ui(output[i], shares[i].elem);
-			syslog(LOG_DEBUG, "spdz2_ext_processor_mersenne61::protocol_share_immediates: share[%lu] = %lu", i, shares[i].elem);
+			syslog(LOG_DEBUG, "spdz2_ext_processor_mersenne61::protocol_share_immediates: value [%lu] share[%lu] = %lu", values[i].elem, i, shares[i].elem);
 		}
 	}
 	else
@@ -253,4 +253,9 @@ bool spdz2_ext_processor_mersenne61::protocol_value_inverse(const mpz_t * value,
     		mpz_get_str(szi, 10, *inverse));
 
 	return true;
+}
+
+bool spdz2_ext_processor_mersenne61::protocol_verify(int * error)
+{
+	*error = (the_party->verify())? 0: -1;
 }

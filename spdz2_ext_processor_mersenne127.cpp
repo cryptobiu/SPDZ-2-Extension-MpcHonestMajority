@@ -296,3 +296,8 @@ bool spdz2_ext_processor_mersenne127::protocol_value_inverse(const mpz_t * value
 
 	return true;
 }
+
+bool spdz2_ext_processor_mersenne127::protocol_verify(int * error)
+{
+	*error = (the_party->verify())? 0: -1;
+}

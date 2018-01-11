@@ -34,15 +34,13 @@ class spdz2_ext_processor_base
 	static const int sm_op_code_mult_asynch;
 	static const int sm_op_code_share_immediates_asynch;
 
-	std::list<mpz_t> m_file_input;
-	std::list<mpz_t>::iterator m_next_file_input;
+	std::list<std::string> m_file_input;
+	std::list<std::string>::iterator m_next_file_input;
 	void load_file_input();
 	void clear_file_input();
 	int get_input_from_file(mpz_t * value);
 	int get_input_from_user(mpz_t * value);
 	int get_input(mpz_t * value, bool from_user = false) { return (from_user)? get_input_from_user(value): get_input_from_file(value); }
-
-	gmp_randstate_t m_random_state;
 
 	/* Services Section */
 	/*
@@ -85,7 +83,7 @@ class spdz2_ext_processor_base
 	void exec_bit_synch();
 	bool m_bit_synch_success;
 	sem_t m_bit_synch_done;
-	mpz_t m_bit_synch_value, m_bit_synch_two, * m_bit_synch_share;
+	mpz_t m_bit_synch_value, * m_bit_synch_share;
 
 	void exec_inverse_synch();
 	bool m_inverse_synch_success;
