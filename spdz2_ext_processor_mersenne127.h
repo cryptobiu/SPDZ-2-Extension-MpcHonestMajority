@@ -14,17 +14,15 @@ class spdz2_ext_processor_mersenne127 : public spdz2_ext_processor_base
 protected:
 
 	virtual int init_protocol();
-	virtual void delete_protocol();
+	virtual int delete_protocol();
 	virtual bool protocol_offline();
-	virtual bool protocol_open();
-	virtual bool protocol_triple();
-	virtual bool protocol_input();
-	virtual bool protocol_input_asynch();
-	virtual bool protocol_mult();
-	virtual bool protocol_share_immediates();
-	virtual bool protocol_share_immediate();
-	virtual bool protocol_random_value(mpz_t * value) const;
-	virtual bool protocol_value_inverse(const mpz_t * value, mpz_t * inverse) const;
+	virtual bool protocol_share(const int pid, const size_t count, const mpz_t * input, mpz_t * output);
+	virtual bool protocol_triple(mpz_t * A, mpz_t * B, mpz_t * C);
+	virtual bool protocol_random_value(mpz_t * value);
+	virtual bool protocol_value_inverse(const mpz_t * value, mpz_t * inverse);
+	virtual bool protocol_open(const size_t value_count, const mpz_t * shares, mpz_t * opens, bool verify);
+	virtual bool protocol_verify(int * error);
+	virtual bool protocol_mult(const size_t count, const mpz_t * input, mpz_t * output, bool verify);
 
 public:
 	spdz2_ext_processor_mersenne127();

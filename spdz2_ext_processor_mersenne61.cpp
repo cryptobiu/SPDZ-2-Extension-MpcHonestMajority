@@ -79,12 +79,13 @@ int spdz2_ext_processor_mersenne61::init_protocol()
 	return 0;
 }
 
-void spdz2_ext_processor_mersenne61::delete_protocol()
+int spdz2_ext_processor_mersenne61::delete_protocol()
 {
 	delete the_party;
 	the_party = NULL;
 	delete the_field;
 	the_field = NULL;
+	return 0;
 }
 
 bool spdz2_ext_processor_mersenne61::protocol_offline()
@@ -92,25 +93,24 @@ bool spdz2_ext_processor_mersenne61::protocol_offline()
 	return the_party->offline();
 }
 
-bool spdz2_ext_processor_mersenne61::protocol_open()
+bool spdz2_ext_processor_mersenne61::protocol_open(const size_t value_count, const mpz_t * shares, mpz_t * opens, bool verify)
 {
-	bool op_open_success = false;
-	std::vector<ZpMersenneLongElement> ext_shares(open_share_value_count), ext_opens(open_share_value_count);
-	syslog(LOG_INFO, "spdz2_ext_processor_mersenne61::protocol_open: calling open for %u shares", (u_int32_t)open_share_value_count);
-	for(size_t i = 0; i < open_share_value_count; i++)
+	bool success = false;
+	std::vector<ZpMersenneLongElement> ext_shares(value_count), ext_opens(value_count);
+	syslog(LOG_INFO, "spdz2_ext_processor_mersenne61::protocol_open: calling open for %u shares", (u_int32_t)value_count);
+	for(size_t i = 0; i < value_count; i++)
 	{
-		ext_shares[i].elem = mpz_get_ui(to_open_share_values[i]);
+		ext_shares[i].elem = mpz_get_ui(shares[i]);
 		syslog(LOG_DEBUG, "spdz2_ext_processor_mersenne61::protocol_open() share value[%lu] = %lu", i, ext_shares[i].elem);
 	}
 
-	if(op_open_success = the_party->openShare((int)ext_shares.size(), ext_shares, ext_opens))
+	if(success = the_party->openShare((int)ext_shares.size(), ext_shares, ext_opens))
 	{
-		do_verify_open = false;
-		if(!do_verify_open || the_party->verify())
+		if(!verify || the_party->verify())
 		{
-			for(size_t i = 0; i < open_share_value_count; i++)
+			for(size_t i = 0; i < value_count; i++)
 			{
-				mpz_set_ui(opened_share_values[i], ext_opens[i].elem);
+				mpz_set_ui(opens[i], ext_opens[i].elem);
 				syslog(LOG_DEBUG, "spdz2_ext_processor_mersenne61::protocol_open() opened value[%lu] = %lu", i, ext_opens[i].elem);
 			}
 		}
@@ -123,18 +123,18 @@ bool spdz2_ext_processor_mersenne61::protocol_open()
 	{
 		syslog(LOG_ERR, "spdz2_ext_processor_mersenne61::protocol_open: openShare failure.");
 	}
-	return op_open_success;
+	return success;
 }
 
-bool spdz2_ext_processor_mersenne61::protocol_triple()
+bool spdz2_ext_processor_mersenne61::protocol_triple(mpz_t * A, mpz_t * B, mpz_t * C)
 {
 	bool op_triple_success = false;
 	std::vector<ZpMersenneLongElement> triple(3);
 	if(op_triple_success = the_party->triples(1, triple))
 	{
-		mpz_set_ui(*pa, triple[0].elem);
-		mpz_set_ui(*pb, triple[1].elem);
-		mpz_set_ui(*pc, triple[2].elem);
+		mpz_set_ui(*A, triple[0].elem);
+		mpz_set_ui(*B, triple[1].elem);
+		mpz_set_ui(*C, triple[2].elem);
 		syslog(LOG_DEBUG, "spdz2_ext_processor_mersenne61::protocol_triple: share a = %lu; share b = %lu; share c = %lu;",
 							triple[0].elem, triple[1].elem, triple[2].elem);
 	}
@@ -143,9 +143,9 @@ bool spdz2_ext_processor_mersenne61::protocol_triple()
 	{//test the triple with open
 		std::vector<ZpMersenneLongElement> ext_shares(3), ext_opens(3);
 
-		ext_shares[0].elem = mpz_get_ui(*pa);
-		ext_shares[1].elem = mpz_get_ui(*pb);
-		ext_shares[2].elem = mpz_get_ui(*pc);
+		ext_shares[0].elem = mpz_get_ui(*A);
+		ext_shares[1].elem = mpz_get_ui(*B);
+		ext_shares[2].elem = mpz_get_ui(*C);
 
 		if(the_party->openShare((int)ext_shares.size(), ext_shares, ext_opens))
 		{
@@ -160,74 +160,24 @@ bool spdz2_ext_processor_mersenne61::protocol_triple()
 	return op_triple_success;
 }
 
-bool spdz2_ext_processor_mersenne61::protocol_input()
+bool spdz2_ext_processor_mersenne61::protocol_mult(const size_t count, const mpz_t * input, mpz_t * output, bool verify)
 {
-	bool op_input_success = false;
-	std::vector<ZpMersenneLongElement> input_value(1);
-	if(op_input_success = the_party->input(input_party_id, input_value))
-	{
-		mpz_set_ui(*p_input_value, input_value[0].elem);
-		syslog(LOG_INFO, "spdz2_ext_processor_mersenne61::protocol_input: input value %lu", input_value[0].elem);
-
-		/**/
-		{//test the input with open
-			std::vector<ZpMersenneLongElement> ext_shares(1), ext_opens(1);
-			ext_shares[0].elem = mpz_get_ui(*p_input_value);
-
-			if(the_party->openShare((int)ext_shares.size(), ext_shares, ext_opens))
-			{
-				syslog(LOG_DEBUG, "spdz2_ext_processor_mersenne61::protocol_input: test open input = %lu", ext_opens[0].elem);
-			}
-			else
-			{
-				syslog(LOG_ERR, "spdz2_ext_processor_mersenne61::protocol_input: test open of input failure");
-			}
-		}
-	}
-	else
-	{
-		syslog(LOG_ERR, "spdz2_ext_processor_mersenne61::protocol_input: protocol input failure.");
-	}
-	return op_input_success;
-}
-
-bool spdz2_ext_processor_mersenne61::protocol_input_asynch()
-{
-	bool op_input_asynch_success = false;
-
-	std::vector<ZpMersenneLongElement> ext_inputs(intput_asynch_count);
-	if(op_input_asynch_success = the_party->input(intput_asynch_party_id, ext_inputs))
-	{
-		for(size_t i = 0; i < intput_asynch_count; ++i)
-		{
-			mpz_set_ui(intput_asynch_values[i], ext_inputs[i].elem);
-		}
-	}
-	else
-	{
-		syslog(LOG_ERR, "spdz2_ext_processor_mersenne61::protocol_input_asynch: protocol input failure.");
-	}
-	return op_input_asynch_success;
-}
-
-bool spdz2_ext_processor_mersenne61::protocol_mult()
-{
-	bool op_mult_success = false;
-	size_t xy_pair_count = mult_share_count/2;
+	bool success = false;
+	size_t xy_pair_count = count/2;
 	std::vector<ZpMersenneLongElement> x_shares(xy_pair_count), y_shares(xy_pair_count), xy_shares(xy_pair_count);
 
 	for(size_t i = 0; i < xy_pair_count; ++i)
 	{
-		x_shares[i].elem = mpz_get_ui(mult_shares[2*i]);
-		y_shares[i].elem = mpz_get_ui(mult_shares[2*i+1]);
+		x_shares[i].elem = mpz_get_ui(input[2*i]);
+		y_shares[i].elem = mpz_get_ui(input[2*i+1]);
 		syslog(LOG_DEBUG, "spdz2_ext_processor_mersenne61::protocol_mult: X-Y pair %lu: X=%lu Y=%lu", i, x_shares[i].elem, y_shares[i].elem);
 	}
 
-	if(op_mult_success = the_party->multShares(xy_pair_count, x_shares, y_shares, xy_shares))
+	if(success = the_party->multShares(xy_pair_count, x_shares, y_shares, xy_shares))
 	{
 		for(size_t i = 0; i < xy_pair_count; ++i)
 		{
-			mpz_set_ui(mult_products[i], xy_shares[i].elem);
+			mpz_set_ui(output[i], xy_shares[i].elem);
 			syslog(LOG_DEBUG, "spdz2_ext_processor_mersenne61::protocol_mult: X-Y product %lu: X*Y=%lu", i, xy_shares[i].elem);
 		}
 	}
@@ -235,21 +185,24 @@ bool spdz2_ext_processor_mersenne61::protocol_mult()
 	{
 		syslog(LOG_ERR, "spdz2_ext_processor_mersenne61::protocol_mult: protocol mult failure.");
 	}
-	return op_mult_success;
+	return success;
 }
 
-bool spdz2_ext_processor_mersenne61::protocol_share_immediates()
+bool spdz2_ext_processor_mersenne61::protocol_share(const int pid, const size_t count, const mpz_t * input, mpz_t * output)
 {
-	bool op_share_immediates_success = false;
-	std::vector<ZpMersenneLongElement> shares(immediates_count);
-	vector<std::string> str_immediates_values;
-	load_share_immediates_strings(str_immediates_values);
+	bool success = false;
+	std::vector<ZpMersenneLongElement> shares(count), values(count);
 
-	if(op_share_immediates_success = the_party->load_share_immediates(0, shares, str_immediates_values))
+	for(size_t i = 0; i < count; ++i)
 	{
-		for(size_t i = 0; i < immediates_count; ++i)
+		values[i].elem = mpz_get_ui(input[i]);
+	}
+
+	if(success = the_party->makeShare(pid, values, shares))
+	{
+		for(size_t i = 0; i < count; ++i)
 		{
-			mpz_set_ui(immediates_shares[i], shares[i].elem);
+			mpz_set_ui(output[i], shares[i].elem);
 			syslog(LOG_DEBUG, "spdz2_ext_processor_mersenne61::protocol_share_immediates: share[%lu] = %lu", i, shares[i].elem);
 		}
 	}
@@ -257,45 +210,10 @@ bool spdz2_ext_processor_mersenne61::protocol_share_immediates()
 	{
 		syslog(LOG_ERR, "spdz2_ext_processor_mersenne61::protocol_share_immediates: protocol share_immediates failure.");
 	}
-	return op_share_immediates_success;
+	return success;
 }
 
-bool spdz2_ext_processor_mersenne61::protocol_share_immediate()
-{
-	bool op_share_immediate_success = false;
-	char sz[128];
-	std::vector<ZpMersenneLongElement> shares(1);
-	vector<std::string> str_immediates_value(1);
-	str_immediates_value[0] = mpz_get_str(sz, 10, *m_immediate_value);
-
-	if(op_share_immediate_success = the_party->load_share_immediates(0, shares, str_immediates_value))
-	{
-		mpz_set_ui(*m_immediate_share, shares[0].elem);
-		syslog(LOG_INFO, "spdz2_ext_processor_mersenne61::protocol_share_immediate: share value %lu", shares[0].elem);
-
-		/**/
-		{//test the input with open
-			std::vector<ZpMersenneLongElement> ext_shares(1), ext_opens(1);
-			ext_shares[0].elem = mpz_get_ui(*m_immediate_share);
-
-			if(the_party->openShare((int)ext_shares.size(), ext_shares, ext_opens))
-			{
-				syslog(LOG_DEBUG, "spdz2_ext_processor_mersenne61::protocol_share_immediate: test open share_immediate = %lu", ext_opens[0].elem);
-			}
-			else
-			{
-				syslog(LOG_ERR, "spdz2_ext_processor_mersenne61::protocol_share_immediate: test open of share_immediate failure");
-			}
-		}
-	}
-	else
-	{
-		syslog(LOG_ERR, "spdz2_ext_processor_mersenne61::protocol_share_immediate: protocol load_share_immediates failure.");
-	}
-	return op_share_immediate_success;
-}
-
-bool spdz2_ext_processor_mersenne61::protocol_random_value(mpz_t * value) const
+bool spdz2_ext_processor_mersenne61::protocol_random_value(mpz_t * value)
 {
 	mpz_t max_num;
 	mpz_init(max_num);
@@ -311,7 +229,7 @@ bool spdz2_ext_processor_mersenne61::protocol_random_value(mpz_t * value) const
 	return true;
 }
 
-bool spdz2_ext_processor_mersenne61::protocol_value_inverse(const mpz_t * value, mpz_t * inverse) const
+bool spdz2_ext_processor_mersenne61::protocol_value_inverse(const mpz_t * value, mpz_t * inverse)
 {
 	mpz_t gcd, x, y, P;
 

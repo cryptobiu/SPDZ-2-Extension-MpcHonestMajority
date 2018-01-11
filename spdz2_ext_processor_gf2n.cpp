@@ -96,12 +96,13 @@ int spdz2_ext_processor_gf2n::init_protocol()
 	return 0;
 }
 
-void spdz2_ext_processor_gf2n::delete_protocol()
+int spdz2_ext_processor_gf2n::delete_protocol()
 {
 	delete the_party;
 	the_party = NULL;
 	delete the_field;
 	the_field = NULL;
+	return 0;
 }
 
 bool spdz2_ext_processor_gf2n::protocol_offline()
@@ -109,28 +110,27 @@ bool spdz2_ext_processor_gf2n::protocol_offline()
 	return the_party->offline();
 }
 
-bool spdz2_ext_processor_gf2n::protocol_open()
+bool spdz2_ext_processor_gf2n::protocol_open(const size_t value_count, const mpz_t * shares, mpz_t * opens, bool verify)
 {
-	bool op_open_success = false;
+	bool success = false;
 	char sz[128];
-	std::vector<GF2E> ext_shares(open_share_value_count), ext_opens(open_share_value_count);
-	syslog(LOG_INFO, "spdz2_ext_processor_gf2n::protocol_open: calling open for %lu shares", open_share_value_count);
-	for(size_t i = 0; i < open_share_value_count; ++i)
+	std::vector<GF2E> ext_shares(value_count), ext_opens(value_count);
+	syslog(LOG_INFO, "spdz2_ext_processor_gf2n::protocol_open: calling open for %lu shares", value_count);
+	for(size_t i = 0; i < value_count; ++i)
 	{
-		mpz2gf2e(to_open_share_values + i, ext_shares[i]);
-		syslog(LOG_DEBUG, "spdz2_ext_processor_gf2n::protocol_open() share value[%lu] = %s", i, mpz_get_str(sz, 10, to_open_share_values[i]));
+		mpz2gf2e(shares + i, ext_shares[i]);
+		syslog(LOG_DEBUG, "spdz2_ext_processor_gf2n::protocol_open() share value[%lu] = %s", i, mpz_get_str(sz, 10, shares[i]));
 	}
 
-	if(op_open_success = the_party->openShare((int)ext_shares.size(), ext_shares, ext_opens))
+	if(success = the_party->openShare((int)ext_shares.size(), ext_shares, ext_opens))
 	{
-		do_verify_open = false;
-		if(!do_verify_open || the_party->verify())
+		if(!verify || the_party->verify())
 		{
 			syslog(LOG_INFO, "spdz2_ext_processor_gf2n::protocol_open: verify open for %u opens", (u_int32_t)ext_opens.size());
-			for(size_t i = 0; i < open_share_value_count; ++i)
+			for(size_t i = 0; i < value_count; ++i)
 			{
-				gf2e2mpz(ext_opens[i], opened_share_values + i);
-				syslog(LOG_DEBUG, "spdz2_ext_processor_gf2n::protocol_open() open value[%lu] = %s", i, mpz_get_str(sz, 10, opened_share_values[i]));
+				gf2e2mpz(ext_opens[i], opens + i);
+				syslog(LOG_DEBUG, "spdz2_ext_processor_gf2n::protocol_open() open value[%lu] = %s", i, mpz_get_str(sz, 10, opens[i]));
 			}
 		}
 		else
@@ -142,30 +142,30 @@ bool spdz2_ext_processor_gf2n::protocol_open()
 	{
 		syslog(LOG_ERR, "spdz2_ext_processor_gf2n::protocol_open: openShare failure.");
 	}
-	return op_open_success;
+	return success;
 }
 
-bool spdz2_ext_processor_gf2n::protocol_triple()
+bool spdz2_ext_processor_gf2n::protocol_triple(mpz_t * A, mpz_t * B, mpz_t * C)
 {
-	bool op_triple_success = false;
+	bool success = false;
 	char sza[128], szb[128], szc[128];
 	std::vector<GF2E> triple(3);
-	if(op_triple_success = the_party->triples(1, triple))
+	if(success = the_party->triples(1, triple))
 	{
-		gf2e2mpz(triple[0], pa);
-		gf2e2mpz(triple[1], pb);
-		gf2e2mpz(triple[2], pc);
+		gf2e2mpz(triple[0], A);
+		gf2e2mpz(triple[1], B);
+		gf2e2mpz(triple[2], C);
 
 		syslog(LOG_DEBUG, "spdz2_ext_processor_gf2n::protocol_triple: share a = %s; share b = %s; share c = %s;",
-				mpz_get_str(sza, 10, *pa), mpz_get_str(szb, 10, *pb), mpz_get_str(szc, 10, *pc));
+				mpz_get_str(sza, 10, *A), mpz_get_str(szb, 10, *B), mpz_get_str(szc, 10, *C));
 	}
 
 	/**/
 	{//test the triple with open
 		std::vector<GF2E> ext_shares(3), ext_opens(3);
-		mpz2gf2e(pa, ext_shares[0]);
-		mpz2gf2e(pb, ext_shares[1]);
-		mpz2gf2e(pc, ext_shares[2]);
+		mpz2gf2e(A, ext_shares[0]);
+		mpz2gf2e(B, ext_shares[1]);
+		mpz2gf2e(C, ext_shares[2]);
 
 		if(the_party->openShare((int)ext_shares.size(), ext_shares, ext_opens))
 		{
@@ -186,84 +186,30 @@ bool spdz2_ext_processor_gf2n::protocol_triple()
 		}
 	}
 
-	return op_triple_success;
+	return success;
 }
 
-bool spdz2_ext_processor_gf2n::protocol_input()
-{
-	bool op_input_success = false;
-	char sz[128];
-	std::vector<GF2E> input_value(1);
-	if(op_input_success = the_party->input(input_party_id, input_value))
-	{
-		gf2e2mpz(input_value[0], p_input_value);
-		syslog(LOG_INFO, "spdz2_ext_processor_gf2n::protocol_input: input value %s", mpz_get_str(sz, 10, *p_input_value));
-
-		/**/
-		{//test the input with open
-			std::vector<GF2E> ext_shares(1), ext_opens(1);
-			mpz2gf2e(p_input_value, ext_shares[0]);
-
-			if(the_party->openShare((int)ext_shares.size(), ext_shares, ext_opens))
-			{
-				mpz_t opv;
-				mpz_init(opv);
-				gf2e2mpz(ext_opens[0], &opv);
-				syslog(LOG_INFO, "spdz2_ext_processor_gf2n::protocol_input: test open input = %s", mpz_get_str(sz, 10, opv));
-			}
-			else
-			{
-				syslog(LOG_ERR, "spdz2_ext_processor_gf2n::protocol_input: test open of input failure");
-			}
-		}
-	}
-	else
-	{
-		syslog(LOG_ERR, "spdz2_ext_processor_gf2n::protocol_input: protocol input failure.");
-	}
-	return op_input_success;
-}
-
-bool spdz2_ext_processor_gf2n::protocol_input_asynch()
-{
-	bool op_input_asynch_success = false;
-
-	std::vector<GF2E> ext_inputs(intput_asynch_count);
-	if(op_input_asynch_success = the_party->input(intput_asynch_party_id, ext_inputs))
-	{
-		for(size_t i = 0; i < intput_asynch_count; ++i)
-		{
-			gf2e2mpz(ext_inputs[i], intput_asynch_values + i);
-		}
-	}
-	else
-	{
-		syslog(LOG_ERR, "spdz2_ext_processor_gf2n::protocol_input_asynch: protocol input failure.");
-	}
-	return op_input_asynch_success;
-}
-
-bool spdz2_ext_processor_gf2n::protocol_mult()
+bool spdz2_ext_processor_gf2n::protocol_mult(const size_t count, const mpz_t * input, mpz_t * output, bool verify)
 {
 	bool op_mult_success = false;
 	char szx[128], szy[128];
-	size_t xy_pair_count = mult_share_count/2;
+	size_t xy_pair_count = count/2;
 	std::vector<GF2E> x_shares(xy_pair_count), y_shares(xy_pair_count), xy_shares(xy_pair_count);
 
 	for(size_t i = 0; i < xy_pair_count; ++i)
 	{
-		mpz2gf2e(mult_shares + (2*i), x_shares[i]);
-		mpz2gf2e(mult_shares + (2*i+1), y_shares[i]);
+		mpz2gf2e(input + (2*i), x_shares[i]);
+		mpz2gf2e(input + (2*i+1), y_shares[i]);
 		syslog(LOG_DEBUG, "spdz2_ext_processor_gf2n::protocol_mult: X-Y pair %lu: X=%s Y=%s",
-				i, mpz_get_str(szx, 10, mult_shares[2*i]), mpz_get_str(szy, 10, mult_shares[2*i+1]));
+				i, mpz_get_str(szx, 10, input[2*i]), mpz_get_str(szy, 10, input[2*i+1]));
 	}
 
 	if(op_mult_success = the_party->multShares(xy_pair_count, x_shares, y_shares, xy_shares))
 	{
 		for(size_t i = 0; i < xy_pair_count; ++i)
 		{
-			gf2e2mpz(xy_shares[i], mult_products + i);
-			syslog(LOG_DEBUG, "spdz2_ext_processor_gf2n::protocol_mult: X-Y product %lu: X*Y=%s", i, mpz_get_str(szx, 10, mult_products[i]));
+			gf2e2mpz(xy_shares[i], output + i);
+			syslog(LOG_DEBUG, "spdz2_ext_processor_gf2n::protocol_mult: X-Y product %lu: X*Y=%s", i, mpz_get_str(szx, 10, output[i]));
 		}
 	}
 	else
@@ -273,74 +219,38 @@ bool spdz2_ext_processor_gf2n::protocol_mult()
 	return op_mult_success;
 }
 
-bool spdz2_ext_processor_gf2n::protocol_share_immediates()
+bool spdz2_ext_processor_gf2n::protocol_share(const int pid, const size_t count, const mpz_t * input, mpz_t * output)
 {
-	bool op_share_immediates_success = false;
-	std::vector<GF2E> shares(immediates_count);
-	vector<std::string> str_immediates_values;
-	load_share_immediates_strings(str_immediates_values);
+	bool success = false;
+	std::vector<GF2E> values(count), shares(count);
 
-	if(op_share_immediates_success = the_party->load_share_immediates(0, shares, str_immediates_values))
+	for(size_t i = 0; i < count; ++i)
 	{
-		for(size_t i = 0; i < immediates_count; ++i)
+		mpz2gf2e(input + i, values[i]);
+	}
+
+	if(success = the_party->makeShare(pid, values, shares))
+	{
+		for(size_t i = 0; i < count; ++i)
 		{
-			gf2e2mpz(shares[i], immediates_shares + i);
+			gf2e2mpz(shares[i], output + i);
 			char sz[128];
-			syslog(LOG_DEBUG, "spdz2_ext_processor_gf2n::protocol_share_immediates: share[%lu] = %s", i, mpz_get_str(sz, 10, immediates_shares[i]));
+			syslog(LOG_DEBUG, "spdz2_ext_processor_gf2n::protocol_share_immediates: share[%lu] = %s", i, mpz_get_str(sz, 10, output[i]));
 		}
 	}
 	else
 	{
 		syslog(LOG_ERR, "spdz2_ext_processor_gf2n::protocol_share_immediates: protocol share_immediates failure.");
 	}
-	return op_share_immediates_success;
+	return success;
 }
 
-bool spdz2_ext_processor_gf2n::protocol_share_immediate()
-{
-	bool op_share_immediate_success = false;
-	char sz[128];
-	std::vector<GF2E> shares(1);
-	vector<std::string> str_immediates_value(1);
-	str_immediates_value[0] = mpz_get_str(sz, 10, *m_immediate_value);
-
-	if(op_share_immediate_success = the_party->load_share_immediates(0, shares, str_immediates_value))
-	{
-		gf2e2mpz(shares[0], m_immediate_share);
-		syslog(LOG_INFO, "spdz2_ext_processor_gf2n::protocol_share_immediate: immediate %s / share value %s",
-				str_immediates_value[0].c_str(), mpz_get_str(sz, 10, *m_immediate_share));
-
-		/**/
-		{//test the input with open
-			std::vector<GF2E> ext_shares(1), ext_opens(1);
-			mpz2gf2e(m_immediate_share, ext_shares[0]);
-
-			if(the_party->openShare((int)ext_shares.size(), ext_shares, ext_opens))
-			{
-				u_int64_t value = 0;
-				the_field->elementToBytes((u_int8_t*)&value, ext_opens[0]);
-				syslog(LOG_INFO, "spdz2_ext_processor_gf2n::protocol_share_immediate: test open share_immediate = %lu", value);
-			}
-			else
-			{
-				syslog(LOG_ERR, "spdz2_ext_processor_gf2n::protocol_share_immediate: test open of share_immediate failure");
-			}
-		}
-	}
-	else
-	{
-		syslog(LOG_ERR, "spdz2_ext_processor_gf2n::protocol_share_immediate: protocol load_share_immediates failure.");
-	}
-	return op_share_immediate_success;
-}
-
-
-bool spdz2_ext_processor_gf2n::protocol_random_value(mpz_t * value) const
+bool spdz2_ext_processor_gf2n::protocol_random_value(mpz_t * value)
 {
 	return false;
 }
 
-bool spdz2_ext_processor_gf2n::protocol_value_inverse(const mpz_t * value, mpz_t * inverse) const
+bool spdz2_ext_processor_gf2n::protocol_value_inverse(const mpz_t * value, mpz_t * inverse)
 {
 	return false;
 }
