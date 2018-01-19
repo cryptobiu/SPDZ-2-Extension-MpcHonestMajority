@@ -62,8 +62,11 @@ spdz2_ext_processor_base::spdz2_ext_processor_base()
 	mpz_init(m_inverse_synch_value);
 	mpz_init(m_inverse_synch_inverse);
 
+	gmp_randinit_mt (m_bit_synch_rand_state);
+	gmp_randseed_ui (m_bit_synch_rand_state, 25);
+
 	openlog("spdz_ext_biu", LOG_NDELAY|LOG_PID, LOG_USER);
-	setlogmask(LOG_UPTO(LOG_DEBUG));
+	setlogmask(LOG_UPTO(LOG_WARNING));
 }
 
 //***********************************************************************************************//
@@ -87,6 +90,8 @@ spdz2_ext_processor_base::~spdz2_ext_processor_base()
 	mpz_clear(m_bit_synch_value);
 	mpz_clear(m_inverse_synch_value);
 	mpz_clear(m_inverse_synch_inverse);
+
+	gmp_randclear (m_bit_synch_rand_state);
 
 	closelog();
 }
@@ -153,9 +158,9 @@ int spdz2_ext_processor_base::stop(const time_t timeout_sec)
 		return -1;
 	}
 
+	syslog(LOG_NOTICE, "spdz2_ext_processor_base::stop: pid %d", m_party_id);
 	delete_protocol();
 	clear_file_input();
-	//syslog(LOG_NOTICE, "spdz2_ext_processor_base::stop: pid %d", m_party_id);
 	return 0;
 }
 
@@ -469,9 +474,33 @@ void spdz2_ext_processor_base::exec_share_immediate_synch()
 //***********************************************************************************************//
 int spdz2_ext_processor_base::bit(mpz_t * share, const time_t timeout_sec)
 {
+	/*
+party [0] value [1] share[0] = 1229106570198852139
+party [1] value [1] share[0] = 152370131184010326
+party [2] value [1] share[0] = 1381476701382862464
+
+party [0] value [0] share[0] = 284139962301200075
+party [1] value [0] share[0] = 568279924602400150
+party [2] value [0] share[0] = 852419886903600225
+	 */
+
+	static const u_int64_t _0_shares[3] = { 284139962301200075, 568279924602400150, 852419886903600225 };
+	static const u_int64_t _1_shares[3] = { 1229106570198852139, 152370131184010326, 1381476701382862464 };
+
+	if(1 == gmp_urandomb_ui (m_bit_synch_rand_state, 1))
+	{
+		mpz_set_ui(*share, _1_shares[m_party_id%3]);
+	}
+	else
+	{
+		mpz_set_ui(*share, _0_shares[m_party_id%3]);
+	}
+	return 0;
+
+	/*
 	m_bit_synch_success = false;
 
-	mpz_set_ui(m_bit_synch_value, rand()%2);
+	mpz_set_ui(m_bit_synch_value, 0);//rand()%2);
 	m_bit_synch_share = share;
 
 	if(0 != push_task(spdz2_ext_processor_base::sm_op_code_bit_synch))
@@ -494,6 +523,7 @@ int spdz2_ext_processor_base::bit(mpz_t * share, const time_t timeout_sec)
 	}
 
 	return (m_bit_synch_success)? 0: -1;
+	*/
 }
 
 //***********************************************************************************************//

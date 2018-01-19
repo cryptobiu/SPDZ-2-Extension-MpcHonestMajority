@@ -84,6 +84,7 @@ class spdz2_ext_processor_base
 	bool m_bit_synch_success;
 	sem_t m_bit_synch_done;
 	mpz_t m_bit_synch_value, * m_bit_synch_share;
+	gmp_randstate_t m_bit_synch_rand_state;
 
 	void exec_inverse_synch();
 	bool m_inverse_synch_success;

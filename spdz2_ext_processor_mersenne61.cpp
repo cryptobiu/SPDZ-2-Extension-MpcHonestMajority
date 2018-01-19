@@ -135,11 +135,10 @@ bool spdz2_ext_processor_mersenne61::protocol_triple(mpz_t * A, mpz_t * B, mpz_t
 		mpz_set_ui(*A, triple[0].elem);
 		mpz_set_ui(*B, triple[1].elem);
 		mpz_set_ui(*C, triple[2].elem);
-		syslog(LOG_DEBUG, "spdz2_ext_processor_mersenne61::protocol_triple: share a = %lu; share b = %lu; share c = %lu;",
-							triple[0].elem, triple[1].elem, triple[2].elem);
+		syslog(LOG_DEBUG, "spdz2_ext_processor_mersenne61::protocol_triple: share a = %lu; share b = %lu; share c = %lu;", triple[0].elem, triple[1].elem, triple[2].elem);
 	}
 
-	/**/
+	/*
 	{//test the triple with open
 		std::vector<ZpMersenneLongElement> ext_shares(3), ext_opens(3);
 
@@ -155,7 +154,7 @@ bool spdz2_ext_processor_mersenne61::protocol_triple(mpz_t * A, mpz_t * B, mpz_t
 		{
 			syslog(LOG_ERR, "spdz2_ext_processor_mersenne61::protocol_triple: test open of triple failure");
 		}
-	}
+	}*/
 
 	return op_triple_success;
 }
@@ -249,8 +248,7 @@ bool spdz2_ext_processor_mersenne61::protocol_value_inverse(const mpz_t * value,
     mpz_clear(P);
 
     char szv[128], szi[128];
-    syslog(LOG_DEBUG, "spdz2_ext_processor_mersenne61::protocol_value_inverse: value = %s; inverse = %s;", mpz_get_str(szv, 10, *value),
-    		mpz_get_str(szi, 10, *inverse));
+    syslog(LOG_DEBUG, "spdz2_ext_processor_mersenne61::protocol_value_inverse: value = %s; inverse = %s;", mpz_get_str(szv, 10, *value), mpz_get_str(szi, 10, *inverse));
 
 	return true;
 }
