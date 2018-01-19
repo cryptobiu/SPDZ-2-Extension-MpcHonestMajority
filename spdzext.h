@@ -16,7 +16,8 @@ extern "C"
 	 * @param[in] offline_size The number of offline elements to create
 	 * @return 0 on success, -1 otherwise
 	 */
-	int init(void ** handle, const int pid, const int num_of_parties, const char * field, const int offline_size = 0);
+	int init(void ** handle, const int pid, const int num_of_parties, const char * field,
+			 const int open_count, const int mult_count, const int bits_count);
 
 	/**
 	 * Terminates an initialized session with the extension library and frees all resources

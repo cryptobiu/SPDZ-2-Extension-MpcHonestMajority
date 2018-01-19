@@ -13,7 +13,7 @@ class spdz2_ext_processor_mersenne61 : public spdz2_ext_processor_base
 	mutable gmp_randstate_t the_gmp_rstate;
 protected:
 
-	virtual int init_protocol();
+	virtual int init_protocol(const int open_count, const int mult_count, const int bits_count);
 	virtual int delete_protocol();
 	virtual bool protocol_offline();
 	virtual bool protocol_share(const int pid, const size_t count, const mpz_t * input, mpz_t * output);
@@ -23,6 +23,7 @@ protected:
 	virtual bool protocol_open(const size_t value_count, const mpz_t * shares, mpz_t * opens, bool verify);
 	virtual bool protocol_verify(int * error);
 	virtual bool protocol_mult(const size_t count, const mpz_t * input, mpz_t * output, bool verify);
+	virtual bool protocol_bits(const size_t count, mpz_t * bit_shares);
 
 public:
 	spdz2_ext_processor_mersenne61();

@@ -30,7 +30,7 @@ const int spdz2_ext_processor_base::sm_op_code_share_immediates_asynch = 204;
 
 //***********************************************************************************************//
 spdz2_ext_processor_base::spdz2_ext_processor_base()
-/*ops*/		: m_runner(0), m_run_flag(false), m_party_id(-1), m_offline_size(-1), m_num_of_parties(0)
+/*ops*/		: m_runner(0), m_run_flag(false), m_party_id(-1), m_num_of_parties(0)
 /*offline*/	, m_offline_synch_success(false)
 /*input_s*/	, m_input_synch_success(false), m_input_synch_output(NULL), m_input_synch_pid(-1)
 /*triple*/	, m_triple_synch_success(false), m_A(NULL), m_B(NULL), m_C(NULL)
@@ -58,12 +58,8 @@ spdz2_ext_processor_base::spdz2_ext_processor_base()
 	sem_init(&m_share_immediates_asynch_done, 0, 0);
 
 	mpz_init(m_input_synch_input);
-	mpz_init(m_bit_synch_value);
 	mpz_init(m_inverse_synch_value);
 	mpz_init(m_inverse_synch_inverse);
-
-	gmp_randinit_mt (m_bit_synch_rand_state);
-	gmp_randseed_ui (m_bit_synch_rand_state, 25);
 
 	openlog("spdz_ext_biu", LOG_NDELAY|LOG_PID, LOG_USER);
 	setlogmask(LOG_UPTO(LOG_WARNING));
@@ -87,17 +83,15 @@ spdz2_ext_processor_base::~spdz2_ext_processor_base()
 	sem_destroy(&m_share_immediates_asynch_done);
 
 	mpz_clear(m_input_synch_input);
-	mpz_clear(m_bit_synch_value);
 	mpz_clear(m_inverse_synch_value);
 	mpz_clear(m_inverse_synch_inverse);
-
-	gmp_randclear (m_bit_synch_rand_state);
 
 	closelog();
 }
 
 //***********************************************************************************************//
-int spdz2_ext_processor_base::start(const int pid, const int num_of_parties, const char * field, const int offline_size)
+int spdz2_ext_processor_base::start(const int pid, const int num_of_parties, const char * field,
+									const int open_count, const int mult_count, const int bits_count)
 {
 	if(m_run_flag)
 	{
@@ -106,7 +100,6 @@ int spdz2_ext_processor_base::start(const int pid, const int num_of_parties, con
 	}
 
 	m_party_id = pid;
-	m_offline_size = offline_size;
 	m_num_of_parties = num_of_parties;
 
 	char sz[64];
@@ -114,7 +107,7 @@ int spdz2_ext_processor_base::start(const int pid, const int num_of_parties, con
 	input_file = sz;
 	load_file_input();
 
-	if(0 != init_protocol())
+	if(0 != init_protocol(open_count, mult_count, bits_count))
 	{
 		syslog(LOG_ERR, "spdz2_ext_processor_base::start: protocol initialization failure.");
 		return -1;
@@ -474,33 +467,7 @@ void spdz2_ext_processor_base::exec_share_immediate_synch()
 //***********************************************************************************************//
 int spdz2_ext_processor_base::bit(mpz_t * share, const time_t timeout_sec)
 {
-	/*
-party [0] value [1] share[0] = 1229106570198852139
-party [1] value [1] share[0] = 152370131184010326
-party [2] value [1] share[0] = 1381476701382862464
-
-party [0] value [0] share[0] = 284139962301200075
-party [1] value [0] share[0] = 568279924602400150
-party [2] value [0] share[0] = 852419886903600225
-	 */
-
-	static const u_int64_t _0_shares[3] = { 284139962301200075, 568279924602400150, 852419886903600225 };
-	static const u_int64_t _1_shares[3] = { 1229106570198852139, 152370131184010326, 1381476701382862464 };
-
-	if(1 == gmp_urandomb_ui (m_bit_synch_rand_state, 1))
-	{
-		mpz_set_ui(*share, _1_shares[m_party_id%3]);
-	}
-	else
-	{
-		mpz_set_ui(*share, _0_shares[m_party_id%3]);
-	}
-	return 0;
-
-	/*
 	m_bit_synch_success = false;
-
-	mpz_set_ui(m_bit_synch_value, 0);//rand()%2);
 	m_bit_synch_share = share;
 
 	if(0 != push_task(spdz2_ext_processor_base::sm_op_code_bit_synch))
@@ -523,13 +490,12 @@ party [2] value [0] share[0] = 852419886903600225
 	}
 
 	return (m_bit_synch_success)? 0: -1;
-	*/
 }
 
 //***********************************************************************************************//
 void spdz2_ext_processor_base::exec_bit_synch()
 {
-	m_bit_synch_success = protocol_share(0, 1, &m_bit_synch_value, m_bit_synch_share);
+	m_bit_synch_success = protocol_bits(1, m_bit_synch_share);
 	sem_post(&m_bit_synch_done);
 }
 

@@ -67,10 +67,10 @@ int spdz2_ext_processor_mersenne61::mix_sub_share(const mpz_t * scalar, mpz_t * 
 	return -1;
 }
 
-int spdz2_ext_processor_mersenne61::init_protocol()
+int spdz2_ext_processor_mersenne61::init_protocol(const int open_count, const int mult_count, const int bits_count)
 {
 	the_field = new TemplateField<ZpMersenneLongElement>(0);
-	the_party = new Protocol<ZpMersenneLongElement>(m_num_of_parties, m_party_id, m_offline_size, m_offline_size, the_field, input_file, "Parties_gfp.txt");
+	the_party = new Protocol<ZpMersenneLongElement>(m_num_of_parties, m_party_id, open_count, mult_count, bits_count, the_field, input_file, "Parties_gfp.txt");
 	if(!the_party->offline())
 	{
 		syslog(LOG_ERR, "spdz2_ext_processor_mersenne61::init_protocol: protocol offline() failure.");
@@ -256,4 +256,23 @@ bool spdz2_ext_processor_mersenne61::protocol_value_inverse(const mpz_t * value,
 bool spdz2_ext_processor_mersenne61::protocol_verify(int * error)
 {
 	*error = (the_party->verify())? 0: -1;
+}
+
+bool spdz2_ext_processor_mersenne61::protocol_bits(const size_t count, mpz_t * bit_shares)
+{
+	bool success = false;
+	std::vector<ZpMersenneLongElement> zbit_shares(count);
+
+	if(success = the_party->bits(count, zbit_shares))
+	{
+		for(size_t i = 0; i < count; ++i)
+		{
+			mpz_set_ui(bit_shares[i], zbit_shares[i].elem);
+		}
+	}
+	else
+	{
+		syslog(LOG_ERR, "spdz2_ext_processor_mersenne61::protocol_bits: protocol bits failure.");
+	}
+	return success;
 }
