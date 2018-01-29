@@ -62,7 +62,7 @@ spdz2_ext_processor_base::spdz2_ext_processor_base()
 	mpz_init(m_inverse_synch_inverse);
 
 	openlog("spdz_ext_biu", LOG_NDELAY|LOG_PID, LOG_USER);
-	setlogmask(LOG_UPTO(LOG_WARNING));
+	setlogmask(LOG_UPTO(LOG_NOTICE));
 }
 
 //***********************************************************************************************//
@@ -173,7 +173,7 @@ void spdz2_ext_processor_base::run()
 		if(0 == result)
 		{
 			int op_code = pop_task();
-			syslog(LOG_NOTICE, "spdz2_ext_processor_base::run: op_code %d", op_code);
+			syslog(LOG_DEBUG, "spdz2_ext_processor_base::run: op_code %d", op_code);
 			switch(op_code)
 			{
 			case sm_op_code_offline_synch:
@@ -235,7 +235,7 @@ int spdz2_ext_processor_base::push_task(const int op_code)
 		char errmsg[512];
 		syslog(LOG_ERR, "spdz2_ext_processor_base::push_task: pthread_mutex_unlock() failed with error %d : %s", result, strerror_r(result, errmsg, 512));
 	}
-	syslog(LOG_NOTICE, "spdz2_ext_processor_base::push_task: op_code %d", op_code);
+	syslog(LOG_DEBUG, "spdz2_ext_processor_base::push_task: op_code %d", op_code);
 	return 0;
 }
 
@@ -265,7 +265,7 @@ int spdz2_ext_processor_base::pop_task()
 		syslog(LOG_ERR, "spdz2_ext_processor_base::pop_task: pthread_mutex_lock() failed with error %d : %s", result, strerror_r(result, errmsg, 512));
 	}
 
-	syslog(LOG_NOTICE, "spdz2_ext_processor_base::pop_task: op_code %d", op_code);
+	syslog(LOG_DEBUG, "spdz2_ext_processor_base::pop_task: op_code %d", op_code);
 	return op_code;
 }
 
