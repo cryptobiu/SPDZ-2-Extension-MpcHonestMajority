@@ -147,6 +147,8 @@ protected:
 	virtual bool protocol_mult(const size_t count, const mpz_t * input, mpz_t * output, bool verify) = 0;
 	virtual bool protocol_bits(const size_t count, mpz_t * bit_shares) = 0;
 
+	static std::string get_time_stamp();
+
 public:
 	spdz2_ext_processor_base();
 	virtual ~spdz2_ext_processor_base();

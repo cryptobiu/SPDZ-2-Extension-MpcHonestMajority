@@ -832,3 +832,13 @@ void spdz2_ext_processor_base::exec_share_immediates_asynch()
 }
 
 //***********************************************************************************************//
+std::string spdz2_ext_processor_base::get_time_stamp()
+{
+	struct timespec timestamp;
+	char timestamp_buffer[256];
+	clock_gettime(CLOCK_REALTIME, &timestamp);
+	snprintf(timestamp_buffer, 256, "%lu.%03lu", (u_int64_t)timestamp.tv_sec, (u_int64_t)((timestamp.tv_nsec/1000000)%1000));
+	return timestamp_buffer;
+}
+
+//***********************************************************************************************//
