@@ -13,6 +13,7 @@ class spdz2_ext_processor_base
 	/* Operational Section */
 	pthread_t m_runner;
 	bool m_run_flag;
+	std::string m_syslog_name;
 
 	sem_t m_task;
 	std::deque<int> m_task_q;

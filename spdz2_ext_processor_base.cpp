@@ -60,9 +60,6 @@ spdz2_ext_processor_base::spdz2_ext_processor_base()
 	mpz_init(m_input_synch_input);
 	mpz_init(m_inverse_synch_value);
 	mpz_init(m_inverse_synch_inverse);
-
-	openlog("spdz_ext_biu", LOG_NDELAY|LOG_PID, LOG_USER);
-	setlogmask(LOG_UPTO(LOG_NOTICE));
 }
 
 //***********************************************************************************************//
@@ -85,8 +82,6 @@ spdz2_ext_processor_base::~spdz2_ext_processor_base()
 	mpz_clear(m_input_synch_input);
 	mpz_clear(m_inverse_synch_value);
 	mpz_clear(m_inverse_synch_inverse);
-
-	closelog();
 }
 
 //***********************************************************************************************//
@@ -96,6 +91,10 @@ int spdz2_ext_processor_base::start(const int pid, const int num_of_parties, con
 	m_party_id = pid;
 	m_num_of_parties = num_of_parties;
 	m_thread_id = thread_id;
+
+	m_syslog_name = get_syslog_name();
+	openlog(m_syslog_name.c_str(), LOG_NDELAY|LOG_PID, LOG_USER);
+	setlogmask(LOG_UPTO(LOG_NOTICE));
 
 	if(m_run_flag)
 	{
@@ -155,6 +154,7 @@ int spdz2_ext_processor_base::stop(const time_t timeout_sec)
 	syslog(LOG_NOTICE, "spdz2_ext_processor_base::stop: pid %d", m_party_id);
 	delete_protocol();
 	clear_file_input();
+	closelog();
 	return 0;
 }
 
