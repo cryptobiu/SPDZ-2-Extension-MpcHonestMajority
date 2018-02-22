@@ -282,3 +282,10 @@ bool spdz2_ext_processor_mersenne61::protocol_bits(const size_t count, mpz_t * b
 	}
 	return success;
 }
+
+std::string spdz2_ext_processor_mersenne61::get_syslog_name()
+{
+	char buffer[32];
+	snprintf(buffer, 32, "spdz2x_gfp_m61_%d_%d", m_party_id, m_thread_id);
+	return std::string(buffer);
+}

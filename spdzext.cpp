@@ -10,8 +10,8 @@
 //***********************************************************************************************//
 
 //-------------------------------------------------------------------------------------------//
-int init(void ** handle, const int pid, const int num_of_parties, const char * field,
-		 const int open_count, const int mult_count, const int bits_count)
+int init(void ** handle, const int pid, const int num_of_parties, const int thread_id,
+		const char * field, const int open_count, const int mult_count, const int bits_count)
 {
 	spdz2_ext_processor_base * proc = NULL;
 	if(strncmp(field, "gfp", 3) == 0)
@@ -42,7 +42,7 @@ int init(void ** handle, const int pid, const int num_of_parties, const char * f
 		return -1;
 	}
 
-	if(0 != proc->start(pid, num_of_parties, field, open_count, mult_count, bits_count))
+	if(0 != proc->start(pid, num_of_parties, thread_id, field, open_count, mult_count, bits_count))
 	{
 		delete proc;
 		return -1;

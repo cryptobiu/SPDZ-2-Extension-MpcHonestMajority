@@ -132,7 +132,7 @@ class spdz2_ext_processor_base
 	mpz_t * m_share_immediates_asynch_output;
 
 protected:
-	int m_party_id, m_num_of_parties;
+	int m_party_id, m_num_of_parties, m_thread_id;
 	std::string input_file;
 
 	virtual int init_protocol(const int open_count, const int mult_count, const int bits_count) = 0;
@@ -147,13 +147,15 @@ protected:
 	virtual bool protocol_mult(const size_t count, const mpz_t * input, mpz_t * output, bool verify) = 0;
 	virtual bool protocol_bits(const size_t count, mpz_t * bit_shares) = 0;
 
+	virtual std::string get_syslog_name() = 0;
+
 	static std::string get_time_stamp();
 
 public:
 	spdz2_ext_processor_base();
 	virtual ~spdz2_ext_processor_base();
 
-	int start(const int pid, const int num_of_parties, const char * field,
+	int start(const int pid, const int num_of_parties, const int thread_id, const char * field,
 			  const int open_count, const int mult_count, const int bits_count);
 	int stop(const time_t timeout_sec = 2);
 

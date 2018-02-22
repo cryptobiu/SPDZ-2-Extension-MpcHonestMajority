@@ -27,6 +27,8 @@ protected:
 	virtual bool protocol_mult(const size_t count, const mpz_t * input, mpz_t * output, bool verify);
 	virtual bool protocol_bits(const size_t count, mpz_t * bit_shares);
 
+	virtual std::string get_syslog_name();
+
 public:
 	spdz2_ext_processor_gf2n(const int bits);
 	virtual ~spdz2_ext_processor_gf2n();

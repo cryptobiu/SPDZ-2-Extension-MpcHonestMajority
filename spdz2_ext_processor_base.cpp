@@ -30,7 +30,7 @@ const int spdz2_ext_processor_base::sm_op_code_share_immediates_asynch = 204;
 
 //***********************************************************************************************//
 spdz2_ext_processor_base::spdz2_ext_processor_base()
-/*ops*/		: m_runner(0), m_run_flag(false), m_party_id(-1), m_num_of_parties(0)
+/*ops*/		: m_runner(0), m_run_flag(false), m_party_id(-1), m_num_of_parties(0), m_thread_id(-1)
 /*offline*/	, m_offline_synch_success(false)
 /*input_s*/	, m_input_synch_success(false), m_input_synch_output(NULL), m_input_synch_pid(-1)
 /*triple*/	, m_triple_synch_success(false), m_A(NULL), m_B(NULL), m_C(NULL)
@@ -90,17 +90,18 @@ spdz2_ext_processor_base::~spdz2_ext_processor_base()
 }
 
 //***********************************************************************************************//
-int spdz2_ext_processor_base::start(const int pid, const int num_of_parties, const char * field,
+int spdz2_ext_processor_base::start(const int pid, const int num_of_parties, const int thread_id, const char * field,
 									const int open_count, const int mult_count, const int bits_count)
 {
+	m_party_id = pid;
+	m_num_of_parties = num_of_parties;
+	m_thread_id = thread_id;
+
 	if(m_run_flag)
 	{
 		syslog(LOG_ERR, "spdz2_ext_processor_base::start: this processor is already started");
 		return -1;
 	}
-
-	m_party_id = pid;
-	m_num_of_parties = num_of_parties;
 
 	char sz[64];
 	snprintf(sz, 64, "party_%d_input.txt", pid);
