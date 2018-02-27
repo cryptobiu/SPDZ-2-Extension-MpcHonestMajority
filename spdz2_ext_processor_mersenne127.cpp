@@ -31,6 +31,7 @@ Mersenne127 TemplateField<Mersenne127>::bytesToElement(unsigned char* elemenetIn
 	mpz_init(value);
 	mpz_import(value, 16, 1, 1, 1, 0, (const void *)elemenetInBytes);
 	Mersenne127 element(value);
+	mpz_clear(value);
     return element;
 }
 
