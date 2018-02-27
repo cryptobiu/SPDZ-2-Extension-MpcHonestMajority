@@ -2,10 +2,15 @@
 
 #include <syslog.h>
 
+static const int order = 1;
+static const int size = 1;
+static const int endian = 1;
+static const int nails = 0;
+
 template <>
 TemplateField<Mersenne127>::TemplateField(long fieldParam)
 {
-    this->elementSizeInBytes = 16;//round up to the next byte
+    this->elementSizeInBytes = 17;//round up to the next byte
     this->elementSizeInBits = 127;
 
     auto randomKey = prg.generateKey(128);
@@ -18,10 +23,9 @@ TemplateField<Mersenne127>::TemplateField(long fieldParam)
 template <>
 void TemplateField<Mersenne127>::elementToBytes(unsigned char* elemenetInBytes, Mersenne127& element)
 {
-	size_t count = 0;
-	u_int8_t buffer[16];
-	mpz_export((void *)buffer, &count, 1, 1, 1, 0, *element.get_mpz_t());
-	memcpy(elemenetInBytes, buffer, 16);
+	size_t words = 0;
+	mpz_export((void*)(elemenetInBytes+1), &words, order, size, endian, nails, *element.get_mpz_t());
+	elemenetInBytes[0] = (unsigned char)words;
 }
 
 template <>
@@ -29,7 +33,7 @@ Mersenne127 TemplateField<Mersenne127>::bytesToElement(unsigned char* elemenetIn
 {
 	mpz_t value;
 	mpz_init(value);
-	mpz_import(value, 16, 1, 1, 1, 0, (const void *)elemenetInBytes);
+	mpz_import(value, elemenetInBytes[0], order, size, endian, nails, (void*)(elemenetInBytes+1));
 	Mersenne127 element(value);
 	mpz_clear(value);
     return element;

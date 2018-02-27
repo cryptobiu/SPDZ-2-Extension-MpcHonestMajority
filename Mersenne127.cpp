@@ -1,5 +1,6 @@
-#include "Mersenne127.h"
 #include <string>
+#include <memory.h>
+#include "Mersenne127.h"
 
 const char Mersenne127::M127[] = "170141183460469231731687303715884105727";
 
@@ -121,8 +122,11 @@ const Mersenne127 & Mersenne127::operator *= (const Mersenne127 & rha)
 std::ostream& operator << (std::ostream& s, const Mersenne127 & m127)
 {
 	char sz[128];
+	memset(sz, 0, 128);
 	mpz_get_str(sz, 10, m127.m_value);
-	return s << sz;
+	std::string str(sz);
+	s << str;
+	return s;
 };
 
 std::istream& operator >> (std::istream& s, Mersenne127 & m127)
