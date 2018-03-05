@@ -4,6 +4,7 @@
 #include <semaphore.h>
 #include <deque>
 #include <vector>
+#include <map>
 #include <list>
 #include <string>
 #include <gmp.h>
@@ -35,13 +36,22 @@ class spdz2_ext_processor_base
 	static const int sm_op_code_mult_asynch;
 	static const int sm_op_code_share_immediates_asynch;
 
-	std::list<std::string> m_file_input;
-	std::list<std::string>::iterator m_next_file_input;
-	void load_file_input();
-	void clear_file_input();
-	int get_input_from_file(mpz_t * value);
-	int get_input_from_user(mpz_t * value);
-	int get_input(mpz_t * value, bool from_user = false) { return (from_user)? get_input_from_user(value): get_input_from_file(value); }
+	typedef struct
+	{
+		mpz_t * shared_values;
+		size_t share_count, share_index;
+	}shared_input_t;
+
+	std::map< int , shared_input_t > m_shared_inputs;
+
+	int load_inputs();
+	int delete_inputs();
+	int load_party_input_specs(std::list<std::string> & party_input_specs);
+	int load_party_inputs(const std::string & party_input_spec);
+	int load_party_inputs(const int pid, const size_t count);
+	int load_self_party_inputs(const size_t count);
+	int load_peer_party_inputs(const int pid, const size_t count, const mpz_t * clr_values = NULL);
+	int load_clr_party_inputs(mpz_t ** clr_values, const size_t count);
 
 	/* Services Section */
 	/*
@@ -66,7 +76,6 @@ class spdz2_ext_processor_base
 	void exec_input_synch();
 	bool m_input_synch_success;
 	sem_t m_input_synch_done;
-	mpz_t m_input_synch_input;
 	mpz_t * m_input_synch_output;
 	int m_input_synch_pid;
 
@@ -112,7 +121,6 @@ class spdz2_ext_processor_base
 	sem_t m_input_asynch_done;
 	int m_input_asynch_pid;
 	size_t m_input_asynch_count;
-	mpz_t * m_input_asynch_input;
 	mpz_t * m_input_asynch_output;
 
 	void exec_mult_asynch();
@@ -134,7 +142,6 @@ class spdz2_ext_processor_base
 
 protected:
 	int m_party_id, m_num_of_parties, m_thread_id;
-	std::string input_file;
 
 	virtual int init_protocol(const int open_count, const int mult_count, const int bits_count) = 0;
 	virtual int delete_protocol() = 0;

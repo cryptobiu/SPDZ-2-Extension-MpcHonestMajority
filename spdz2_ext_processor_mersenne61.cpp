@@ -71,20 +71,18 @@ int spdz2_ext_processor_mersenne61::init_protocol(const int open_count, const in
 {
 	syslog(LOG_NOTICE, "spdz2_ext_processor_mersenne61::init_protocol: starting setup [%s]", spdz2_ext_processor_base::get_time_stamp().c_str());
 	the_field = new TemplateField<ZpMersenneLongElement>(0);
-	the_party = new Protocol<ZpMersenneLongElement>(m_num_of_parties, m_party_id, open_count, mult_count, bits_count, the_field, input_file, "Parties_gfp.txt");
+	the_party = new Protocol<ZpMersenneLongElement>(m_num_of_parties, m_party_id, open_count, mult_count, bits_count, the_field, "Parties_gfp.txt");
 	syslog(LOG_NOTICE, "spdz2_ext_processor_mersenne61::init_protocol: starting offline [%s]", spdz2_ext_processor_base::get_time_stamp().c_str());
 	if(!the_party->offline())
 	{
 		syslog(LOG_ERR, "spdz2_ext_processor_mersenne61::init_protocol: protocol offline() failure.");
 		return -1;
 	}
-	syslog(LOG_NOTICE, "spdz2_ext_processor_mersenne61::init_protocol: starting online [%s]", spdz2_ext_processor_base::get_time_stamp().c_str());
 	return 0;
 }
 
 int spdz2_ext_processor_mersenne61::delete_protocol()
 {
-	syslog(LOG_NOTICE, "spdz2_ext_processor_mersenne61::delete_protocol: online done [%s]", spdz2_ext_processor_base::get_time_stamp().c_str());
 	delete the_party;
 	the_party = NULL;
 	delete the_field;

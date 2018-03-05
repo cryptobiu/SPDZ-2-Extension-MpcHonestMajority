@@ -20,8 +20,6 @@ set(SOURCE_FILES
 	spdz2_ext_processor_mersenne61.cpp
 	spdz2_ext_processor_gf2n.h
 	spdz2_ext_processor_gf2n.cpp
-	Mersenne127.h
-	Mersenne127.cpp
 )
 
 add_library(spdz_ext_biu SHARED ${SOURCE_FILES})

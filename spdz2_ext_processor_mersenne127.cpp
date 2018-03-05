@@ -2,54 +2,6 @@
 
 #include <syslog.h>
 
-static const int order = -1;
-static const int size = 8;
-static const int endian = 0;
-static const int nails = 0;
-
-template <>
-TemplateField<Mersenne127>::TemplateField(long fieldParam)
-{
-    this->elementSizeInBytes = 16;//round up to the next byte
-    this->elementSizeInBits = 127;
-
-    auto randomKey = prg.generateKey(128);
-    prg.setKey(randomKey);
-
-    m_ZERO = new Mersenne127(0);
-    m_ONE = new Mersenne127(1);
-}
-
-template <>
-void TemplateField<Mersenne127>::elementToBytes(unsigned char* elemenetInBytes, Mersenne127& element)
-{
-	memset(elemenetInBytes, 0, 16);
-	mpz_export((void*)elemenetInBytes, NULL, order, size, endian, nails, *element.get_mpz_t());
-}
-
-template <>
-Mersenne127 TemplateField<Mersenne127>::bytesToElement(unsigned char* elemenetInBytes)
-{
-	mpz_t value;
-	mpz_init(value);
-	mpz_import(value, 2, order, size, endian, nails, (void*)elemenetInBytes);
-	Mersenne127 element(value);
-	mpz_clear(value);
-    return element;
-}
-
-template <>
-Mersenne127 TemplateField<Mersenne127>::GetElement(long b)
-{
-	if(b == 1)		return *m_ONE;
-    if(b == 0)		return *m_ZERO;
-    else
-    {
-    	Mersenne127 element(b);
-        return element;
-    }
-}
-
 spdz2_ext_processor_mersenne127::spdz2_ext_processor_mersenne127()
  : spdz2_ext_processor_base()
  , the_field(NULL), the_party(NULL)
@@ -108,8 +60,10 @@ int spdz2_ext_processor_mersenne127::mix_sub_share(const mpz_t * scalar, mpz_t *
 
 int spdz2_ext_processor_mersenne127::init_protocol(const int open_count, const int mult_count, const int bits_count)
 {
+	syslog(LOG_NOTICE, "spdz2_ext_processor_mersenne127::init_protocol: starting setup [%s]", spdz2_ext_processor_base::get_time_stamp().c_str());
 	the_field = new TemplateField<Mersenne127>(0);
-	the_party = new Protocol<Mersenne127>(m_num_of_parties, m_party_id, open_count, mult_count, bits_count, the_field, input_file, "Parties_gfp.txt");
+	the_party = new Protocol<Mersenne127>(m_num_of_parties, m_party_id, open_count, mult_count, bits_count, the_field, "Parties_gfp.txt");
+	syslog(LOG_NOTICE, "spdz2_ext_processor_mersenne127::init_protocol: starting offline [%s]", spdz2_ext_processor_base::get_time_stamp().c_str());
 	if(!the_party->offline())
 	{
 		syslog(LOG_ERR, "spdz2_ext_processor_mersenne127::init_protocol: protocol offline() failure.");

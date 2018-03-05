@@ -39,7 +39,7 @@ spdz2_ext_processor_base::spdz2_ext_processor_base()
 /*inverse*/	, m_inverse_synch_success(false), m_inverse_synch_value_share(NULL), m_inverse_synch_inverse_share(NULL)
 /*open*/	, m_open_asynch_on(false), m_open_asynch_success(false), m_open_asynch_count(0), m_open_asynch_input(NULL), m_open_asynch_output(NULL), m_open_asynch_verify(false)
 /*verify*/	, m_verify_asynch_on(false), m_verify_asynch_success(false), m_verify_asynch_error(NULL)
-/*input_a*/	, m_input_asynch_on(false), m_input_asynch_success(false), m_input_asynch_pid(-1), m_input_asynch_count(0), m_input_asynch_output(NULL), m_input_asynch_input(NULL)
+/*input_a*/	, m_input_asynch_on(false), m_input_asynch_success(false), m_input_asynch_pid(-1), m_input_asynch_count(0), m_input_asynch_output(NULL)
 /*mult*/	, m_mult_asynch_on(false), m_mult_asynch_success(false), m_mult_asynch_count(0), m_mult_asynch_input(NULL), m_mult_asynch_output(NULL), m_mult_asynch_verify(false)
 /*shr_im_a*/, m_share_immediates_asynch_on(false), m_share_immediates_asynch_success(false), m_share_immediates_asynch_count(0), m_share_immediates_asynch_input(NULL), m_share_immediates_asynch_output(NULL)
 {
@@ -57,7 +57,6 @@ spdz2_ext_processor_base::spdz2_ext_processor_base()
 	sem_init(&m_mult_asynch_done, 0, 0);
 	sem_init(&m_share_immediates_asynch_done, 0, 0);
 
-	mpz_init(m_input_synch_input);
 	mpz_init(m_inverse_synch_value);
 	mpz_init(m_inverse_synch_inverse);
 }
@@ -79,7 +78,6 @@ spdz2_ext_processor_base::~spdz2_ext_processor_base()
 	sem_destroy(&m_mult_asynch_done);
 	sem_destroy(&m_share_immediates_asynch_done);
 
-	mpz_clear(m_input_synch_input);
 	mpz_clear(m_inverse_synch_value);
 	mpz_clear(m_inverse_synch_inverse);
 }
@@ -101,17 +99,22 @@ int spdz2_ext_processor_base::start(const int pid, const int num_of_parties, con
 		syslog(LOG_ERR, "spdz2_ext_processor_base::start: this processor is already started");
 		return -1;
 	}
-
-	char sz[64];
-	snprintf(sz, 64, "party_%d_input.txt", pid);
-	input_file = sz;
-	load_file_input();
+	syslog(LOG_NOTICE, "spdz2_ext_processor_base::start: pid %d", m_party_id);
 
 	if(0 != init_protocol(open_count, mult_count, bits_count))
 	{
 		syslog(LOG_ERR, "spdz2_ext_processor_base::start: protocol initialization failure.");
 		return -1;
 	}
+
+	syslog(LOG_NOTICE, "spdz2_ext_processor_base::init_protocol: starting input share [%s]", spdz2_ext_processor_base::get_time_stamp().c_str());
+	if(0 != load_inputs())
+	{
+		syslog(LOG_ERR, "spdz2_ext_processor_base::start: input load failure.");
+		return -1;
+	}
+
+	syslog(LOG_NOTICE, "spdz2_ext_processor_base::init_protocol: starting online [%s]", spdz2_ext_processor_base::get_time_stamp().c_str());
 
 	m_run_flag = true;
 	int result = pthread_create(&m_runner, NULL, spdz2_ext_processor_proc, this);
@@ -123,7 +126,6 @@ int spdz2_ext_processor_base::start(const int pid, const int num_of_parties, con
 		return -1;
 	}
 
-	syslog(LOG_NOTICE, "spdz2_ext_processor_base::start: pid %d", m_party_id);
 	return 0;
 }
 
@@ -135,6 +137,7 @@ int spdz2_ext_processor_base::stop(const time_t timeout_sec)
 		syslog(LOG_ERR, "spdz2_ext_processor_base::stop this processor is not running.");
 		return -1;
 	}
+	syslog(LOG_NOTICE, "spdz2_ext_processor_base::stop: online done [%s]", spdz2_ext_processor_base::get_time_stamp().c_str());
 
 	m_run_flag = false;
 	void * return_code = NULL;
@@ -153,7 +156,7 @@ int spdz2_ext_processor_base::stop(const time_t timeout_sec)
 
 	syslog(LOG_NOTICE, "spdz2_ext_processor_base::stop: pid %d", m_party_id);
 	delete_protocol();
-	clear_file_input();
+	delete_inputs();
 	closelog();
 	return 0;
 }
@@ -271,47 +274,179 @@ int spdz2_ext_processor_base::pop_task()
 }
 
 //***********************************************************************************************//
-void spdz2_ext_processor_base::load_file_input()
+int spdz2_ext_processor_base::load_inputs()
 {
-	char sz[128];
-	snprintf(sz, 128, "party_%d_input.txt", m_party_id);
-	FILE * pf = fopen(sz, "r");
-	if(NULL != pf)
+	std::list<std::string> party_input_specs;
+	if(0 != load_party_input_specs(party_input_specs))
 	{
-		while(NULL != fgets(sz, 128, pf))
-		{
-			m_file_input.push_back(sz);
-		}
-		fclose(pf);
+		syslog(LOG_ERR, "spdz2_ext_processor_base::load_inputs: failed loading the party input specs");
+		return -1;
 	}
-	m_next_file_input = m_file_input.begin();
-}
 
-//***********************************************************************************************//
-void spdz2_ext_processor_base::clear_file_input()
-{
-	m_file_input.clear();
-}
+	for(std::list<std::string>::const_iterator i = party_input_specs.begin(); i != party_input_specs.end(); ++i)
+	{
+		if(0 != load_party_inputs(*i))
+		{
+			syslog(LOG_ERR, "spdz2_ext_processor_base::load_inputs: failed loading party input by spec [%s]", i->c_str());
+			return -1;
+		}
+	}
 
-//***********************************************************************************************//
-int spdz2_ext_processor_base::get_input_from_file(mpz_t * value)
-{
-	if(m_file_input.empty()) return -1;
-	if(m_next_file_input == m_file_input.end()) m_next_file_input = m_file_input.begin();
-	mpz_set_str(*value, (*(m_next_file_input++)).c_str(), 10);
 	return 0;
 }
 
 //***********************************************************************************************//
-int spdz2_ext_processor_base::get_input_from_user(mpz_t * value)
+int spdz2_ext_processor_base::delete_inputs()
+{
+	for(std::map< int , shared_input_t >::iterator i = m_shared_inputs.begin(); i != m_shared_inputs.end(); ++i)
+	{
+		if(NULL != i->second.shared_values && 0 < i->second.share_count)
+		{
+			for(size_t j = 0; j < i->second.share_count; ++j)
+				mpz_clear(i->second.shared_values[j]);
+			delete i->second.shared_values;
+			i->second.shared_values = NULL;
+			i->second.share_count = 0;
+			i->second.share_index = 0;
+		}
+	}
+	m_shared_inputs.clear();
+}
+
+//***********************************************************************************************//
+int spdz2_ext_processor_base::load_party_input_specs(std::list<std::string> & party_input_specs)
+{
+	static const char common_inputs_spec[] = "Parties_Inputs.txt";
+
+	party_input_specs.clear();
+	FILE * pf = fopen(common_inputs_spec, "r");
+	if(NULL != pf)
+	{
+		char sz[128];
+		while(NULL != fgets(sz, 128, pf))
+		{
+			if (NULL == strstr(sz, "#"))
+				party_input_specs.push_back(sz);
+		}
+		fclose(pf);
+	}
+	else
+	{
+		syslog(LOG_ERR, "spdz2_ext_processor_base::load_party_input_specs: failed to open [%s].", common_inputs_spec);
+		return -1;
+	}
+	return (party_input_specs.empty())? -1: 0;
+}
+
+//***********************************************************************************************//
+int spdz2_ext_processor_base::load_party_inputs(const std::string & party_input_spec)
+{
+	std::string::size_type pos = party_input_spec.find(',');
+	if(std::string::npos != pos)
+	{
+		int pid = (int)strtol(party_input_spec.substr(0, pos).c_str(), NULL, 10);
+		size_t count = (size_t)strtol(party_input_spec.substr(pos+1).c_str(), NULL, 10);
+		if(0 < count)
+			return load_party_inputs(pid, count);
+		else
+			return 0;
+	}
+	else
+	{
+		syslog(LOG_ERR, "spdz2_ext_processor_base::load_party_inputs: invalid party input spec format [%s]", party_input_spec.c_str());
+		return -1;
+	}
+}
+
+//***********************************************************************************************//
+int spdz2_ext_processor_base::load_party_inputs(const int pid, const size_t count)
+{
+	return (pid == this->m_party_id)? load_self_party_inputs(count): load_peer_party_inputs(pid, count);
+}
+
+//***********************************************************************************************//
+int spdz2_ext_processor_base::load_self_party_inputs(const size_t count)
+{
+	int result = -1;
+	mpz_t * clr_values = NULL;
+	if(0 == load_clr_party_inputs(&clr_values, count) && NULL != clr_values)
+	{
+		result = load_peer_party_inputs(m_party_id, count, clr_values);
+
+		for(size_t i = 0; i < count; ++i)
+			mpz_clear(clr_values[i]);
+		delete clr_values;
+	}
+	else
+		syslog(LOG_ERR, "spdz2_ext_processor_base::load_self_party_inputs: failed loading clear inputs.");
+	return result;
+}
+
+int spdz2_ext_processor_base::load_peer_party_inputs(const int pid, const size_t count, const mpz_t * clr_values)
+{
+	int result = -1;
+	shared_input_t party_inputs;
+	party_inputs.share_count = count;
+	party_inputs.share_index = 0;
+	party_inputs.shared_values = new mpz_t[party_inputs.share_count];
+	for(size_t i = 0; i < party_inputs.share_count; ++i)
+		mpz_init(party_inputs.shared_values[i]);
+
+	if(protocol_share(pid, count, (NULL != clr_values)? clr_values: party_inputs.shared_values, party_inputs.shared_values))
+	{
+		if(m_shared_inputs.insert(std::pair<int, shared_input_t>(pid, party_inputs)).second)
+			result = 0;
+		else
+		{
+			for(size_t i = 0; i < count; ++i)
+				mpz_clear(party_inputs.shared_values[i]);
+			delete party_inputs.shared_values;
+			syslog(LOG_ERR, "spdz2_ext_processor_base::load_peer_party_inputs: failed to map-insert shared inputs for pid=%d.", pid);
+		}
+	}
+	else
+	{
+		for(size_t i = 0; i < count; ++i)
+			mpz_clear(party_inputs.shared_values[i]);
+		delete party_inputs.shared_values;
+		syslog(LOG_ERR, "spdz2_ext_processor_base::load_peer_party_inputs: protocol_share() failed for pid=%d.", pid);
+	}
+	return result;
+}
+
+//***********************************************************************************************//
+int spdz2_ext_processor_base::load_clr_party_inputs(mpz_t ** clr_values, const size_t count)
 {
 	char sz[128];
-	if(NULL != fgets(sz, 128, stdin))
+	snprintf(sz, 128, "party_%d_input.txt", m_party_id);
+	std::string input_file = sz;
+
+	FILE * pf = fopen(input_file.c_str(), "r");
+	if(NULL != pf)
 	{
-		mpz_set_str(*value, sz, 10);
-		return 0;
+		*clr_values = new mpz_t[count];
+		size_t clr_values_idx = 0;
+
+		while(NULL != fgets(sz, 128, pf))
+		{
+			mpz_init((*clr_values)[clr_values_idx]);
+			mpz_set_str((*clr_values)[clr_values_idx++], sz, 10);
+			if(clr_values_idx >= count)
+				break;
+		}
+		fclose(pf);
+
+		if(count > clr_values_idx)
+		{
+			for(size_t i = 0; i < clr_values_idx; i++)
+				mpz_clear((*clr_values)[i]);
+			delete (*clr_values);
+			*clr_values = NULL;
+			syslog(LOG_ERR, "spdz2_ext_processor_base::load_clr_party_inputs: not enough inputs in file [%s]; required %lu; file has %lu;",
+					input_file.c_str(), count, clr_values_idx);
+		}
 	}
-	return -1;
+	return (NULL != (*clr_values))? 0: -1;
 }
 
 //***********************************************************************************************//
@@ -354,15 +489,10 @@ void spdz2_ext_processor_base::exec_offline_synch()
 //***********************************************************************************************//
 int spdz2_ext_processor_base::input(const int input_of_pid, mpz_t * input_value, const time_t timeout_sec)
 {
-	if(input_of_pid == m_party_id && 0 != get_input(&m_input_synch_input))
-	{
-		syslog(LOG_ERR, "spdz2_ext_processor_base::input: failed getting input value.");
-		return -1;
-	}
-
 	m_input_synch_success = false;
 	m_input_synch_output = input_value;
 	m_input_synch_pid = input_of_pid;
+
 	if(0 != push_task(spdz2_ext_processor_base::sm_op_code_input_synch))
 	{
 		syslog(LOG_ERR, "spdz2_ext_processor_base::input: failed pushing a task to queue.");
@@ -388,7 +518,11 @@ int spdz2_ext_processor_base::input(const int input_of_pid, mpz_t * input_value,
 //***********************************************************************************************//
 void spdz2_ext_processor_base::exec_input_synch()
 {
-	m_input_synch_success = protocol_share(m_input_synch_pid, 1, &m_input_synch_input, m_input_synch_output);
+	std::map< int , shared_input_t >::iterator i = m_shared_inputs.find(m_input_synch_pid);
+	if((m_input_synch_success = (m_shared_inputs.end() != i && 0 < i->second.share_count && i->second.share_index < i->second.share_count)))
+		mpz_set(*m_input_synch_output, i->second.shared_values[i->second.share_index++]);
+	else
+		syslog(LOG_ERR, "spdz2_ext_processor_base::exec_input_synch: failed to get input for pid %d.", m_input_synch_pid);
 	sem_post(&m_input_synch_done);
 }
 
@@ -658,20 +792,11 @@ int spdz2_ext_processor_base::start_input(const int input_of_pid, const size_t n
 		return -1;
 	}
 	m_input_asynch_on = true;
+
 	m_input_asynch_success = false;
 	m_input_asynch_pid = input_of_pid;
 	m_input_asynch_count = num_of_inputs;
 	m_input_asynch_output = inputs;
-
-	m_input_asynch_input = new mpz_t[m_input_asynch_count];
-	for(size_t i = 0; i < m_input_asynch_count; ++i)
-	{
-		mpz_init(m_input_asynch_input[i]);
-		if(m_party_id == m_input_asynch_pid)
-		{
-			 get_input(m_input_asynch_input + i);
-		}
-	}
 
 	if(0 != push_task(spdz2_ext_processor_base::sm_op_code_input_asynch))
 	{
@@ -704,20 +829,33 @@ int spdz2_ext_processor_base::stop_input(const time_t timeout_sec)
 		return -1;
 	}
 
-	for(size_t i = 0; i < m_input_asynch_count; ++i)
-	{
-		mpz_clear(m_input_asynch_input[i]);
-	}
-	delete []m_input_asynch_input;
-	m_input_asynch_input = NULL;
-
 	return (m_input_asynch_success)? 0: -1;
 }
 
 //***********************************************************************************************//
 void spdz2_ext_processor_base::exec_input_asynch()
 {
-	m_input_asynch_success = protocol_share(m_input_asynch_pid, m_input_asynch_count, m_input_asynch_input, m_input_asynch_output);
+	std::map< int , shared_input_t >::iterator i = m_shared_inputs.find(m_input_asynch_pid);
+	if(m_shared_inputs.end() != i)
+	{
+		if((i->second.share_count - i->second.share_index) >= m_input_asynch_count)
+		{
+			for(size_t j = 0; j < m_input_asynch_count; ++j)
+			{
+				mpz_set(m_input_asynch_output[j], i->second.shared_values[i->second.share_index++]);
+			}
+			m_input_asynch_success = true;
+		}
+		else
+		{
+			syslog(LOG_ERR, "spdz2_ext_processor_base::exec_input_synch: not enough input for pid %d; required %lu; available %lu;",
+					m_input_asynch_pid, m_input_asynch_count, (i->second.share_count - i->second.share_index));
+		}
+	}
+	else
+	{
+		syslog(LOG_ERR, "spdz2_ext_processor_base::exec_input_synch: failed to get input for pid %d.", m_input_asynch_pid);
+	}
 	sem_post(&m_input_asynch_done);
 }
 
