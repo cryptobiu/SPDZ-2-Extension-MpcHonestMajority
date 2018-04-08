@@ -257,7 +257,7 @@ bool spdz2_ext_processor_mersenne61::protocol_value_inverse(const mpz_t * value,
 
 bool spdz2_ext_processor_mersenne61::protocol_verify(int * error)
 {
-	*error = (the_party->verify())? 0: -1;
+	return (0 == (*error = (the_party->verify())? 0: -1))? true: false;
 }
 
 bool spdz2_ext_processor_mersenne61::protocol_bits(const size_t count, mpz_t * bit_shares)
