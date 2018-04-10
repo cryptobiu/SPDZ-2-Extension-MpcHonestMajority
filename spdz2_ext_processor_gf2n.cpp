@@ -281,6 +281,11 @@ bool spdz2_ext_processor_gf2n::protocol_bits(const size_t count, mpz_t * bit_sha
 	return success;
 }
 
+bool spdz2_ext_processor_gf2n::protocol_value_mult(const mpz_t * op1, const mpz_t * op2, mpz_t * product)
+{
+	return false;
+}
+
 std::string spdz2_ext_processor_gf2n::get_syslog_name()
 {
 	char buffer[32];

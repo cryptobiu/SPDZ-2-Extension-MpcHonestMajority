@@ -56,9 +56,6 @@ spdz2_ext_processor_base::spdz2_ext_processor_base()
 	sem_init(&m_input_asynch_done, 0, 0);
 	sem_init(&m_mult_asynch_done, 0, 0);
 	sem_init(&m_share_immediates_asynch_done, 0, 0);
-
-	mpz_init(m_inverse_synch_value);
-	mpz_init(m_inverse_synch_inverse);
 }
 
 //***********************************************************************************************//
@@ -77,9 +74,6 @@ spdz2_ext_processor_base::~spdz2_ext_processor_base()
 	sem_destroy(&m_input_asynch_done);
 	sem_destroy(&m_mult_asynch_done);
 	sem_destroy(&m_share_immediates_asynch_done);
-
-	mpz_clear(m_inverse_synch_value);
-	mpz_clear(m_inverse_synch_inverse);
 }
 
 //***********************************************************************************************//
@@ -666,11 +660,43 @@ int spdz2_ext_processor_base::inverse(mpz_t * share_value, mpz_t * share_inverse
 //***********************************************************************************************//
 void spdz2_ext_processor_base::exec_inverse_synch()
 {
-	m_inverse_synch_success =
-			protocol_random_value(&m_inverse_synch_value) &&
-			protocol_value_inverse(&m_inverse_synch_value, &m_inverse_synch_inverse) &&
-			protocol_share(0, 1, &m_inverse_synch_value, m_inverse_synch_value_share) &&
-			protocol_share(0, 1, &m_inverse_synch_inverse, m_inverse_synch_inverse_share);
+/*
+1.       Non-interactively generate a share of a field element [x]				]
+2.       Non-interactively generate a share of another filed element [r].		] All 3 are implemented below
+3.       MPC multiply [u] = [x][r]												] using protocol_triple
+4.       Open u=[u]
+5.       Non-interactively inverse v=1/u
+6.       Non-interactively multiply [y] =v [r]
+Now [y] [x] =1 holds.
+*/
+
+	mpz_t & x(*m_inverse_synch_value_share);
+	mpz_t & y(*m_inverse_synch_inverse_share);
+	mpz_t r, u, open_u, v;
+	mpz_init(r);
+	mpz_init(u);
+	mpz_init(open_u);
+	mpz_init(v);
+
+	if(protocol_triple(&x, &r, &u))
+	{
+		if(protocol_open(1, &u, &open_u, true))
+		{
+			protocol_value_inverse(&open_u, &v);
+			protocol_value_mult(&v, &r, &y);
+			m_inverse_synch_success = true;
+		}
+		else
+			syslog(LOG_ERR, "spdz2_ext_processor_base::exec_inverse_synch: protocol_open() failed");
+	}
+	else
+		syslog(LOG_ERR, "spdz2_ext_processor_base::exec_inverse_synch: protocol_triple() failed");
+
+	mpz_clear(r);
+	mpz_clear(u);
+	mpz_clear(open_u);
+	mpz_clear(v);
+
 	sem_post(&m_inverse_synch_done);
 }
 

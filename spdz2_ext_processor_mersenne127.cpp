@@ -279,6 +279,22 @@ bool spdz2_ext_processor_mersenne127::protocol_bits(const size_t count, mpz_t * 
 	return success;
 }
 
+bool spdz2_ext_processor_mersenne127::protocol_value_mult(const mpz_t * op1, const mpz_t * op2, mpz_t * product)
+{
+	mpz_t P, temp;
+    mpz_init(P);
+    mpz_init(temp);
+
+    mpz_set_str(P, Mersenne127::M127, 10);
+
+    mpz_mul(temp, *op1, *op2);
+    mpz_mod(*product, temp, P);
+
+    mpz_clear(P);
+    mpz_clear(temp);
+    return true;
+}
+
 std::string spdz2_ext_processor_mersenne127::get_syslog_name()
 {
 	char buffer[32];

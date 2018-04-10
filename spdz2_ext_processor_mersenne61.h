@@ -24,6 +24,7 @@ protected:
 	virtual bool protocol_verify(int * error);
 	virtual bool protocol_mult(const size_t count, const mpz_t * input, mpz_t * output, bool verify);
 	virtual bool protocol_bits(const size_t count, mpz_t * bit_shares);
+	virtual bool protocol_value_mult(const mpz_t * op1, const mpz_t * op2, mpz_t * product);
 
 	virtual std::string get_syslog_name();
 

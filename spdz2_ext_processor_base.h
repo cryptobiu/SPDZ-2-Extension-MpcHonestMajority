@@ -98,7 +98,7 @@ class spdz2_ext_processor_base
 	void exec_inverse_synch();
 	bool m_inverse_synch_success;
 	sem_t m_inverse_synch_done;
-	mpz_t m_inverse_synch_value, m_inverse_synch_inverse, * m_inverse_synch_value_share, * m_inverse_synch_inverse_share;
+	mpz_t * m_inverse_synch_value_share, * m_inverse_synch_inverse_share;
 
 	void exec_open_asynch();
 	bool m_open_asynch_on;
@@ -154,6 +154,7 @@ protected:
 	virtual bool protocol_verify(int * error) = 0;
 	virtual bool protocol_mult(const size_t count, const mpz_t * input, mpz_t * output, bool verify) = 0;
 	virtual bool protocol_bits(const size_t count, mpz_t * bit_shares) = 0;
+	virtual bool protocol_value_mult(const mpz_t * op1, const mpz_t * op2, mpz_t * product) = 0;
 
 	virtual std::string get_syslog_name() = 0;
 
