@@ -9,9 +9,9 @@
 
 #include "Measurement.hpp"
 
-static const char tsk1[] = "setup";
-static const char tsk2[] = "offline";
-static const char tsk3[] = "online";
+static const char tsk0[] = "setup";
+static const char tsk1[] = "offline";
+static const char tsk2[] = "online";
 
 //***********************************************************************************************//
 void * spdz2_ext_processor_proc(void * arg)
@@ -103,9 +103,9 @@ int spdz2_ext_processor_base::start(const int pid, const int num_of_parties, con
 
 	{
 		std::vector< std::string > tasks;
+		tasks.push_back(tsk0);
 		tasks.push_back(tsk1);
 		tasks.push_back(tsk2);
-		tasks.push_back(tsk3);
 		m_measure = new Measurement(get_syslog_name(), 1, pid, num_of_parties, get_parties_file(), tasks);
 	}
 
@@ -146,6 +146,7 @@ int spdz2_ext_processor_base::stop(const time_t timeout_sec)
 		return -1;
 	}
 	stop_measure();
+	if(NULL != m_measure) { delete m_measure; m_measure = NULL; }
 
 	m_run_flag = false;
 	void * return_code = NULL;
@@ -162,12 +163,10 @@ int spdz2_ext_processor_base::stop(const time_t timeout_sec)
 		return -1;
 	}
 
-	if(NULL != m_measure) { delete m_measure; m_measure = NULL; }
-
 	syslog(LOG_NOTICE, "spdz2_ext_processor_base::stop: pid %d", m_party_id);
+	closelog();
 	delete_protocol();
 	delete_inputs();
-	closelog();
 	return 0;
 }
 
@@ -1026,29 +1025,29 @@ std::string spdz2_ext_processor_base::get_time_stamp()
 void spdz2_ext_processor_base::start_setup_measure()
 {
 	syslog(LOG_NOTICE, "%s: [%s]", __FUNCTION__, get_time_stamp().c_str());
-	m_measure->startSubTask(tsk1, 1);
+	m_measure->startSubTask(tsk0, 0);
 }
 
 //***********************************************************************************************//
 void spdz2_ext_processor_base::start_offline_measure()
 {
-	m_measure->endSubTask(tsk1, 1);
+	m_measure->endSubTask(tsk0, 0);
 	syslog(LOG_NOTICE, "%s: [%s]", __FUNCTION__, get_time_stamp().c_str());
-	m_measure->startSubTask(tsk2, 1);
+	m_measure->startSubTask(tsk1, 0);
 }
 
 //***********************************************************************************************//
 void spdz2_ext_processor_base::start_online_measure()
 {
-	m_measure->endSubTask(tsk2, 1);
+	m_measure->endSubTask(tsk1, 0);
 	syslog(LOG_NOTICE, "%s: [%s]", __FUNCTION__, get_time_stamp().c_str());
-	m_measure->startSubTask(tsk3, 1);
+	m_measure->startSubTask(tsk2, 0);
 }
 
 //***********************************************************************************************//
 void spdz2_ext_processor_base::stop_measure()
 {
-	m_measure->endSubTask(tsk3, 1);
+	m_measure->endSubTask(tsk2, 0);
 	syslog(LOG_NOTICE, "%s: [%s]", __FUNCTION__, get_time_stamp().c_str());
 }
 
