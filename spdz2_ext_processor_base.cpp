@@ -7,6 +7,12 @@
 #include <errno.h>
 #include <syslog.h>
 
+#include "Measurement.hpp"
+
+static const char tsk1[] = "setup";
+static const char tsk2[] = "offline";
+static const char tsk3[] = "online";
+
 //***********************************************************************************************//
 void * spdz2_ext_processor_proc(void * arg)
 {
@@ -30,7 +36,7 @@ const int spdz2_ext_processor_base::sm_op_code_share_immediates_asynch = 204;
 
 //***********************************************************************************************//
 spdz2_ext_processor_base::spdz2_ext_processor_base()
-/*ops*/		: m_runner(0), m_run_flag(false), m_party_id(-1), m_num_of_parties(0), m_thread_id(-1)
+/*ops*/		: m_runner(0), m_run_flag(false), m_party_id(-1), m_num_of_parties(0), m_thread_id(-1), m_measure(NULL)
 /*offline*/	, m_offline_synch_success(false)
 /*input_s*/	, m_input_synch_success(false), m_input_synch_output(NULL), m_input_synch_pid(-1)
 /*triple*/	, m_triple_synch_success(false), m_A(NULL), m_B(NULL), m_C(NULL)
@@ -95,6 +101,14 @@ int spdz2_ext_processor_base::start(const int pid, const int num_of_parties, con
 	}
 	syslog(LOG_NOTICE, "spdz2_ext_processor_base::start: pid %d", m_party_id);
 
+	{
+		std::vector< std::string > tasks;
+		tasks.push_back(tsk1);
+		tasks.push_back(tsk2);
+		tasks.push_back(tsk3);
+		m_measure = new Measurement(get_syslog_name(), 1, pid, num_of_parties, get_parties_file(), tasks);
+	}
+
 	if(0 != init_protocol(open_count, mult_count, bits_count))
 	{
 		syslog(LOG_ERR, "spdz2_ext_processor_base::start: protocol initialization failure.");
@@ -108,7 +122,7 @@ int spdz2_ext_processor_base::start(const int pid, const int num_of_parties, con
 		return -1;
 	}
 
-	syslog(LOG_NOTICE, "spdz2_ext_processor_base::init_protocol: starting online [%s]", spdz2_ext_processor_base::get_time_stamp().c_str());
+	start_online_measure();
 
 	m_run_flag = true;
 	int result = pthread_create(&m_runner, NULL, spdz2_ext_processor_proc, this);
@@ -131,7 +145,7 @@ int spdz2_ext_processor_base::stop(const time_t timeout_sec)
 		syslog(LOG_ERR, "spdz2_ext_processor_base::stop this processor is not running.");
 		return -1;
 	}
-	syslog(LOG_NOTICE, "spdz2_ext_processor_base::stop: online done [%s]", spdz2_ext_processor_base::get_time_stamp().c_str());
+	stop_measure();
 
 	m_run_flag = false;
 	void * return_code = NULL;
@@ -147,6 +161,8 @@ int spdz2_ext_processor_base::stop(const time_t timeout_sec)
 		syslog(LOG_ERR, "spdz2_ext_processor_base::stop: pthread_timedjoin_np() failed with error %d : %s", result, strerror_r(result, errmsg, 512));
 		return -1;
 	}
+
+	if(NULL != m_measure) { delete m_measure; m_measure = NULL; }
 
 	syslog(LOG_NOTICE, "spdz2_ext_processor_base::stop: pid %d", m_party_id);
 	delete_protocol();
@@ -1004,6 +1020,36 @@ std::string spdz2_ext_processor_base::get_time_stamp()
 	clock_gettime(CLOCK_REALTIME, &timestamp);
 	snprintf(timestamp_buffer, 256, "%lu.%03lu", (u_int64_t)timestamp.tv_sec, (u_int64_t)((timestamp.tv_nsec/1000000)%1000));
 	return timestamp_buffer;
+}
+
+//***********************************************************************************************//
+void spdz2_ext_processor_base::start_setup_measure()
+{
+	syslog(LOG_NOTICE, "%s: [%s]", __FUNCTION__, get_time_stamp().c_str());
+	m_measure->startSubTask(tsk1, 1);
+}
+
+//***********************************************************************************************//
+void spdz2_ext_processor_base::start_offline_measure()
+{
+	m_measure->endSubTask(tsk1, 1);
+	syslog(LOG_NOTICE, "%s: [%s]", __FUNCTION__, get_time_stamp().c_str());
+	m_measure->startSubTask(tsk2, 1);
+}
+
+//***********************************************************************************************//
+void spdz2_ext_processor_base::start_online_measure()
+{
+	m_measure->endSubTask(tsk2, 1);
+	syslog(LOG_NOTICE, "%s: [%s]", __FUNCTION__, get_time_stamp().c_str());
+	m_measure->startSubTask(tsk3, 1);
+}
+
+//***********************************************************************************************//
+void spdz2_ext_processor_base::stop_measure()
+{
+	m_measure->endSubTask(tsk3, 1);
+	syslog(LOG_NOTICE, "%s: [%s]", __FUNCTION__, get_time_stamp().c_str());
 }
 
 //***********************************************************************************************//

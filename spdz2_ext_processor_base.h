@@ -9,6 +9,8 @@
 #include <string>
 #include <gmp.h>
 
+class Measurement;
+
 class spdz2_ext_processor_base
 {
 	/* Operational Section */
@@ -141,6 +143,12 @@ class spdz2_ext_processor_base
 	mpz_t * m_share_immediates_asynch_output;
 
 protected:
+	Measurement * m_measure;
+	void start_setup_measure();
+	void start_offline_measure();
+	void start_online_measure();
+	void stop_measure();
+
 	int m_party_id, m_num_of_parties, m_thread_id;
 
 	virtual int init_protocol(const int open_count, const int mult_count, const int bits_count) = 0;
@@ -156,6 +164,7 @@ protected:
 	virtual bool protocol_bits(const size_t count, mpz_t * bit_shares) = 0;
 	virtual bool protocol_value_mult(const mpz_t * op1, const mpz_t * op2, mpz_t * product) = 0;
 
+	virtual std::string get_parties_file() = 0;
 	virtual std::string get_syslog_name() = 0;
 
 	static std::string get_time_stamp();

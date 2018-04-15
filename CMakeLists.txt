@@ -7,6 +7,7 @@ INCLUDE_DIRECTORIES(	$ENV{HOME}/MPCHonestMajorityForSpdz
 						$ENV{HOME} 
 						$ENV{HOME}/libscapi/lib/OTExtensionBristol
 						$ENV{HOME}/libscapi/install/include
+						$ENV{HOME}/libscapi/include/infra
 )
 
 set(SOURCE_FILES

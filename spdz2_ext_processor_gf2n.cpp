@@ -86,10 +86,10 @@ int spdz2_ext_processor_gf2n::mix_sub_share(const mpz_t * scalar, mpz_t * share)
 
 int spdz2_ext_processor_gf2n::init_protocol(const int open_count, const int mult_count, const int bits_count)
 {
-	syslog(LOG_NOTICE, "spdz2_ext_processor_gf2n::init_protocol: starting setup [%s]", spdz2_ext_processor_base::get_time_stamp().c_str());
+	start_setup_measure();
 	the_field = new TemplateField<GF2E>(gf2n_bits);
-	the_party = new Protocol<GF2E>(m_num_of_parties, m_party_id, open_count, mult_count, bits_count, the_field, "Parties_gf2n.txt");
-	syslog(LOG_NOTICE, "spdz2_ext_processor_gf2n::init_protocol: starting offline [%s]", spdz2_ext_processor_base::get_time_stamp().c_str());
+	the_party = new Protocol<GF2E>(m_num_of_parties, m_party_id, open_count, mult_count, bits_count, the_field, get_parties_file());
+	start_offline_measure();
 	if(!the_party->offline())
 	{
 		syslog(LOG_ERR, "spdz2_ext_processor_gf2n::init_protocol: protocol offline() failure.");
@@ -284,6 +284,11 @@ bool spdz2_ext_processor_gf2n::protocol_bits(const size_t count, mpz_t * bit_sha
 bool spdz2_ext_processor_gf2n::protocol_value_mult(const mpz_t * op1, const mpz_t * op2, mpz_t * product)
 {
 	return false;
+}
+
+std::string spdz2_ext_processor_gf2n::get_parties_file()
+{
+	return "Parties_gf2n.txt";
 }
 
 std::string spdz2_ext_processor_gf2n::get_syslog_name()
