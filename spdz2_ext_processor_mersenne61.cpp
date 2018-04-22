@@ -295,7 +295,7 @@ bool spdz2_ext_processor_mersenne61::protocol_value_mult(const mpz_t * op1, cons
 
 std::string spdz2_ext_processor_mersenne61::get_parties_file()
 {
-	"Parties_gfp.txt";
+	return "Parties_gfp.txt";
 }
 
 std::string spdz2_ext_processor_mersenne61::get_syslog_name()
