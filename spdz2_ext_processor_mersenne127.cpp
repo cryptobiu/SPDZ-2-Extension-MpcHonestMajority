@@ -90,21 +90,24 @@ bool spdz2_ext_processor_mersenne127::protocol_open(const size_t value_count, co
 {
 	bool success = false;
 	char sz[128];
-	std::vector<Mersenne127> ext_shares(value_count), ext_opens(value_count);
+
+	if(m_aux1.size() < value_count) m_aux1.resize(value_count);
+	if(m_aux2.size() < value_count) m_aux2.resize(value_count);
+
 	syslog(LOG_INFO, "spdz2_ext_processor_mersenne127::protocol_open: calling open for %u shares", (u_int32_t)value_count);
 	for(size_t i = 0; i < value_count; i++)
 	{
-		ext_shares[i].set_mpz_t(shares + i);
+		m_aux1[i].set_mpz_t(shares + i);
 		syslog(LOG_DEBUG, "spdz2_ext_processor_mersenne127::protocol_open() share value[%lu] = %s", i, mpz_get_str(sz, 10, shares[i]));
 	}
 
-	if(success = the_party->openShare((int)ext_shares.size(), ext_shares, ext_opens))
+	if(success = the_party->openShare((int)m_aux1.size(), m_aux1, m_aux2))
 	{
 		if(!verify || the_party->verify())
 		{
 			for(size_t i = 0; i < value_count; i++)
 			{
-				mpz_set(opens[i], *ext_opens[i].get_mpz_t());
+				mpz_set(opens[i], *m_aux2[i].get_mpz_t());
 				syslog(LOG_DEBUG, "spdz2_ext_processor_mersenne127::protocol_open() opened value[%lu] = %s", i, mpz_get_str(sz, 10, opens[i]));
 			}
 		}
@@ -134,7 +137,7 @@ bool spdz2_ext_processor_mersenne127::protocol_triple(mpz_t * A, mpz_t * B, mpz_
 				mpz_get_str(sza, 10, *A), mpz_get_str(szb, 10, *B), mpz_get_str(szc, 10, *C));
 	}
 
-	/**/
+	/*
 	{//test the triple with open
 		std::vector<Mersenne127> ext_shares(3), ext_opens(3);
 
@@ -151,7 +154,7 @@ bool spdz2_ext_processor_mersenne127::protocol_triple(mpz_t * A, mpz_t * B, mpz_
 		{
 			syslog(LOG_ERR, "spdz2_ext_processor_mersenne127::protocol_triple: test open of triple failure");
 		}
-	}
+	}*/
 
 	return success;
 }
