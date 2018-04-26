@@ -269,7 +269,6 @@ bool spdz2_ext_processor_mersenne127::protocol_verify(int * error)
 bool spdz2_ext_processor_mersenne127::protocol_bits(const size_t count, mpz_t * bit_shares)
 {
 	bool success = false;
-	//std::vector<Mersenne127> m127_bit_shares(count);
 
 	if(m_aux1.size() < count) m_aux1.resize(count);
 
