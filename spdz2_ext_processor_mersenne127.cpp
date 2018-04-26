@@ -161,22 +161,25 @@ bool spdz2_ext_processor_mersenne127::protocol_mult(const size_t count, const mp
 	bool success = false;
 	char szx[128], szy[128];
 	size_t xy_pair_count = count/2;
-	std::vector<Mersenne127> x_shares(xy_pair_count), y_shares(xy_pair_count), xy_shares(xy_pair_count);
+
+	if(m_aux1.size() < xy_pair_count) m_aux1.resize(xy_pair_count);
+	if(m_aux2.size() < xy_pair_count) m_aux2.resize(xy_pair_count);
+	if(m_aux3.size() < xy_pair_count) m_aux3.resize(xy_pair_count);
 
 	for(size_t i = 0; i < xy_pair_count; ++i)
 	{
-		x_shares[i].set_mpz_t(input + (2*i));
-		y_shares[i].set_mpz_t(input + (2*i+1));
+		m_aux1[i].set_mpz_t(input + (2*i));
+		m_aux2[i].set_mpz_t(input + (2*i+1));
 		syslog(LOG_DEBUG, "spdz2_ext_processor_mersenne127::protocol_mult: X-Y pair %lu: X=%s Y=%s",
-				i, mpz_get_str(szx, 10, *x_shares[i].get_mpz_t()), mpz_get_str(szy, 10, *y_shares[i].get_mpz_t()));
+				i, mpz_get_str(szx, 10, *m_aux1[i].get_mpz_t()), mpz_get_str(szy, 10, *m_aux2[i].get_mpz_t()));
 	}
 
-	if(success = the_party->multShares(xy_pair_count, x_shares, y_shares, xy_shares))
+	if(success = the_party->multShares(xy_pair_count, m_aux1, m_aux2, m_aux3))
 	{
 		for(size_t i = 0; i < xy_pair_count; ++i)
 		{
-			mpz_set(output[i], *xy_shares[i].get_mpz_t());
-			syslog(LOG_DEBUG, "spdz2_ext_processor_mersenne127::protocol_mult: X-Y product %lu: X*Y=%s", i, mpz_get_str(szx, 10, *xy_shares[i].get_mpz_t()));
+			mpz_set(output[i], *m_aux3[i].get_mpz_t());
+			syslog(LOG_DEBUG, "spdz2_ext_processor_mersenne127::protocol_mult: X-Y product %lu: X*Y=%s", i, mpz_get_str(szx, 10, *m_aux3[i].get_mpz_t()));
 		}
 	}
 	else

@@ -11,6 +11,8 @@ class spdz2_ext_processor_mersenne127 : public spdz2_ext_processor_base
 	TemplateField<Mersenne127> * the_field;
 	Protocol<Mersenne127> * the_party;
 	mutable gmp_randstate_t the_gmp_rstate;
+
+	std::vector<Mersenne127> m_aux1, m_aux2, m_aux3;
 protected:
 
 	virtual int init_protocol(const int open_count, const int mult_count, const int bits_count);
