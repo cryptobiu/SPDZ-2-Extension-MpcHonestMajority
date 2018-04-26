@@ -101,7 +101,7 @@ bool spdz2_ext_processor_mersenne127::protocol_open(const size_t value_count, co
 		syslog(LOG_DEBUG, "spdz2_ext_processor_mersenne127::protocol_open() share value[%lu] = %s", i, mpz_get_str(sz, 10, shares[i]));
 	}
 
-	if(success = the_party->openShare((int)m_aux1.size(), m_aux1, m_aux2))
+	if(success = the_party->openShare((int)value_count, m_aux1, m_aux2))
 	{
 		if(!verify || the_party->verify())
 		{
@@ -269,13 +269,15 @@ bool spdz2_ext_processor_mersenne127::protocol_verify(int * error)
 bool spdz2_ext_processor_mersenne127::protocol_bits(const size_t count, mpz_t * bit_shares)
 {
 	bool success = false;
-	std::vector<Mersenne127> m127_bit_shares(count);
+	//std::vector<Mersenne127> m127_bit_shares(count);
 
-	if(success = the_party->bits(count, m127_bit_shares))
+	if(m_aux1.size() < count) m_aux1.resize(count);
+
+	if(success = the_party->bits(count, m_aux1))
 	{
 		for(size_t i = 0; i < count; ++i)
 		{
-			mpz_set(bit_shares[i], *m127_bit_shares[i].get_mpz_t());
+			mpz_set(bit_shares[i], *m_aux1[i].get_mpz_t());
 		}
 	}
 	else
