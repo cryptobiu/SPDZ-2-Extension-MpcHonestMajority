@@ -11,9 +11,6 @@ class spdz2_ext_processor_mersenne61 : public spdz2_ext_processor_base
 	TemplateField<ZpMersenneLongElement> * the_field;
 	Protocol<ZpMersenneLongElement> * the_party;
 	mutable gmp_randstate_t the_gmp_rstate;
-
-	std::vector<ZpMersenneLongElement> m_A_vector, m_B_vector, m_C_vector;
-
 protected:
 
 	virtual int init_protocol(const int open_count, const int mult_count, const int bits_count);

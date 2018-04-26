@@ -8,7 +8,6 @@ const u_int64_t spdz2_ext_processor_mersenne61::mersenne61 = 0x1FFFFFFFFFFFFFFF;
 spdz2_ext_processor_mersenne61::spdz2_ext_processor_mersenne61()
  : spdz2_ext_processor_base()
  , the_field(NULL), the_party(NULL)
- , m_A_vector(5000), m_B_vector(5000), m_C_vector(5000)
 {
 	gmp_randinit_mt(the_gmp_rstate);
 }
@@ -98,28 +97,23 @@ bool spdz2_ext_processor_mersenne61::protocol_offline()
 
 bool spdz2_ext_processor_mersenne61::protocol_open(const size_t value_count, const mpz_t * shares, mpz_t * opens, bool verify)
 {
-	/*
-	 * 		m_A_vector stand for the shares; m_B_vector stands for the opens
-	 * */
-
 	bool success = false;
-	if(m_A_vector.size() < value_count) m_A_vector.resize(value_count);
-	if(m_B_vector.size() < value_count) m_B_vector.resize(value_count);
+	std::vector<ZpMersenneLongElement> ext_shares(value_count), ext_opens(value_count);
 	syslog(LOG_DEBUG, "spdz2_ext_processor_mersenne61::protocol_open: calling open for %u shares", (u_int32_t)value_count);
 	for(size_t i = 0; i < value_count; i++)
 	{
-		m_A_vector[i].elem = mpz_get_ui(shares[i]);
-		syslog(LOG_DEBUG, "spdz2_ext_processor_mersenne61::protocol_open() share value[%lu] = %lu", i, m_A_vector[i].elem);
+		ext_shares[i].elem = mpz_get_ui(shares[i]);
+		syslog(LOG_DEBUG, "spdz2_ext_processor_mersenne61::protocol_open() share value[%lu] = %lu", i, ext_shares[i].elem);
 	}
 
-	if(success = the_party->openShare((int)value_count, m_A_vector, m_B_vector))
+	if(success = the_party->openShare((int)ext_shares.size(), ext_shares, ext_opens))
 	{
 		if(!verify || the_party->verify())
 		{
 			for(size_t i = 0; i < value_count; i++)
 			{
-				mpz_set_ui(opens[i], m_B_vector[i].elem);
-				syslog(LOG_DEBUG, "spdz2_ext_processor_mersenne61::protocol_open() opened value[%lu] = %lu", i, m_B_vector[i].elem);
+				mpz_set_ui(opens[i], ext_opens[i].elem);
+				syslog(LOG_DEBUG, "spdz2_ext_processor_mersenne61::protocol_open() opened value[%lu] = %lu", i, ext_opens[i].elem);
 			}
 		}
 		else
@@ -137,13 +131,13 @@ bool spdz2_ext_processor_mersenne61::protocol_open(const size_t value_count, con
 bool spdz2_ext_processor_mersenne61::protocol_triple(mpz_t * A, mpz_t * B, mpz_t * C)
 {
 	bool op_triple_success = false;
-	if(m_A_vector.size() < 3) m_A_vector.resize(3);
-	if(op_triple_success = the_party->triples(1, m_A_vector))
+	std::vector<ZpMersenneLongElement> triple(3);
+	if(op_triple_success = the_party->triples(1, triple))
 	{
-		mpz_set_ui(*A, m_A_vector[0].elem);
-		mpz_set_ui(*B, m_A_vector[1].elem);
-		mpz_set_ui(*C, m_A_vector[2].elem);
-		syslog(LOG_DEBUG, "spdz2_ext_processor_mersenne61::protocol_triple: share a = %lu; share b = %lu; share c = %lu;", m_A_vector[0].elem, m_A_vector[1].elem, m_A_vector[2].elem);
+		mpz_set_ui(*A, triple[0].elem);
+		mpz_set_ui(*B, triple[1].elem);
+		mpz_set_ui(*C, triple[2].elem);
+		syslog(LOG_DEBUG, "spdz2_ext_processor_mersenne61::protocol_triple: share a = %lu; share b = %lu; share c = %lu;", triple[0].elem, triple[1].elem, triple[2].elem);
 	}
 
 	/*
@@ -171,24 +165,21 @@ bool spdz2_ext_processor_mersenne61::protocol_mult(const size_t count, const mpz
 {
 	bool success = false;
 	size_t xy_pair_count = count/2;
-
-	if(m_A_vector.size() < xy_pair_count) m_A_vector.resize(xy_pair_count);
-	if(m_B_vector.size() < xy_pair_count) m_B_vector.resize(xy_pair_count);
-	if(m_C_vector.size() < xy_pair_count) m_C_vector.resize(xy_pair_count);
+	std::vector<ZpMersenneLongElement> x_shares(xy_pair_count), y_shares(xy_pair_count), xy_shares(xy_pair_count);
 
 	for(size_t i = 0; i < xy_pair_count; ++i)
 	{
-		m_A_vector[i].elem = mpz_get_ui(input[2*i]);
-		m_B_vector[i].elem = mpz_get_ui(input[2*i+1]);
-		syslog(LOG_DEBUG, "spdz2_ext_processor_mersenne61::protocol_mult: X-Y pair %lu: X=%lu Y=%lu", i, m_A_vector[i].elem, m_B_vector[i].elem);
+		x_shares[i].elem = mpz_get_ui(input[2*i]);
+		y_shares[i].elem = mpz_get_ui(input[2*i+1]);
+		syslog(LOG_DEBUG, "spdz2_ext_processor_mersenne61::protocol_mult: X-Y pair %lu: X=%lu Y=%lu", i, x_shares[i].elem, y_shares[i].elem);
 	}
 
-	if(success = the_party->multShares(xy_pair_count, m_A_vector, m_B_vector, m_C_vector))
+	if(success = the_party->multShares(xy_pair_count, x_shares, y_shares, xy_shares))
 	{
 		for(size_t i = 0; i < xy_pair_count; ++i)
 		{
-			mpz_set_ui(output[i], m_C_vector[i].elem);
-			syslog(LOG_DEBUG, "spdz2_ext_processor_mersenne61::protocol_mult: X-Y product %lu: X*Y=%lu", i, m_C_vector[i].elem);
+			mpz_set_ui(output[i], xy_shares[i].elem);
+			syslog(LOG_DEBUG, "spdz2_ext_processor_mersenne61::protocol_mult: X-Y product %lu: X*Y=%lu", i, xy_shares[i].elem);
 		}
 	}
 	else
@@ -201,21 +192,19 @@ bool spdz2_ext_processor_mersenne61::protocol_mult(const size_t count, const mpz
 bool spdz2_ext_processor_mersenne61::protocol_share(const int pid, const size_t count, const mpz_t * input, mpz_t * output)
 {
 	bool success = false;
-
-	if(m_A_vector.size() < count) m_A_vector.resize(count);
-	if(m_B_vector.size() < count) m_B_vector.resize(count);
+	std::vector<ZpMersenneLongElement> shares(count), values(count);
 
 	for(size_t i = 0; i < count; ++i)
 	{
-		m_A_vector[i].elem = mpz_get_ui(input[i]);
+		values[i].elem = mpz_get_ui(input[i]);
 	}
 
-	if(success = the_party->makeShare(pid, m_A_vector, m_B_vector))
+	if(success = the_party->makeShare(pid, values, shares))
 	{
 		for(size_t i = 0; i < count; ++i)
 		{
-			mpz_set_ui(output[i], m_B_vector[i].elem);
-			syslog(LOG_DEBUG, "spdz2_ext_processor_mersenne61::protocol_share_immediates: value [%lu] share[%lu] = %lu", m_A_vector[i].elem, i, m_B_vector[i].elem);
+			mpz_set_ui(output[i], shares[i].elem);
+			syslog(LOG_DEBUG, "spdz2_ext_processor_mersenne61::protocol_share_immediates: value [%lu] share[%lu] = %lu", values[i].elem, i, shares[i].elem);
 		}
 	}
 	else
@@ -275,14 +264,13 @@ bool spdz2_ext_processor_mersenne61::protocol_bits(const size_t count, mpz_t * b
 {
 	bool success = false;
 	char sz[128];
+	std::vector<ZpMersenneLongElement> zbit_shares(count);
 
-	if(m_A_vector.size() < count) m_A_vector.resize(count);
-
-	if(success = the_party->bits(count, m_A_vector))
+	if(success = the_party->bits(count, zbit_shares))
 	{
 		for(size_t i = 0; i < count; ++i)
 		{
-			mpz_set_ui(bit_shares[i], m_A_vector[i].elem);
+			mpz_set_ui(bit_shares[i], zbit_shares[i].elem);
 			syslog(LOG_DEBUG, "spdz2_ext_processor_mersenne61::protocol_bits: protocol bits share = %s.", mpz_get_str(sz, 10, bit_shares[i]));
 		}
 	}
