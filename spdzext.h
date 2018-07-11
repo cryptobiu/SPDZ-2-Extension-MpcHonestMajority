@@ -35,8 +35,7 @@ extern "C"
 	int offline(void * handle, const int offline_size);
 
 	/**
-	 * Start an asynchronous opening of shared values
-	 * Must be followed by a call to stop open
+	 * Open shared values
 	 * @param[in] handle An initialized session handle
 	 * @param[in] share_count The number of shared values to be opened
 	 * @param[in] shares An array of share values to be opened
@@ -44,15 +43,7 @@ extern "C"
 	 * @param[in] verify Whether the opened values are to be verified, 0 for false
 	 * @return 0 on success, -1 otherwise
 	 */
-	int start_open(void * handle, const size_t share_count, const mpz_t * shares, mpz_t * opens, int verify);
-
-	/**
-	 * Complete an asynchronous opening of shared values
-	 * Will fail if no open start was called before
-	 * @param[in] handle An initialized session handle
-	 * @return 0 on success, -1 otherwise
-	 */
-	int stop_open(void * handle);
+	int opens(void * handle, const size_t share_count, const mpz_t * shares, mpz_t * opens, int verify);
 
 	/**
 	 * Retrieve a triple of values
@@ -65,53 +56,25 @@ extern "C"
 	int triple(void * handle, mpz_t * a, mpz_t * b, mpz_t * c);
 
 	/**
-	 * Retrieve an input value from a party
-	 * @param[in] handle An initialized session handle
-	 * @param[in] input_of_pid The party identifier from which input is required
-	 * @param[out] input_value The input value
-	 * @return 0 on success, -1 otherwise
-	 */
-	int input(void * handle, const int input_of_pid, mpz_t * input_value);
-
-	/**
-	 * Start an asynchronous verification operation
-	 * Must be followed by a call to stop verify
+	 * Verify
 	 * @param[in] handle An initialized session handle
 	 * @param[out] error Verification error code
 	 * @return 0 on success, -1 otherwise
 	 */
-	int start_verify(void * handle, int * error);
+	int verify(void * handle, int * error);
 
 	/**
-	 * Complete an asynchronous verification operation
-	 * Will fail if no verification start was called before
-	 * @param[in] handle An initialized session handle
-	 * @return 0 on success, -1 otherwise
-	 */
-	int stop_verify(void * handle);
-
-	/**
-	 * Start an asynchronous multiple input values operation
-	 * Must be followed by a call to stop input
+	 * Get multiple user input values
 	 * @param[in] handle An initialized session handle
 	 * @param[in] input_of_pid The party identifier from which input is required
 	 * @param[in] num_of_inputs The number of required input values
 	 * @param[out] inputs The input values
 	 * @return 0 on success, -1 otherwise
 	 */
-    int start_input(void * handle, const int input_of_pid, const size_t num_of_inputs, mpz_t * inputs);
-
-	/**
-	 * Complete an asynchronous multiple input values operation
-	 * Will fail if no input start was called before
-	 * @param[in] handle An initialized session handle
-	 * @return 0 on success, -1 otherwise
-	 */
-    int stop_input(void * handle);
+    int input(void * handle, const int input_of_pid, const size_t num_of_inputs, mpz_t * inputs);
 
     /**
-     * Start an asynchronous multiply operation
-	 * Must be followed by a call to stop mult
+     * Multiply share values
 	 * @param[in] handle An initialized session handle
 	 * @param[in] share_count Number of the shared values
 	 * @param[in] shares The shared values
@@ -119,15 +82,7 @@ extern "C"
 	 * @param[in] verify Verification flag
 	 * @return 0 on success, -1 otherwise
      */
-    int start_mult(void * handle, const size_t share_count, const mpz_t * shares, mpz_t * products, int verify);
-
-	/**
-	 * Complete an asynchronous multiply operation
-	 * Will fail if no start mult was previously called
-	 * @param[in] handle An initialized session handle
-	 * @return 0 on success, -1 otherwise
-	 */
-    int stop_mult(void * handle);
+    int mult(void * handle, const size_t share_count, const mpz_t * shares, mpz_t * products, int verify);
 
     /**
      * Addition of a share value with a scalar value
@@ -157,32 +112,14 @@ extern "C"
     int mix_sub_share(void * handle, const mpz_t * scalar, mpz_t * share);
 
     /**
-     * Start an asynchronous operation of sharing given values
-	 * Must be followed by a stop call to share_immediates
+     * Share the given values
 	 * @param[in] handle An initialized session handle
 	 * @param[in] value_count The number of the values to share
 	 * @param[in] values An array of values to share
 	 * @param[out] shares The shared values
 	 * @return 0 on success, -1 otherwise
      */
-    int start_share_immediates(void * handle, const size_t value_count, const mpz_t * values, mpz_t * shares);
-
-	/**
-	 * Complete an asynchronous value sharing operation
-	 * Will fail if no start share_immediates was previously called
-	 * @param[in] handle An initialized session handle
-	 * @return 0 on success, -1 otherwise
-	 */
-    int stop_share_immediates(void * handle);
-
-    /**
-     * Synchrnous load share from immediate
-	 * @param[in] handle An initialized session handle
-	 * @param[in] value A value to share
-	 * @param[out] share A share to fill
-	 * @return 0 on success, -1 otherwise
-     */
-    int share_immediate(void * handle, const mpz_t * value, mpz_t * share);
+    int share_immediates(void * handle, const size_t value_count, const mpz_t * values, mpz_t * shares);
 
     /**
      * Get a shared input bit value

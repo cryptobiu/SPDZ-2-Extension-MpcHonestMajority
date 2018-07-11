@@ -11,7 +11,7 @@
 
 //-------------------------------------------------------------------------------------------//
 int init(void ** handle, const int pid, const int num_of_parties, const int thread_id,
-		const char * field, const int open_count, const int mult_count, const int bits_count)
+		 const char * field, const int open_count, const int mult_count, const int bits_count)
 {
 	spdz2_ext_processor_base * proc = NULL;
 	if(strncmp(field, "gfp", 3) == 0)
@@ -42,7 +42,7 @@ int init(void ** handle, const int pid, const int num_of_parties, const int thre
 		return -1;
 	}
 
-	if(0 != proc->start(pid, num_of_parties, thread_id, field, open_count, mult_count, bits_count))
+	if(0 != proc->init(pid, num_of_parties, thread_id, field, open_count, mult_count, bits_count))
 	{
 		delete proc;
 		return -1;
@@ -54,7 +54,7 @@ int init(void ** handle, const int pid, const int num_of_parties, const int thre
 int term(void * handle)
 {
 	spdz2_ext_processor_base * proc = ((spdz2_ext_processor_base *)handle);
-	proc->stop(20);
+	proc->term();
 	delete proc;
 	return 0;
 }
@@ -64,19 +64,19 @@ int offline(void * handle, const int offline_size)
 	return ((spdz2_ext_processor_base *)handle)->offline(offline_size);
 }
 //-------------------------------------------------------------------------------------------//
-int start_open(void * handle, const size_t share_count, const mpz_t * shares, mpz_t * opens, int verify)
+int opens(void * handle, const size_t share_count, const mpz_t * shares, mpz_t * opens, int verify)
 {
-	return ((spdz2_ext_processor_base *)handle)->start_open(share_count, shares, opens, verify);
-}
-//-------------------------------------------------------------------------------------------//
-int stop_open(void * handle)
-{
-	return ((spdz2_ext_processor_base *)handle)->stop_open();
+	return ((spdz2_ext_processor_base *)handle)->open(share_count, shares, opens, verify);
 }
 //-------------------------------------------------------------------------------------------//
 int triple(void * handle, mpz_t * a, mpz_t * b, mpz_t * c)
 {
-	return ((spdz2_ext_processor_base *)handle)->triple(a, b, c, 20);
+	return ((spdz2_ext_processor_base *)handle)->triple(a, b, c);
+}
+//-------------------------------------------------------------------------------------------//
+int verify(void * handle, int * error)
+{
+	return ((spdz2_ext_processor_base *)handle)->verify(error);
 }
 //-------------------------------------------------------------------------------------------//
 int input(void * handle, const int input_of_pid, mpz_t * input_value)
@@ -84,34 +84,9 @@ int input(void * handle, const int input_of_pid, mpz_t * input_value)
 	return ((spdz2_ext_processor_base *)handle)->input(input_of_pid, input_value);
 }
 //-------------------------------------------------------------------------------------------//
-int start_verify(void * handle, int * error)
+int mult(void * handle, const size_t share_count, const mpz_t * shares, mpz_t * products, int verify)
 {
-	return ((spdz2_ext_processor_base *)handle)->start_verify(error);
-}
-//-------------------------------------------------------------------------------------------//
-int stop_verify(void * handle)
-{
-	return ((spdz2_ext_processor_base *)handle)->stop_verify();
-}
-//-------------------------------------------------------------------------------------------//
-int start_input(void * handle, const int input_of_pid, const size_t num_of_inputs, mpz_t * inputs)
-{
-	return ((spdz2_ext_processor_base *)handle)->start_input(input_of_pid, num_of_inputs, inputs);
-}
-//-------------------------------------------------------------------------------------------//
-int stop_input(void * handle)
-{
-	return ((spdz2_ext_processor_base *)handle)->stop_input();
-}
-//-------------------------------------------------------------------------------------------//
-int start_mult(void * handle, const size_t share_count, const mpz_t * shares, mpz_t * products, int verify)
-{
-	return ((spdz2_ext_processor_base *)handle)->start_mult(share_count, shares, products, verify);
-}
-//-------------------------------------------------------------------------------------------//
-int stop_mult(void * handle)
-{
-	return ((spdz2_ext_processor_base *)handle)->stop_mult();
+	return ((spdz2_ext_processor_base *)handle)->mult(share_count, shares, products, verify);
 }
 //-------------------------------------------------------------------------------------------//
 int mix_add(void * handle, mpz_t * share, const mpz_t * scalar)
@@ -129,19 +104,9 @@ int mix_sub_share(void * handle, const mpz_t * scalar, mpz_t * share)
 	return ((spdz2_ext_processor_base *)handle)->mix_sub_share(scalar, share);
 }
 //-------------------------------------------------------------------------------------------//
-int start_share_immediates(void * handle, const size_t value_count, const mpz_t * values, mpz_t * shares)
+int share_immediates(void * handle, const size_t value_count, const mpz_t * values, mpz_t * shares)
 {
-	return ((spdz2_ext_processor_base *)handle)->start_share_immediates(value_count, values, shares);
-}
-//-------------------------------------------------------------------------------------------//
-int stop_share_immediates(void * handle)
-{
-	return ((spdz2_ext_processor_base *)handle)->stop_share_immediates();
-}
-//-------------------------------------------------------------------------------------------//
-int share_immediate(void * handle, const mpz_t * value, mpz_t * share)
-{
-	return ((spdz2_ext_processor_base *)handle)->share_immediate(value, share);
+	return ((spdz2_ext_processor_base *)handle)->share_immediates(value_count, values, shares);
 }
 //-------------------------------------------------------------------------------------------//
 int bit(void * handle, mpz_t * share)
@@ -154,7 +119,6 @@ int inverse(void * handle, mpz_t * share_value, mpz_t * share_inverse)
 	return ((spdz2_ext_processor_base *)handle)->inverse(share_value, share_inverse);
 }
 //-------------------------------------------------------------------------------------------//
-
 /*
 mpz_t gfp_conversion(const mpz_t value)
 {
