@@ -117,6 +117,51 @@ int spdz2_ext_processor_mersenne61::bit(mpz_t share)
 	return -1;
 }
 
+int spdz2_ext_processor_mersenne61::inverse(mpz_t x, mpz_t y)
+{
+/*
+1.      Non-interactively generate a share of a field element [x]				]
+2.      Non-interactively generate a share of another filed element [r].		] All 3 are implemented below
+3.      MPC multiply [u] = [x][r]												] using protocol_triple
+4.      Open u=[u]
+5.      Non-interactively inverse v=1/u
+6.      Non-interactively multiply [y] =v [r]
+7.		Now [y] [x] =1 holds.
+*/
+
+	int result = -1;
+	mpz_t r, u, open_u, v, product;
+
+	mpz_init(r);
+	mpz_init(u);
+	mpz_init(open_u);
+	mpz_init(v);
+	mpz_init(product);
+
+	if(triple(x, r, u))
+	{
+		if(open(1, &u, &open_u, true))
+		{
+			value_inverse(open_u, v);
+			mpz_mul(product, v, r);
+			mpz_mod_ui(y, product, spdz2_ext_processor_mersenne61::mersenne61);
+			result = 0;
+		}
+		else
+			syslog(LOG_ERR, "spdz2_ext_processor_base::exec_inverse_synch: protocol_open() failed");
+	}
+	else
+		syslog(LOG_ERR, "spdz2_ext_processor_base::exec_inverse_synch: protocol_triple() failed");
+
+	mpz_clear(r);
+	mpz_clear(u);
+	mpz_clear(open_u);
+	mpz_clear(v);
+	mpz_clear(product);
+
+	return result;
+}
+
 int spdz2_ext_processor_mersenne61::value_inverse(const mpz_t value, mpz_t inverse)
 {
 	mpz_t gcd, x, y, P;
