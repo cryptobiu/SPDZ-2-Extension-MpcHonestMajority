@@ -35,6 +35,24 @@ int spdz2_ext_processor_mersenne127::term()
 	return 0;
 }
 
+int spdz2_ext_processor_mersenne127::offline(const int offline_size)
+{
+	return (the_party->offline())? 0: -1;
+}
+
+int spdz2_ext_processor_mersenne127::input(const int input_of_pid, mpz_t input_value)
+{
+	std::map< int , shared_input_t >::iterator i = m_shared_inputs.find(input_of_pid);
+
+	if(m_shared_inputs.end() != i && 0 < i->second.share_count && i->second.share_index < i->second.share_count)
+	{
+		mpz_set(input_value, i->second.shared_values[i->second.share_index++]);
+		return 0;
+	}
+	syslog(LOG_ERR, "spdz2_ext_processor_mersenne127::input: failed to get input for pid %d.", input_of_pid);
+	return -1;
+}
+
 //
 //int spdz2_ext_processor_mersenne127::mix_add(mpz_t * share, const mpz_t * scalar)
 //{

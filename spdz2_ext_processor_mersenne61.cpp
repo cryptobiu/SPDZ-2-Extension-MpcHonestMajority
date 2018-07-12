@@ -52,7 +52,7 @@ int spdz2_ext_processor_mersenne61::input(const int input_of_pid, mpz_t input_va
 		mpz_set(input_value, i->second.shared_values[i->second.share_index++]);
 		return 0;
 	}
-	syslog(LOG_ERR, "spdz2_ext_processor_base::exec_input_synch: failed to get input for pid %d.", input_of_pid);
+	syslog(LOG_ERR, "spdz2_ext_processor_mersenne61::input: failed to get input for pid %d.", input_of_pid);
 	return -1;
 }
 
