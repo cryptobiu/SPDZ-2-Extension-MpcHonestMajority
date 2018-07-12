@@ -53,6 +53,23 @@ int spdz2_ext_processor_mersenne127::input(const int input_of_pid, mpz_t input_v
 	return -1;
 }
 
+int spdz2_ext_processor_mersenne127::triple(mpz_t a, mpz_t b, mpz_t c)
+{
+	std::vector<Mersenne127> triple(3);
+	if(the_party->triples(1, triple))
+	{
+		mpz_set(a, *triple[0].get_mpz_t());
+		mpz_set(b, *triple[1].get_mpz_t());
+		mpz_set(c, *triple[2].get_mpz_t());
+		return 0;
+	}
+	else
+	{
+		syslog(LOG_ERR, "spdz2_ext_processor_mersenne127::triple: protocol triples failure.");
+	}
+	return -1;
+}
+
 //
 //int spdz2_ext_processor_mersenne127::mix_add(mpz_t * share, const mpz_t * scalar)
 //{
