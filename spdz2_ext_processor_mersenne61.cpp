@@ -29,6 +29,15 @@ int spdz2_ext_processor_mersenne61::init(const int pid, const int num_of_parties
 	return 0;
 }
 
+int spdz2_ext_processor_mersenne61::term()
+{
+	delete the_party;
+	the_party = NULL;
+	delete the_field;
+	the_field = NULL;
+	return 0;
+}
+
 //
 //spdz2_ext_processor_mersenne61::spdz2_ext_processor_mersenne61()
 // : spdz2_ext_processor_base()
