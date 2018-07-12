@@ -43,28 +43,28 @@ int spdz2_ext_processor_mersenne61::offline(const int offline_size)
 	return (the_party->offline())? 0: -1;
 }
 
-int spdz2_ext_processor_mersenne61::input(const int input_of_pid, mpz_t * input_value)
+int spdz2_ext_processor_mersenne61::input(const int input_of_pid, mpz_t input_value)
 {
 	std::map< int , shared_input_t >::iterator i = m_shared_inputs.find(input_of_pid);
 
 	if(m_shared_inputs.end() != i && 0 < i->second.share_count && i->second.share_index < i->second.share_count)
 	{
-		mpz_set(*input_value, i->second.shared_values[i->second.share_index++]);
+		mpz_set(input_value, i->second.shared_values[i->second.share_index++]);
 		return 0;
 	}
 	syslog(LOG_ERR, "spdz2_ext_processor_base::exec_input_synch: failed to get input for pid %d.", input_of_pid);
 	return -1;
 }
 
-int spdz2_ext_processor_mersenne61::triple(mpz_t * a, mpz_t * b, mpz_t * c)
+int spdz2_ext_processor_mersenne61::triple(mpz_t a, mpz_t b, mpz_t c)
 {
 	std::vector<ZpMersenneLongElement> triple(3);
 	if(the_party->triples(1, triple))
 	{
 		syslog(LOG_DEBUG, "spdz2_ext_processor_mersenne61::protocol_triple: share a = %lu; share b = %lu; share c = %lu;", triple[0].elem, triple[1].elem, triple[2].elem);
-		mpz_set_ui(*a, triple[0].elem);
-		mpz_set_ui(*b, triple[1].elem);
-		mpz_set_ui(*c, triple[2].elem);
+		mpz_set_ui(a, triple[0].elem);
+		mpz_set_ui(b, triple[1].elem);
+		mpz_set_ui(c, triple[2].elem);
 		return 0;
 	}
 	else
@@ -101,12 +101,12 @@ int spdz2_ext_processor_mersenne61::share_immediates(const int share_of_pid, con
 	return -1;
 }
 
-int spdz2_ext_processor_mersenne61::bit(mpz_t * share)
+int spdz2_ext_processor_mersenne61::bit(mpz_t share)
 {
 	std::vector<ZpMersenneLongElement> zbit_shares(1);
 	if(the_party->bits(1, zbit_shares))
 	{
-		mpz_set_ui(*share, zbit_shares[0].elem);
+		mpz_set_ui(share, zbit_shares[0].elem);
 		syslog(LOG_DEBUG, "spdz2_ext_processor_mersenne61::bit: protocol bits share = %lu.", zbit_shares[0].elem);
 		return 0;
 	}
@@ -115,6 +115,30 @@ int spdz2_ext_processor_mersenne61::bit(mpz_t * share)
 		syslog(LOG_ERR, "spdz2_ext_processor_mersenne61::bit: protocol bits failure.");
 	}
 	return -1;
+}
+
+int spdz2_ext_processor_mersenne61::value_inverse(const mpz_t value, mpz_t inverse)
+{
+	mpz_t gcd, x, y, P;
+
+	mpz_init(gcd);
+	mpz_init(x);
+	mpz_init(y);
+	mpz_init(P);
+
+	mpz_set_ui(P, spdz2_ext_processor_mersenne61::mersenne61);
+	mpz_gcdext(gcd, x, y, value, P);
+	mpz_mod(inverse, x, P);
+
+	mpz_clear(gcd);
+	mpz_clear(x);
+	mpz_clear(y);
+	mpz_clear(P);
+
+	char szv[128], szi[128];
+	syslog(LOG_DEBUG, "spdz2_ext_processor_mersenne61::protocol_value_inverse: value = %s; inverse = %s;", mpz_get_str(szv, 10, value), mpz_get_str(szi, 10, inverse));
+
+	return 0;
 }
 
 //

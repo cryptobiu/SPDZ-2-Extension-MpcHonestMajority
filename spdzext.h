@@ -14,19 +14,19 @@ extern "C"
 
 	int offline(void * handle, const int offline_size);
 	int opens(void * handle, const size_t share_count, const mpz_t * shares, mpz_t * opens, int verify);
-	int triple(void * handle, mpz_t * a, mpz_t * b, mpz_t * c);
+	int triple(void * handle, mpz_t a, mpz_t b, mpz_t c);
 	int verify(void * handle, int * error);
     int input(void * handle, const int input_of_pid, const size_t num_of_inputs, mpz_t * inputs);
     int mult(void * handle, const size_t share_count, const mpz_t * shares, mpz_t * products, int verify);
 
-    int mix_add(void * handle, mpz_t * share, const mpz_t * scalar);
-    int mix_sub_scalar(void * handle, mpz_t * share, const mpz_t * scalar);
-    int mix_sub_share(void * handle, const mpz_t * scalar, mpz_t * share);
+    int mix_add(void * handle, mpz_t share, const mpz_t scalar);
+    int mix_sub_scalar(void * handle, mpz_t share, const mpz_t scalar);
+    int mix_sub_share(void * handle, const mpz_t scalar, mpz_t share);
 
     int share_immediates(void * handle, const int party_id, const size_t value_count, const mpz_t * values, mpz_t * shares);
 
-    int bit(void * handle, mpz_t * share);
-    int inverse(void * handle, mpz_t * share_value, mpz_t * share_inverse);
+    int bit(void * handle, mpz_t share);
+    int inverse(void * handle, mpz_t share_value, mpz_t share_inverse);
 
     /*
     mpz_t gfp_conversion(const mpz_t * value);

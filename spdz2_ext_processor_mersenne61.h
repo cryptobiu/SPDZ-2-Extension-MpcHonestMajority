@@ -11,6 +11,8 @@ class spdz2_ext_processor_mersenne61 : public spdz2_ext_processor_base
 	TemplateField<ZpMersenneLongElement> * the_field;
 	Protocol<ZpMersenneLongElement> * the_party;
 	gmp_randstate_t the_gmp_rstate;
+
+	int value_inverse(const mpz_t value, mpz_t inverse);
 public:
 	spdz2_ext_processor_mersenne61();
 	virtual ~spdz2_ext_processor_mersenne61();
@@ -20,18 +22,18 @@ public:
 	int term();
 
 	int offline(const int offline_size);
-	int input(const int input_of_pid, mpz_t * input_value);
-	int triple(mpz_t * a, mpz_t * b, mpz_t * c);
+	int input(const int input_of_pid, mpz_t input_value);
+	int triple(mpz_t a, mpz_t b, mpz_t c);
 	int share_immediates(const int share_of_pid, const size_t value_count, const mpz_t * values, mpz_t * shares);
-    int bit(mpz_t * share);
-    int inverse(mpz_t * share_value, mpz_t * share_inverse);
+    int bit(mpz_t share);
+    int inverse(mpz_t share_value, mpz_t share_inverse);
     int open(const size_t share_count, const mpz_t * share_values, mpz_t * opens, int verify);
 	int verify(int * error);
 	int input(const int input_of_pid, const size_t num_of_inputs, mpz_t * inputs);
     int mult(const size_t share_count, const mpz_t * shares, mpz_t * products, int verify);
-    int mix_add(mpz_t * share, const mpz_t * scalar);
-    int mix_sub_scalar(mpz_t * share, const mpz_t * scalar);
-    int mix_sub_share(const mpz_t * scalar, mpz_t * share);
+    int mix_add(mpz_t share, const mpz_t scalar);
+    int mix_sub_scalar(mpz_t share, const mpz_t scalar);
+    int mix_sub_share(const mpz_t scalar, mpz_t share);
 
 	static const u_int64_t mersenne61;
 };
