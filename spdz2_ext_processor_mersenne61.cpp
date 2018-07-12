@@ -56,6 +56,20 @@ int spdz2_ext_processor_mersenne61::input(const int input_of_pid, mpz_t * input_
 	return -1;
 }
 
+int spdz2_ext_processor_mersenne61::triple(mpz_t * a, mpz_t * b, mpz_t * c)
+{
+	std::vector<ZpMersenneLongElement> triple(3);
+	if(the_party->triples(1, triple))
+	{
+		syslog(LOG_DEBUG, "spdz2_ext_processor_mersenne61::protocol_triple: share a = %lu; share b = %lu; share c = %lu;", triple[0].elem, triple[1].elem, triple[2].elem);
+		mpz_set_ui(*a, triple[0].elem);
+		mpz_set_ui(*b, triple[1].elem);
+		mpz_set_ui(*c, triple[2].elem);
+		return 0;
+	}
+	return -1;
+}
+
 //
 //spdz2_ext_processor_mersenne61::spdz2_ext_processor_mersenne61()
 // : spdz2_ext_processor_base()
