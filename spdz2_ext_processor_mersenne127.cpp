@@ -2,6 +2,17 @@
 
 #include <syslog.h>
 
+spdz2_ext_processor_mersenne127::spdz2_ext_processor_mersenne127()
+: the_field(NULL), the_party(NULL)
+{
+	gmp_randinit_mt(the_gmp_rstate);
+}
+
+spdz2_ext_processor_mersenne127::~spdz2_ext_processor_mersenne127()
+{
+}
+
+
 //spdz2_ext_processor_mersenne127::spdz2_ext_processor_mersenne127()
 // : spdz2_ext_processor_base()
 // , the_field(NULL), the_party(NULL)

@@ -8,6 +8,10 @@
 
 class spdz2_ext_processor_mersenne127 : public spdz2_ext_processor_base
 {
+	TemplateField<Mersenne127> * the_field;
+	Protocol<Mersenne127> * the_party;
+	gmp_randstate_t the_gmp_rstate;
+
 public:
 	spdz2_ext_processor_mersenne127();
 	virtual ~spdz2_ext_processor_mersenne127();
