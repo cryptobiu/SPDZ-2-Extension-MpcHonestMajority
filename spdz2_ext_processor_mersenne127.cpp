@@ -12,17 +12,29 @@ spdz2_ext_processor_mersenne127::~spdz2_ext_processor_mersenne127()
 {
 }
 
+int spdz2_ext_processor_mersenne127::init(const int pid, const int num_of_parties, const int thread_id, const char * field,
+		 	 	 	 	 	 	 	 	 const int open_count, const int mult_count, const int bits_count)
+{
+	spdz2_ext_processor_base::init(pid, num_of_parties, thread_id, field, open_count, mult_count, bits_count);
+	the_field = new TemplateField<Mersenne127>(0);
+	the_party = new Protocol<Mersenne127>(m_nparties, m_pid, open_count, mult_count, bits_count, the_field, get_parties_file());
+	if(!the_party->offline())
+	{
+		syslog(LOG_ERR, "spdz2_ext_processor_mersenne127::init_protocol: protocol offline() failure.");
+		return -1;
+	}
+	return 0;
+}
 
-//spdz2_ext_processor_mersenne127::spdz2_ext_processor_mersenne127()
-// : spdz2_ext_processor_base()
-// , the_field(NULL), the_party(NULL)
-//{
-//	gmp_randinit_mt(the_gmp_rstate);
-//}
-//
-//spdz2_ext_processor_mersenne127::~spdz2_ext_processor_mersenne127()
-//{
-//}
+int spdz2_ext_processor_mersenne127::term()
+{
+	delete the_party;
+	the_party = NULL;
+	delete the_field;
+	the_field = NULL;
+	return 0;
+}
+
 //
 //int spdz2_ext_processor_mersenne127::mix_add(mpz_t * share, const mpz_t * scalar)
 //{
