@@ -77,7 +77,6 @@ int spdz2_ext_processor_mersenne61::triple(mpz_t * a, mpz_t * b, mpz_t * c)
 int spdz2_ext_processor_mersenne61::share_immediates(const int share_of_pid, const size_t value_count, const mpz_t * values, mpz_t * shares)
 {
 	std::vector<ZpMersenneLongElement> m61shares(value_count), m61values(value_count);
-
 	if(share_of_pid == m_pid)
 	{
 		for(size_t i = 0; i < value_count; ++i)
@@ -98,6 +97,22 @@ int spdz2_ext_processor_mersenne61::share_immediates(const int share_of_pid, con
 	else
 	{
 		syslog(LOG_ERR, "spdz2_ext_processor_mersenne61::protocol_share_immediates: protocol share_immediates failure.");
+	}
+	return -1;
+}
+
+int spdz2_ext_processor_mersenne61::bit(mpz_t * share)
+{
+	std::vector<ZpMersenneLongElement> zbit_shares(1);
+	if(the_party->bits(1, zbit_shares))
+	{
+		mpz_set_ui(*share, zbit_shares[0].elem);
+		syslog(LOG_DEBUG, "spdz2_ext_processor_mersenne61::bit: protocol bits share = %lu.", zbit_shares[0].elem);
+		return 0;
+	}
+	else
+	{
+		syslog(LOG_ERR, "spdz2_ext_processor_mersenne61::bit: protocol bits failure.");
 	}
 	return -1;
 }
