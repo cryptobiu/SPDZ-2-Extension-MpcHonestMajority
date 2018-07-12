@@ -186,6 +186,41 @@ int spdz2_ext_processor_mersenne61::value_inverse(const mpz_t value, mpz_t inver
 	return 0;
 }
 
+int spdz2_ext_processor_mersenne61::open(const size_t share_count, const mpz_t * share_values, mpz_t * opens, int verify)
+{
+	int result = -1;
+	std::vector<ZpMersenneLongElement> m61shares(share_count), m61opens(share_count);
+	syslog(LOG_DEBUG, "spdz2_ext_processor_mersenne61::protocol_open: calling open for %u shares", (u_int32_t)share_count);
+	for(size_t i = 0; i < share_count; i++)
+	{
+		m61shares[i].elem = mpz_get_ui(share_values[i]);
+		syslog(LOG_DEBUG, "spdz2_ext_processor_mersenne61::protocol_open() share value[%lu] = %lu", i, m61shares[i].elem);
+	}
+
+	if(the_party->openShare((int)share_count, m61shares, m61opens))
+	{
+		if(!verify || the_party->verify())
+		{
+			for(size_t i = 0; i < share_count; i++)
+			{
+				mpz_set_ui(opens[i], m61opens[i].elem);
+				syslog(LOG_DEBUG, "spdz2_ext_processor_mersenne61::protocol_open() opened value[%lu] = %lu", i, m61opens[i].elem);
+			}
+			result = 0;
+		}
+		else
+		{
+			syslog(LOG_ERR, "spdz2_ext_processor_mersenne61::protocol_open: verify failure.");
+		}
+	}
+	else
+	{
+		syslog(LOG_ERR, "spdz2_ext_processor_mersenne61::protocol_open: openShare failure.");
+	}
+	return result;
+
+}
+
 //
 //spdz2_ext_processor_mersenne61::spdz2_ext_processor_mersenne61()
 // : spdz2_ext_processor_base()
