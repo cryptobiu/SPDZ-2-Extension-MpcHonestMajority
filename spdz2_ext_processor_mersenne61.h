@@ -22,7 +22,7 @@ public:
 	int offline(const int offline_size);
 	int input(const int input_of_pid, mpz_t * input_value);
 	int triple(mpz_t * a, mpz_t * b, mpz_t * c);
-	int share_immediates(const size_t value_count, const mpz_t * values, mpz_t * shares);
+	int share_immediates(const int share_of_pid, const size_t value_count, const mpz_t * values, mpz_t * shares);
     int bit(mpz_t * share);
     int inverse(mpz_t * share_value, mpz_t * share_inverse);
     int open(const size_t share_count, const mpz_t * share_values, mpz_t * opens, int verify);

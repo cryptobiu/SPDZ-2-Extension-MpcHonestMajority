@@ -104,9 +104,9 @@ int mix_sub_share(void * handle, const mpz_t * scalar, mpz_t * share)
 	return ((spdz2_ext_processor_base *)handle)->mix_sub_share(scalar, share);
 }
 //-------------------------------------------------------------------------------------------//
-int share_immediates(void * handle, const size_t value_count, const mpz_t * values, mpz_t * shares)
+int share_immediates(void * handle, const int party_id, const size_t value_count, const mpz_t * values, mpz_t * shares)
 {
-	return ((spdz2_ext_processor_base *)handle)->share_immediates(value_count, values, shares);
+	return ((spdz2_ext_processor_base *)handle)->share_immediates(party_id, value_count, values, shares);
 }
 //-------------------------------------------------------------------------------------------//
 int bit(void * handle, mpz_t * share)
