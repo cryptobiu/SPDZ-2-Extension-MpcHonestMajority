@@ -38,6 +38,11 @@ int spdz2_ext_processor_mersenne61::term()
 	return 0;
 }
 
+int spdz2_ext_processor_mersenne61::offline(const int offline_size)
+{
+	return (the_party->offline())? 0: -1;
+}
+
 //
 //spdz2_ext_processor_mersenne61::spdz2_ext_processor_mersenne61()
 // : spdz2_ext_processor_base()
