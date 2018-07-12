@@ -294,7 +294,20 @@ int spdz2_ext_processor_mersenne61::mix_add(mpz_t share, const mpz_t scalar)
 	}
 	syslog(LOG_ERR, "spdz2_ext_processor_mersenne61::mix_add: protocol addShareAndScalar failure.");
 	return -1;
+}
 
+int spdz2_ext_processor_mersenne61::mix_sub_scalar(mpz_t share, const mpz_t scalar)
+{
+	ZpMersenneLongElement input, output, arg;
+	input.elem = mpz_get_ui(share);
+	arg.elem = mpz_get_ui(scalar);
+	if(Protocol<ZpMersenneLongElement>::shareSubScalar(input, arg, output))
+	{
+		mpz_set_ui(share, output.elem);
+		return 0;
+	}
+	syslog(LOG_ERR, "spdz2_ext_processor_mersenne61::mix_sub_scalar: protocol shareSubScalar failure.");
+	return -1;
 }
 
 //
