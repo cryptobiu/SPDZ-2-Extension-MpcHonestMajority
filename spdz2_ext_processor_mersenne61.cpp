@@ -253,6 +253,35 @@ int spdz2_ext_processor_mersenne61::input(const int input_of_pid, const size_t n
 	return result;
 }
 
+int spdz2_ext_processor_mersenne61::mult(const size_t share_count, const mpz_t * shares, mpz_t * products, int verify)
+{
+	int result = -1;
+	size_t xy_pair_count = share_count/2;
+	std::vector<ZpMersenneLongElement> x_shares(xy_pair_count), y_shares(xy_pair_count), xy_shares(xy_pair_count);
+
+	for(size_t i = 0; i < xy_pair_count; ++i)
+	{
+		x_shares[i].elem = mpz_get_ui(shares[2*i]);
+		y_shares[i].elem = mpz_get_ui(shares[2*i+1]);
+		syslog(LOG_DEBUG, "spdz2_ext_processor_mersenne61::protocol_mult: X-Y pair %lu: X=%lu Y=%lu", i, x_shares[i].elem, y_shares[i].elem);
+	}
+
+	if(the_party->multShares(xy_pair_count, x_shares, y_shares, xy_shares))
+	{
+		for(size_t i = 0; i < xy_pair_count; ++i)
+		{
+			mpz_set_ui(products[i], xy_shares[i].elem);
+			syslog(LOG_DEBUG, "spdz2_ext_processor_mersenne61::protocol_mult: X-Y product %lu: X*Y=%lu", i, xy_shares[i].elem);
+		}
+		result = 0;
+	}
+	else
+	{
+		syslog(LOG_ERR, "spdz2_ext_processor_mersenne61::protocol_mult: protocol mult failure.");
+	}
+	return result;
+}
+
 //
 //spdz2_ext_processor_mersenne61::spdz2_ext_processor_mersenne61()
 // : spdz2_ext_processor_base()
