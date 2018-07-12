@@ -70,6 +70,32 @@ int spdz2_ext_processor_mersenne127::triple(mpz_t a, mpz_t b, mpz_t c)
 	return -1;
 }
 
+int spdz2_ext_processor_mersenne127::share_immediates(const int share_of_pid, const size_t value_count, const mpz_t * values, mpz_t * shares)
+{
+	std::vector<Mersenne127> m127shares(value_count), m127values(value_count);
+	if(share_of_pid == m_pid)
+	{
+		for(size_t i = 0; i < value_count; ++i)
+		{
+			m127values[i].set_mpz_t(values + i);
+		}
+	}
+
+	if(the_party->makeShare(share_of_pid, m127values, m127shares))
+	{
+		for(size_t i = 0; i < value_count; ++i)
+		{
+			mpz_set(shares[i], *m127shares[i].get_mpz_t());
+		}
+		return 0;
+	}
+	else
+	{
+		syslog(LOG_ERR, "spdz2_ext_processor_mersenne127::protocol_share_immediates: protocol share_immediates failure.");
+	}
+	return -1;
+}
+
 //
 //int spdz2_ext_processor_mersenne127::mix_add(mpz_t * share, const mpz_t * scalar)
 //{

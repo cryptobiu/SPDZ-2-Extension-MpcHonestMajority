@@ -81,7 +81,7 @@ int spdz2_ext_processor_mersenne61::share_immediates(const int share_of_pid, con
 	{
 		for(size_t i = 0; i < value_count; ++i)
 		{
-			m61shares[i].elem = mpz_get_ui(values[i]);
+			m61values[i].elem = mpz_get_ui(values[i]);
 		}
 	}
 
