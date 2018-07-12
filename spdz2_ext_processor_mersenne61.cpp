@@ -67,6 +67,38 @@ int spdz2_ext_processor_mersenne61::triple(mpz_t * a, mpz_t * b, mpz_t * c)
 		mpz_set_ui(*c, triple[2].elem);
 		return 0;
 	}
+	else
+	{
+		syslog(LOG_ERR, "spdz2_ext_processor_mersenne61::triple: protocol triples failure.");
+	}
+	return -1;
+}
+
+int spdz2_ext_processor_mersenne61::share_immediates(const int share_of_pid, const size_t value_count, const mpz_t * values, mpz_t * shares)
+{
+	std::vector<ZpMersenneLongElement> m61shares(value_count), m61values(value_count);
+
+	if(share_of_pid == m_pid)
+	{
+		for(size_t i = 0; i < value_count; ++i)
+		{
+			m61shares[i].elem = mpz_get_ui(values[i]);
+		}
+	}
+
+	if(the_party->makeShare(share_of_pid, m61values, m61shares))
+	{
+		for(size_t i = 0; i < value_count; ++i)
+		{
+			mpz_set_ui(shares[i], m61shares[i].elem);
+			syslog(LOG_DEBUG, "spdz2_ext_processor_mersenne61::protocol_share_immediates: value [%lu] share[%lu] = %lu", m61values[i].elem, i, m61shares[i].elem);
+		}
+		return 0;
+	}
+	else
+	{
+		syslog(LOG_ERR, "spdz2_ext_processor_mersenne61::protocol_share_immediates: protocol share_immediates failure.");
+	}
 	return -1;
 }
 
