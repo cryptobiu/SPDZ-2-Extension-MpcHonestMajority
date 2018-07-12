@@ -221,6 +221,11 @@ int spdz2_ext_processor_mersenne61::open(const size_t share_count, const mpz_t *
 
 }
 
+int spdz2_ext_processor_mersenne61::verify(int * error)
+{
+	return (the_party->verify())? 0: -1;
+}
+
 //
 //spdz2_ext_processor_mersenne61::spdz2_ext_processor_mersenne61()
 // : spdz2_ext_processor_base()
