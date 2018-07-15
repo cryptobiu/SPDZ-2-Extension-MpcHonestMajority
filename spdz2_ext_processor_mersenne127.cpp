@@ -96,6 +96,21 @@ int spdz2_ext_processor_mersenne127::share_immediates(const int share_of_pid, co
 	return -1;
 }
 
+int spdz2_ext_processor_mersenne127::bit(mpz_t share)
+{
+	std::vector<Mersenne127> zbit_shares(1);
+	if(the_party->bits(1, zbit_shares))
+	{
+		mpz_set(share, *zbit_shares[0].get_mpz_t());
+		return 0;
+	}
+	else
+	{
+		syslog(LOG_ERR, "spdz2_ext_processor_mersenne61::bit: protocol bits failure.");
+	}
+	return -1;
+}
+
 //
 //int spdz2_ext_processor_mersenne127::mix_add(mpz_t * share, const mpz_t * scalar)
 //{
