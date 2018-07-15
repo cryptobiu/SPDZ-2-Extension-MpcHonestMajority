@@ -11,8 +11,6 @@ class spdz2_ext_processor_mersenne61 : public spdz2_ext_processor_base
 	TemplateField<ZpMersenneLongElement> * the_field;
 	Protocol<ZpMersenneLongElement> * the_party;
 	gmp_randstate_t the_gmp_rstate;
-
-	int value_inverse(const mpz_t value, mpz_t inverse);
 public:
 	spdz2_ext_processor_mersenne61();
 	virtual ~spdz2_ext_processor_mersenne61();
@@ -35,6 +33,7 @@ public:
     int mix_sub_scalar(mpz_t share, const mpz_t scalar);
     int mix_sub_share(const mpz_t scalar, mpz_t share);
 
+	static int inverse_value(const mpz_t value, mpz_t inverse);
 	static const u_int64_t mersenne61;
 };
 /*

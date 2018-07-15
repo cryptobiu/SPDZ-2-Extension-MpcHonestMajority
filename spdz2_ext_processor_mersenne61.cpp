@@ -142,7 +142,7 @@ int spdz2_ext_processor_mersenne61::inverse(mpz_t x, mpz_t y)
 	{
 		if(open(1, &u, &open_u, true))
 		{
-			value_inverse(open_u, v);
+			inverse_value(open_u, v);
 			mpz_mul(product, v, r);
 			mpz_mod_ui(y, product, spdz2_ext_processor_mersenne61::mersenne61);
 			result = 0;
@@ -162,7 +162,7 @@ int spdz2_ext_processor_mersenne61::inverse(mpz_t x, mpz_t y)
 	return result;
 }
 
-int spdz2_ext_processor_mersenne61::value_inverse(const mpz_t value, mpz_t inverse)
+int spdz2_ext_processor_mersenne61::inverse_value(const mpz_t value, mpz_t inverse)
 {
 	mpz_t gcd, x, y, P;
 

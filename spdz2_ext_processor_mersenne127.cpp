@@ -111,6 +111,79 @@ int spdz2_ext_processor_mersenne127::bit(mpz_t share)
 	return -1;
 }
 
+int spdz2_ext_processor_mersenne127::inverse(mpz_t x, mpz_t y)
+{
+/*
+1.      Non-interactively generate a share of a field element [x]				]
+2.      Non-interactively generate a share of another filed element [r].		] All 3 are implemented below
+3.      MPC multiply [u] = [x][r]												] using protocol_triple
+4.      Open u=[u]
+5.      Non-interactively inverse v=1/u
+6.      Non-interactively multiply [y] =v [r]
+7.		Now [y] [x] =1 holds.
+*/
+
+	int result = -1;
+	mpz_t r, u, open_u, v, product;
+
+	mpz_init(r);
+	mpz_init(u);
+	mpz_init(open_u);
+	mpz_init(v);
+	mpz_init(product);
+
+	if(triple(x, r, u))
+	{
+		if(open(1, &u, &open_u, true))
+		{
+			inverse_value(open_u, v);
+			mpz_mul(product, v, r);
+
+			mpz_t M127;
+			mpz_init(M127);
+			mpz_set_str(M127, Mersenne127::M127, 10);
+			mpz_mod(y, product, M127);
+			result = 0;
+		}
+		else
+			syslog(LOG_ERR, "spdz2_ext_processor_base::exec_inverse_synch: protocol_open() failed");
+	}
+	else
+		syslog(LOG_ERR, "spdz2_ext_processor_base::exec_inverse_synch: protocol_triple() failed");
+
+	mpz_clear(r);
+	mpz_clear(u);
+	mpz_clear(open_u);
+	mpz_clear(v);
+	mpz_clear(product);
+
+	return result;
+}
+
+int spdz2_ext_processor_mersenne127::inverse_value(const mpz_t value, mpz_t inverse)
+{
+	mpz_t gcd, x, y, P;
+
+	mpz_init(gcd);
+	mpz_init(x);
+	mpz_init(y);
+	mpz_init(P);
+
+	mpz_set_str(P, Mersenne127::M127, 10);
+	mpz_gcdext(gcd, x, y, value, P);
+	mpz_mod(inverse, x, P);
+
+	mpz_clear(gcd);
+	mpz_clear(x);
+	mpz_clear(y);
+	mpz_clear(P);
+
+	char szv[128], szi[128];
+	syslog(LOG_DEBUG, "spdz2_ext_processor_mersenne61::protocol_value_inverse: value = %s; inverse = %s;", mpz_get_str(szv, 10, value), mpz_get_str(szi, 10, inverse));
+
+	return 0;
+}
+
 //
 //int spdz2_ext_processor_mersenne127::mix_add(mpz_t * share, const mpz_t * scalar)
 //{

@@ -33,6 +33,8 @@ public:
     int mix_add(mpz_t share, const mpz_t scalar);
     int mix_sub_scalar(mpz_t share, const mpz_t scalar);
     int mix_sub_share(const mpz_t scalar, mpz_t share);
+
+    static int inverse_value(const mpz_t value, mpz_t inverse);
 };
 
 /*
