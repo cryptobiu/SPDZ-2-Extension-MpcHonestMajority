@@ -3,36 +3,65 @@
 
 #include <syslog.h>
 
-//spdz2_ext_processor_gf2n::spdz2_ext_processor_gf2n(const int bits)
-// : spdz2_ext_processor_base()
-//, the_field(NULL), the_party(NULL), gf2n_bits(bits)
-//{
-//}
-//
-//spdz2_ext_processor_gf2n::~spdz2_ext_processor_gf2n()
-//{
-//}
-//
-//void spdz2_ext_processor_gf2n::mpz2gf2e(const mpz_t * mpz_value, GF2E & gf2e_value)
-//{
-//	u_int64_t v = mpz_get_ui(*mpz_value);
-//	gf2e_value = the_field->GetElement(v);
-//}
-//
-//void spdz2_ext_processor_gf2n::gf2e2mpz(GF2E & gf2e_value, mpz_t * mpz_value)
-//{
-//	u_int64_t v = 0;
-//	the_field->elementToBytes((u_int8_t*)&v, gf2e_value);
-//	mpz_set_ui(*mpz_value, v);
-//}
-//
-//std::string spdz2_ext_processor_gf2n::trace(GF2E & value)
-//{
-//	std::stringstream ss;
-//	ss << value;
-//	return ss.str();
-//}
-//
+spdz2_ext_processor_gf2n::spdz2_ext_processor_gf2n(const int bits)
+: spdz2_ext_processor_base(), the_field(NULL), the_party(NULL), gf2n_bits(bits)
+{
+}
+
+spdz2_ext_processor_gf2n::~spdz2_ext_processor_gf2n()
+{
+}
+
+void spdz2_ext_processor_gf2n::mpz2gf2e(const mpz_t mpz_value, GF2E & gf2e_value)
+{
+	u_int64_t v = mpz_get_ui(mpz_value);
+	gf2e_value = the_field->GetElement(v);
+}
+
+void spdz2_ext_processor_gf2n::gf2e2mpz(GF2E & gf2e_value, mpz_t mpz_value)
+{
+	u_int64_t v = 0;
+	the_field->elementToBytes((u_int8_t*)&v, gf2e_value);
+	mpz_set_ui(mpz_value, v);
+}
+
+std::string spdz2_ext_processor_gf2n::trace(GF2E & value)
+{
+	std::stringstream ss;
+	ss << value;
+	return ss.str();
+}
+
+int spdz2_ext_processor_gf2n::init(const int pid, const int num_of_parties, const int thread_id, const char * field,
+			 	 	 	 	 	   const int open_count, const int mult_count, const int bits_count)
+{
+	spdz2_ext_processor_base::init(pid, num_of_parties, thread_id, field, open_count, mult_count, bits_count);
+	the_field = new TemplateField<GF2E>(gf2n_bits);
+	the_party = new Protocol<GF2E>(m_nparties, m_pid, open_count, mult_count, bits_count, the_field, get_parties_file());
+	if(!the_party->offline())
+	{
+		syslog(LOG_ERR, "spdz2_ext_processor_gf2n::init_protocol: protocol offline() failure.");
+		return -1;
+	}
+	return 0;
+
+}
+
+int spdz2_ext_processor_gf2n::term()
+{
+	delete the_party;
+	the_party = NULL;
+	delete the_field;
+	the_field = NULL;
+	return 0;
+}
+
+int spdz2_ext_processor_gf2n::offline(const int offline_size)
+{
+	return (the_party->offline())? 0: -1;
+}
+
+
 //int spdz2_ext_processor_gf2n::mix_add(mpz_t * share, const mpz_t * scalar)
 //{
 //	char szsh[128], szsc[128];

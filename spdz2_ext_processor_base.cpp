@@ -195,3 +195,19 @@ int spdz2_ext_processor_base::load_clr_party_inputs(mpz_t ** clr_values, const s
 }
 
 //***********************************************************************************************//
+
+int spdz2_ext_processor_base::input(const int input_of_pid, mpz_t input_value)
+{
+	std::map< int , shared_input_t >::iterator i = m_shared_inputs.find(input_of_pid);
+
+	if(m_shared_inputs.end() != i && 0 < i->second.share_count && i->second.share_index < i->second.share_count)
+	{
+		mpz_set(input_value, i->second.shared_values[i->second.share_index++]);
+		return 0;
+	}
+	syslog(LOG_ERR, "spdz2_ext_processor_base::input: failed to get input for pid %d.", input_of_pid);
+	return -1;
+}
+
+//***********************************************************************************************//
+

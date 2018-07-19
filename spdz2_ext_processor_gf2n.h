@@ -6,8 +6,15 @@
 
 class spdz2_ext_processor_gf2n : public spdz2_ext_processor_base
 {
+	int gf2n_bits;
+	TemplateField<GF2E> * the_field;
+	Protocol<GF2E> * the_party;
+
+	void mpz2gf2e(const mpz_t mpz_value, GF2E & gf2e_value);
+	void gf2e2mpz(GF2E & gf2e_value, mpz_t mpz_value);
+	std::string trace(GF2E & value);
 public:
-	spdz2_ext_processor_gf2n(long numbits);
+	spdz2_ext_processor_gf2n(const int numbits);
 	virtual ~spdz2_ext_processor_gf2n();
 
 	int init(const int pid, const int num_of_parties, const int thread_id, const char * field,
@@ -15,7 +22,6 @@ public:
 	int term();
 
 	int offline(const int offline_size);
-	int input(const int input_of_pid, mpz_t input_value);
 	int triple(mpz_t a, mpz_t b, mpz_t c);
 	int share_immediates(const int share_of_pid, const size_t value_count, const mpz_t * values, mpz_t * shares);
     int bit(mpz_t share);

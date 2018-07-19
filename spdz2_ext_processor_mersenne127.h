@@ -21,7 +21,6 @@ public:
 	int term();
 
 	int offline(const int offline_size);
-	int input(const int input_of_pid, mpz_t input_value);
 	int triple(mpz_t a, mpz_t b, mpz_t c);
 	int share_immediates(const int share_of_pid, const size_t value_count, const mpz_t * values, mpz_t * shares);
     int bit(mpz_t share);

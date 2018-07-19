@@ -47,7 +47,7 @@ public:
 	virtual int term() = 0;
 
 	virtual int offline(const int offline_size) = 0;
-	virtual int input(const int input_of_pid, mpz_t input_value) = 0;
+	virtual int input(const int input_of_pid, mpz_t input_value);
 	virtual int triple(mpz_t a, mpz_t b, mpz_t c) = 0;
 	virtual int share_immediates(const int share_of_pid, const size_t value_count, const mpz_t * values, mpz_t * shares) = 0;
     virtual int bit(mpz_t share) = 0;
