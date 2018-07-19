@@ -27,6 +27,9 @@ public:
     int mix_add(mpz_t share, const mpz_t scalar);
     int mix_sub_scalar(mpz_t share, const mpz_t scalar);
     int mix_sub_share(const mpz_t scalar, mpz_t share);
+    std::string get_parties_file();
+
+    static int inverse_value(const mpz_t value, mpz_t inverse);
 };
 /*
 class spdz2_ext_processor_gf2n : public spdz2_ext_processor_base

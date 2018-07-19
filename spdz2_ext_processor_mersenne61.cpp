@@ -323,3 +323,8 @@ int spdz2_ext_processor_mersenne61::mix_sub_share(const mpz_t scalar, mpz_t shar
 	syslog(LOG_ERR, "spdz2_ext_processor_mersenne61::mix_sub_share: protocol shareSubScalar failure.");
 	return -1;
 }
+
+std::string spdz2_ext_processor_mersenne61::get_parties_file()
+{
+	return "arties_gfp61.txt";
+}

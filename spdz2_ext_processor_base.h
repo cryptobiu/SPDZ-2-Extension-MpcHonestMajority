@@ -60,5 +60,5 @@ public:
     virtual int mix_sub_scalar(mpz_t share, const mpz_t scalar) = 0;
     virtual int mix_sub_share(const mpz_t scalar, mpz_t share) = 0;
 
-    virtual std::string get_parties_file();
+    virtual std::string get_parties_file() = 0;
 };
