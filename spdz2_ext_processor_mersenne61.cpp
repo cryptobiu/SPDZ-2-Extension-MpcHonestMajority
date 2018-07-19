@@ -135,10 +135,10 @@ int spdz2_ext_processor_mersenne61::inverse(mpz_t x, mpz_t y)
 			result = 0;
 		}
 		else
-			syslog(LOG_ERR, "spdz2_ext_processor_base::exec_inverse_synch: protocol_open() failed");
+			syslog(LOG_ERR, "spdz2_ext_processor_mersenne61::inverse: protocol open() failed");
 	}
 	else
-		syslog(LOG_ERR, "spdz2_ext_processor_base::exec_inverse_synch: protocol_triple() failed");
+		syslog(LOG_ERR, "spdz2_ext_processor_mersenne61::inverse: protocol triple() failed");
 
 	mpz_clear(r);
 	mpz_clear(u);
@@ -211,33 +211,6 @@ int spdz2_ext_processor_mersenne61::open(const size_t share_count, const mpz_t *
 int spdz2_ext_processor_mersenne61::verify(int * error)
 {
 	return (the_party->verify())? 0: -1;
-}
-
-int spdz2_ext_processor_mersenne61::input(const int input_of_pid, const size_t num_of_inputs, mpz_t * inputs)
-{
-	int result = -1;
-	std::map< int , shared_input_t >::iterator i = m_shared_inputs.find(input_of_pid);
-	if(m_shared_inputs.end() != i)
-	{
-		if((i->second.share_count - i->second.share_index) >= num_of_inputs)
-		{
-			for(size_t j = 0; j < num_of_inputs; ++j)
-			{
-				mpz_set(inputs[j], i->second.shared_values[i->second.share_index++]);
-			}
-			result = 0;
-		}
-		else
-		{
-			syslog(LOG_ERR, "spdz2_ext_processor_base::exec_input_synch: not enough input for pid %d; required %lu; available %lu;",
-					input_of_pid, num_of_inputs, (i->second.share_count - i->second.share_index));
-		}
-	}
-	else
-	{
-		syslog(LOG_ERR, "spdz2_ext_processor_base::exec_input_synch: failed to get input for pid %d.", input_of_pid);
-	}
-	return result;
 }
 
 int spdz2_ext_processor_mersenne61::mult(const size_t share_count, const mpz_t * shares, mpz_t * products, int verify)

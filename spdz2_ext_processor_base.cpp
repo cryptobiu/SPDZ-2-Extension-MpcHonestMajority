@@ -211,3 +211,33 @@ int spdz2_ext_processor_base::input(const int input_of_pid, mpz_t input_value)
 
 //***********************************************************************************************//
 
+int spdz2_ext_processor_base::input(const int input_of_pid, const size_t num_of_inputs, mpz_t * inputs)
+{
+	int result = -1;
+	std::map< int , shared_input_t >::iterator i = m_shared_inputs.find(input_of_pid);
+	if(m_shared_inputs.end() != i)
+	{
+		if((i->second.share_count - i->second.share_index) >= num_of_inputs)
+		{
+			for(size_t j = 0; j < num_of_inputs; ++j)
+			{
+				mpz_set(inputs[j], i->second.shared_values[i->second.share_index++]);
+			}
+			result = 0;
+		}
+		else
+		{
+			syslog(LOG_ERR, "spdz2_ext_processor_base::input: not enough input for pid %d; required %lu; available %lu;",
+					input_of_pid, num_of_inputs, (i->second.share_count - i->second.share_index));
+		}
+	}
+	else
+	{
+		syslog(LOG_ERR, "spdz2_ext_processor_base::input: failed to get input for pid %d.", input_of_pid);
+	}
+	return result;
+}
+
+//***********************************************************************************************//
+
+

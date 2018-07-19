@@ -27,7 +27,6 @@ public:
     int inverse(mpz_t share_value, mpz_t share_inverse);
     int open(const size_t share_count, const mpz_t * share_values, mpz_t * opens, int verify);
 	int verify(int * error);
-	int input(const int input_of_pid, const size_t num_of_inputs, mpz_t * inputs);
     int mult(const size_t share_count, const mpz_t * shares, mpz_t * products, int verify);
     int mix_add(mpz_t share, const mpz_t scalar);
     int mix_sub_scalar(mpz_t share, const mpz_t scalar);
