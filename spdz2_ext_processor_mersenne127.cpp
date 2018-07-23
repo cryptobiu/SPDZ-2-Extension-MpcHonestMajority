@@ -283,5 +283,17 @@ int spdz2_ext_processor_mersenne127::mix_sub_share(const mpz_t scalar, mpz_t sha
 
 std::string spdz2_ext_processor_mersenne127::get_parties_file()
 {
-	return "arties_gfp127.txt";
+	return "parties_gfp127.txt";
+}
+
+std::string spdz2_ext_processor_mersenne127::get_log_file()
+{
+	char buffer[128];
+	snprintf(buffer, 128, "spdz2_x_m127_%d_%d.log", m_pid, m_thid);
+	return std::string(buffer);
+}
+
+std::string spdz2_ext_processor_mersenne127::get_log_category()
+{
+	return "m127";
 }

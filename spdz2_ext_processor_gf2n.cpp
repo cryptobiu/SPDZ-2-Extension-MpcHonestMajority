@@ -306,5 +306,17 @@ int spdz2_ext_processor_gf2n::mix_sub_share(const mpz_t scalar, mpz_t share)
 
 std::string spdz2_ext_processor_gf2n::get_parties_file()
 {
-	return "arties_gf2n.txt";
+	return "parties_gf2n.txt";
+}
+
+std::string spdz2_ext_processor_gf2n::get_log_file()
+{
+	char buffer[128];
+	snprintf(buffer, 128, "spdz2_x_gf2n%d_%d_%d.log", gf2n_bits, m_pid, m_thid);
+	return std::string(buffer);
+}
+
+std::string spdz2_ext_processor_gf2n::get_log_category()
+{
+	return "gf2n";
 }

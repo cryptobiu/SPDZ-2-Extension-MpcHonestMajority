@@ -1,7 +1,7 @@
 
 #include "spdz2_ext_processor_mersenne61.h"
 
-#include <syslog.h>
+#include <log4cpp/Category.hh>
 
 const u_int64_t spdz2_ext_processor_mersenne61::mersenne61 = 0x1FFFFFFFFFFFFFFF;
 
@@ -18,15 +18,22 @@ spdz2_ext_processor_mersenne61::~spdz2_ext_processor_mersenne61()
 int spdz2_ext_processor_mersenne61::init(const int pid, const int num_of_parties, const int thread_id, const char * field,
 		 	 	 	 	 	 	 	 	 const int open_count, const int mult_count, const int bits_count)
 {
-	spdz2_ext_processor_base::init(pid, num_of_parties, thread_id, field, open_count, mult_count, bits_count);
-	the_field = new TemplateField<ZpMersenneLongElement>(0);
-	the_party = new Protocol<ZpMersenneLongElement>(m_nparties, m_pid, open_count, mult_count, bits_count, the_field, get_parties_file());
-	if(!the_party->offline())
+	if(0 == spdz2_ext_processor_base::init(pid, num_of_parties, thread_id, field, open_count, mult_count, bits_count))
 	{
-		syslog(LOG_ERR, "spdz2_ext_processor_mersenne61::init_protocol: protocol offline() failure.");
-		return -1;
+		the_field = new TemplateField<ZpMersenneLongElement>(0);
+		the_party = new Protocol<ZpMersenneLongElement>(m_nparties, m_pid, open_count, mult_count, bits_count, the_field, get_parties_file());
+		if(the_party->offline())
+		{
+			return 0;
+		}
+		else
+			LC(m_logcat).error("%s: protocol offline() failure.", __FUNCTION__);
+		delete the_party;
+		delete the_field;
 	}
-	return 0;
+	else
+		LC(m_logcat).error("%s: base init() failure.", __FUNCTION__);
+	return -1;
 }
 
 int spdz2_ext_processor_mersenne61::term()
@@ -48,7 +55,8 @@ int spdz2_ext_processor_mersenne61::triple(mpz_t a, mpz_t b, mpz_t c)
 	std::vector<ZpMersenneLongElement> triple(3);
 	if(the_party->triples(1, triple))
 	{
-		syslog(LOG_DEBUG, "spdz2_ext_processor_mersenne61::protocol_triple: share a = %lu; share b = %lu; share c = %lu;", triple[0].elem, triple[1].elem, triple[2].elem);
+		LC(m_logcat).debug("%s: share a = %lu; share b = %lu; share c = %lu;",
+				__FUNCTION__, triple[0].elem, triple[1].elem, triple[2].elem);
 		mpz_set_ui(a, triple[0].elem);
 		mpz_set_ui(b, triple[1].elem);
 		mpz_set_ui(c, triple[2].elem);
@@ -56,7 +64,7 @@ int spdz2_ext_processor_mersenne61::triple(mpz_t a, mpz_t b, mpz_t c)
 	}
 	else
 	{
-		syslog(LOG_ERR, "spdz2_ext_processor_mersenne61::triple: protocol triples failure.");
+		LC(m_logcat).error("%s: protocol triples failure.", __FUNCTION__);
 	}
 	return -1;
 }
@@ -77,13 +85,13 @@ int spdz2_ext_processor_mersenne61::share_immediates(const int share_of_pid, con
 		for(size_t i = 0; i < value_count; ++i)
 		{
 			mpz_set_ui(shares[i], m61shares[i].elem);
-			syslog(LOG_DEBUG, "spdz2_ext_processor_mersenne61::protocol_share_immediates: value [%lu] share[%lu] = %lu", m61values[i].elem, i, m61shares[i].elem);
+			LC(m_logcat).debug("%s: value [%lu] share[%lu] = %lu", __FUNCTION__, m61values[i].elem, i, m61shares[i].elem);
 		}
 		return 0;
 	}
 	else
 	{
-		syslog(LOG_ERR, "spdz2_ext_processor_mersenne61::protocol_share_immediates: protocol share_immediates failure.");
+		LC(m_logcat).error("%s: protocol share_immediates failure.", __FUNCTION__);
 	}
 	return -1;
 }
@@ -94,12 +102,12 @@ int spdz2_ext_processor_mersenne61::bit(mpz_t share)
 	if(the_party->bits(1, zbit_shares))
 	{
 		mpz_set_ui(share, zbit_shares[0].elem);
-		syslog(LOG_DEBUG, "spdz2_ext_processor_mersenne61::bit: protocol bits share = %lu.", zbit_shares[0].elem);
+		LC(m_logcat).debug("%s: protocol bits share = %lu.", __FUNCTION__, zbit_shares[0].elem);
 		return 0;
 	}
 	else
 	{
-		syslog(LOG_ERR, "spdz2_ext_processor_mersenne61::bit: protocol bits failure.");
+		LC(m_logcat).error("%s: protocol bits failure.", __FUNCTION__);
 	}
 	return -1;
 }
@@ -130,15 +138,20 @@ int spdz2_ext_processor_mersenne61::inverse(mpz_t x, mpz_t y)
 		if(open(1, &u, &open_u, true))
 		{
 			inverse_value(open_u, v);
+			if(LC(m_logcat).isDebugEnabled())
+			{
+				char szv[128], szi[128];
+				LC(m_logcat).debug("%s: value = %s; inverse = %s;", __FUNCTION__, mpz_get_str(szv, 10, open_u), mpz_get_str(szi, 10, v));
+			}
 			mpz_mul(product, v, r);
 			mpz_mod_ui(y, product, spdz2_ext_processor_mersenne61::mersenne61);
 			result = 0;
 		}
 		else
-			syslog(LOG_ERR, "spdz2_ext_processor_mersenne61::inverse: protocol open() failed");
+			LC(m_logcat).error("%s: protocol open() failed.", __FUNCTION__);
 	}
 	else
-		syslog(LOG_ERR, "spdz2_ext_processor_mersenne61::inverse: protocol triple() failed");
+		LC(m_logcat).error("%s: protocol triple() failed.", __FUNCTION__);
 
 	mpz_clear(r);
 	mpz_clear(u);
@@ -167,9 +180,6 @@ int spdz2_ext_processor_mersenne61::inverse_value(const mpz_t value, mpz_t inver
 	mpz_clear(y);
 	mpz_clear(P);
 
-	char szv[128], szi[128];
-	syslog(LOG_DEBUG, "spdz2_ext_processor_mersenne61::protocol_value_inverse: value = %s; inverse = %s;", mpz_get_str(szv, 10, value), mpz_get_str(szi, 10, inverse));
-
 	return 0;
 }
 
@@ -177,11 +187,11 @@ int spdz2_ext_processor_mersenne61::open(const size_t share_count, const mpz_t *
 {
 	int result = -1;
 	std::vector<ZpMersenneLongElement> m61shares(share_count), m61opens(share_count);
-	syslog(LOG_DEBUG, "spdz2_ext_processor_mersenne61::protocol_open: calling open for %u shares", (u_int32_t)share_count);
+	LC(m_logcat).debug("%s: calling open for %u shares", __FUNCTION__, (u_int32_t)share_count);
 	for(size_t i = 0; i < share_count; i++)
 	{
 		m61shares[i].elem = mpz_get_ui(share_values[i]);
-		syslog(LOG_DEBUG, "spdz2_ext_processor_mersenne61::protocol_open() share value[%lu] = %lu", i, m61shares[i].elem);
+		LC(m_logcat).debug("%s: share value[%lu] = %lu", __FUNCTION__, i, m61shares[i].elem);
 	}
 
 	if(the_party->openShare((int)share_count, m61shares, m61opens))
@@ -191,18 +201,18 @@ int spdz2_ext_processor_mersenne61::open(const size_t share_count, const mpz_t *
 			for(size_t i = 0; i < share_count; i++)
 			{
 				mpz_set_ui(opens[i], m61opens[i].elem);
-				syslog(LOG_DEBUG, "spdz2_ext_processor_mersenne61::protocol_open() opened value[%lu] = %lu", i, m61opens[i].elem);
+				LC(m_logcat).debug("%s: opened value[%lu] = %lu", __FUNCTION__, i, m61opens[i].elem);
 			}
 			result = 0;
 		}
 		else
 		{
-			syslog(LOG_ERR, "spdz2_ext_processor_mersenne61::protocol_open: verify failure.");
+			LC(m_logcat).error("%s: verify failure.", __FUNCTION__);
 		}
 	}
 	else
 	{
-		syslog(LOG_ERR, "spdz2_ext_processor_mersenne61::protocol_open: openShare failure.");
+		LC(m_logcat).error("%s: openShare failure.", __FUNCTION__);
 	}
 	return result;
 
@@ -223,7 +233,7 @@ int spdz2_ext_processor_mersenne61::mult(const size_t share_count, const mpz_t *
 	{
 		x_shares[i].elem = mpz_get_ui(shares[2*i]);
 		y_shares[i].elem = mpz_get_ui(shares[2*i+1]);
-		syslog(LOG_DEBUG, "spdz2_ext_processor_mersenne61::protocol_mult: X-Y pair %lu: X=%lu Y=%lu", i, x_shares[i].elem, y_shares[i].elem);
+		LC(m_logcat).debug("%s: X-Y pair %lu: X=%lu Y=%lu", __FUNCTION__, i, x_shares[i].elem, y_shares[i].elem);
 	}
 
 	if(the_party->multShares(xy_pair_count, x_shares, y_shares, xy_shares))
@@ -231,13 +241,13 @@ int spdz2_ext_processor_mersenne61::mult(const size_t share_count, const mpz_t *
 		for(size_t i = 0; i < xy_pair_count; ++i)
 		{
 			mpz_set_ui(products[i], xy_shares[i].elem);
-			syslog(LOG_DEBUG, "spdz2_ext_processor_mersenne61::protocol_mult: X-Y product %lu: X*Y=%lu", i, xy_shares[i].elem);
+			LC(m_logcat).debug("%s: X-Y product %lu: X*Y=%lu", __FUNCTION__, i, xy_shares[i].elem);
 		}
 		result = 0;
 	}
 	else
 	{
-		syslog(LOG_ERR, "spdz2_ext_processor_mersenne61::protocol_mult: protocol mult failure.");
+		LC(m_logcat).error("%s: protocol mult failure.", __FUNCTION__);
 	}
 	return result;
 }
@@ -252,7 +262,7 @@ int spdz2_ext_processor_mersenne61::mix_add(mpz_t share, const mpz_t scalar)
 		mpz_set_ui(share, output.elem);
 		return 0;
 	}
-	syslog(LOG_ERR, "spdz2_ext_processor_mersenne61::mix_add: protocol addShareAndScalar failure.");
+	LC(m_logcat).error("%s: protocol addShareAndScalar failure.", __FUNCTION__);
 	return -1;
 }
 
@@ -266,7 +276,7 @@ int spdz2_ext_processor_mersenne61::mix_sub_scalar(mpz_t share, const mpz_t scal
 		mpz_set_ui(share, output.elem);
 		return 0;
 	}
-	syslog(LOG_ERR, "spdz2_ext_processor_mersenne61::mix_sub_scalar: protocol shareSubScalar failure.");
+	LC(m_logcat).error("%s: protocol shareSubScalar failure.", __FUNCTION__);
 	return -1;
 }
 
@@ -280,11 +290,23 @@ int spdz2_ext_processor_mersenne61::mix_sub_share(const mpz_t scalar, mpz_t shar
 		mpz_set_ui(share, output.elem);
 		return 0;
 	}
-	syslog(LOG_ERR, "spdz2_ext_processor_mersenne61::mix_sub_share: protocol shareSubScalar failure.");
+	LC(m_logcat).error("%s: protocol scalarSubShare failure.", __FUNCTION__);
 	return -1;
 }
 
 std::string spdz2_ext_processor_mersenne61::get_parties_file()
 {
-	return "arties_gfp61.txt";
+	return "parties_gfp61.txt";
+}
+
+std::string spdz2_ext_processor_mersenne61::get_log_file()
+{
+	char buffer[128];
+	snprintf(buffer, 128, "spdz2_x_m61_%d_%d.log", m_pid, m_thid);
+	return std::string(buffer);
+}
+
+std::string spdz2_ext_processor_mersenne61::get_log_category()
+{
+	return "m61";
 }

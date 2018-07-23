@@ -7,7 +7,15 @@
 #include <errno.h>
 #include <syslog.h>
 
-#include "Measurement.hpp"
+//#include "Measurement.hpp"
+
+#include <log4cpp/Category.hh>
+#include <log4cpp/FileAppender.hh>
+#include <log4cpp/SimpleLayout.hh>
+#include <log4cpp/RollingFileAppender.hh>
+#include <log4cpp/SimpleLayout.hh>
+#include <log4cpp/BasicLayout.hh>
+#include <log4cpp/PatternLayout.hh>
 
 static const char tsk0[] = "setup";
 static const char tsk1[] = "offline";
@@ -25,12 +33,48 @@ spdz2_ext_processor_base::~spdz2_ext_processor_base()
 
 //***********************************************************************************************//
 int spdz2_ext_processor_base::init(const int pid, const int num_of_parties, const int thread_id, const char * field,
-		 	 	 	 	 	 	   const int open_count, const int mult_count, const int bits_count)
+		 	 	 	 	 	 	   const int open_count, const int mult_count, const int bits_count, int log_level)
 {
 	m_pid = pid;
 	m_nparties = num_of_parties;
 	m_thid = thread_id;
-	return 0;
+	return init_log(log_level);
+}
+
+//***********************************************************************************************//
+int spdz2_ext_processor_base::init_log(int log_level)
+{
+	static const char the_layout[] = "%d{%y-%m-%d %H:%M:%S.%l}| %-6p | %-15c | %m%n";
+
+	std::string log_file = "/var/log/";
+	log_file += get_log_file();
+	m_logcat = get_log_category();
+
+    log4cpp::Layout * log_layout = NULL;
+    log4cpp::Appender * appender = new log4cpp::RollingFileAppender("rlf.appender", log_file.c_str(), 10*1024*1024, 10);
+
+    bool pattern_layout = false;
+    try
+    {
+        log_layout = new log4cpp::PatternLayout();
+        ((log4cpp::PatternLayout *)log_layout)->setConversionPattern(the_layout);
+        appender->setLayout(log_layout);
+        pattern_layout = true;
+    }
+    catch(...)
+    {
+        pattern_layout = false;
+    }
+
+    if(!pattern_layout)
+    {
+        log_layout = new log4cpp::BasicLayout();
+        appender->setLayout(log_layout);
+    }
+
+    log4cpp::Category::getInstance(m_logcat).addAppender(appender);
+    log4cpp::Category::getInstance(m_logcat).setPriority((log4cpp::Priority::PriorityLevel)log_level);
+    log4cpp::Category::getInstance(m_logcat).notice("log start");
 }
 
 //***********************************************************************************************//
@@ -58,7 +102,7 @@ int spdz2_ext_processor_base::load_inputs()
 //***********************************************************************************************//
 int spdz2_ext_processor_base::load_party_input_specs(std::list<std::string> & party_input_specs)
 {
-	static const char common_inputs_spec[] = "Parties_Inputs.txt";
+	static const char common_inputs_spec[] = "parties_inputs.txt";
 
 	party_input_specs.clear();
 	FILE * pf = fopen(common_inputs_spec, "r");

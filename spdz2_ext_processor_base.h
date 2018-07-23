@@ -18,6 +18,7 @@ protected:
 	int m_thid;
 	std::string m_field;
 	int m_nopen, m_nmult, m_nbits;
+	std::string m_logcat;
 
 	typedef struct
 	{
@@ -36,13 +37,14 @@ protected:
 	int load_peer_party_inputs(const int pid, const size_t count, const mpz_t * clr_values = NULL);
 	int load_clr_party_inputs(mpz_t ** clr_values, const size_t count);
 
+	int init_log(int log_level);
 
 public:
 	spdz2_ext_processor_base();
 	virtual ~spdz2_ext_processor_base();
 
 	virtual int init(const int pid, const int num_of_parties, const int thread_id, const char * field,
-			 const int open_count, const int mult_count, const int bits_count);
+			 const int open_count, const int mult_count, const int bits_count, int log_level = 700);
 
 	virtual int term() = 0;
 
@@ -62,4 +64,8 @@ public:
     virtual int mix_sub_share(const mpz_t scalar, mpz_t share) = 0;
 
     virtual std::string get_parties_file() = 0;
+	virtual std::string get_log_file() = 0;
+	virtual std::string get_log_category() = 0;
 };
+
+#define LC(x) log4cpp::Category::getInstance(x)
