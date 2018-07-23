@@ -1,7 +1,7 @@
 
 #include "spdz2_ext_processor_gf2n.h"
 
-#include <syslog.h>
+#include <log4cpp/Category.hh>
 
 spdz2_ext_processor_gf2n::spdz2_ext_processor_gf2n(const int bits)
 : spdz2_ext_processor_base(), the_field(NULL), the_party(NULL), gf2n_bits(bits)
@@ -37,16 +37,23 @@ std::string spdz2_ext_processor_gf2n::trace(GF2E & value)
 int spdz2_ext_processor_gf2n::init(const int pid, const int num_of_parties, const int thread_id, const char * field,
 			 	 	 	 	 	   const int open_count, const int mult_count, const int bits_count)
 {
-	spdz2_ext_processor_base::init(pid, num_of_parties, thread_id, field, open_count, mult_count, bits_count);
-	the_field = new TemplateField<GF2E>(gf2n_bits);
-	the_party = new Protocol<GF2E>(m_nparties, m_pid, open_count, mult_count, bits_count, the_field, get_parties_file());
-	if(!the_party->offline())
+	if(0 == spdz2_ext_processor_base::init(pid, num_of_parties, thread_id, field, open_count, mult_count, bits_count))
 	{
-		syslog(LOG_ERR, "spdz2_ext_processor_gf2n::init_protocol: protocol offline() failure.");
-		return -1;
+		the_field = new TemplateField<GF2E>(gf2n_bits);
+		the_party = new Protocol<GF2E>(m_nparties, m_pid, open_count, mult_count, bits_count, the_field, get_parties_file());
+		if(the_party->offline())
+		{
+			mpz_ui_pow_ui(m_field, 2, bits_count);
+			return 0;
+		}
+		else
+			LC(m_logcat).error("%s: protocol offline() failure.", __FUNCTION__);
+		delete the_party;
+		delete the_field;
 	}
-	mpz_ui_pow_ui(m_field, 2, bits_count);
-	return 0;
+	else
+		LC(m_logcat).error("%s: base init() failure.", __FUNCTION__);
+	return -1;
 
 }
 
@@ -69,7 +76,7 @@ int spdz2_ext_processor_gf2n::triple(mpz_t a, mpz_t b, mpz_t c)
 	std::vector<GF2E> triple(3);
 	if(the_party->triples(1, triple))
 	{
-		syslog(LOG_DEBUG, "spdz2_ext_processor_gf2n::protocol_triple: share a = %s; share b = %s; share c = %s;", trace(triple[0]).c_str(), trace(triple[1]).c_str(), trace(triple[2]).c_str());
+		LC(m_logcat).debug("%s: share a = %s; share b = %s; share c = %s;", __FUNCTION__, trace(triple[0]).c_str(), trace(triple[1]).c_str(), trace(triple[2]).c_str());
 		gf2e2mpz(triple[0], a);
 		gf2e2mpz(triple[1], b);
 		gf2e2mpz(triple[2], c);
@@ -77,7 +84,7 @@ int spdz2_ext_processor_gf2n::triple(mpz_t a, mpz_t b, mpz_t c)
 	}
 	else
 	{
-		syslog(LOG_ERR, "spdz2_ext_processor_gf2n::triple: protocol triples failure.");
+		LC(m_logcat).error("%s: protocol triples failure.", __FUNCTION__);
 	}
 	return -1;
 }
@@ -98,13 +105,14 @@ int spdz2_ext_processor_gf2n::share_immediates(const int share_of_pid, const siz
 		for(size_t i = 0; i < value_count; ++i)
 		{
 			gf2e2mpz(gf2shares[i], shares[i]);
-			syslog(LOG_DEBUG, "spdz2_ext_processor_gf2n::protocol_share_immediates: %lu) value = %s; share = %s", i, trace(gf2values[i]).c_str(), trace(gf2shares[i]).c_str());
+			LC(m_logcat).debug("%s: %lu) value = %s; share = %s"
+					, __FUNCTION__, i, trace(gf2values[i]).c_str(), trace(gf2shares[i]).c_str());
 		}
 		return 0;
 	}
 	else
 	{
-		syslog(LOG_ERR, "spdz2_ext_processor_gf2n::protocol_share_immediates: protocol share_immediates failure.");
+		LC(m_logcat).error("%s: protocol share_immediates failure.", __FUNCTION__);
 	}
 	return -1;
 }
@@ -115,12 +123,12 @@ int spdz2_ext_processor_gf2n::bit(mpz_t share)
 	if(the_party->bits(1, zbit_shares))
 	{
 		gf2e2mpz(zbit_shares[0], share);
-		syslog(LOG_DEBUG, "spdz2_ext_processor_gf2n::bit: protocol bits share = %s.", trace(zbit_shares[0]).c_str());
+		LC(m_logcat).debug("%s: protocol bits share = %s.", __FUNCTION__, trace(zbit_shares[0]).c_str());
 		return 0;
 	}
 	else
 	{
-		syslog(LOG_ERR, "spdz2_ext_processor_gf2n::bit: protocol bits failure.");
+		LC(m_logcat).error("%s: protocol bits failure.", __FUNCTION__);
 	}
 	return -1;
 }
@@ -151,15 +159,21 @@ int spdz2_ext_processor_gf2n::inverse(mpz_t x, mpz_t y)
 		if(open(1, &u, &open_u, true))
 		{
 			inverse_value(open_u, v);
+			if(LC(m_logcat).isDebugEnabled())
+			{
+				char szv[128], szi[128];
+				LC(m_logcat).debug("%s: value = %s; inverse = %s;", __FUNCTION__, mpz_get_str(szv, 10, open_u), mpz_get_str(szi, 10, v));
+			}
+
 			mpz_mul(product, v, r);
 			mpz_mod(y, product, m_field);
 			result = 0;
 		}
 		else
-			syslog(LOG_ERR, "spdz2_ext_processor_gf2n::inverse: protocol open() failed");
+			LC(m_logcat).error("%s: protocol open() failed", __FUNCTION__);
 	}
 	else
-		syslog(LOG_ERR, "spdz2_ext_processor_gf2n::inverse: protocol triple() failed");
+		LC(m_logcat).error("%s: protocol triple() failed", __FUNCTION__);
 
 	mpz_clear(r);
 	mpz_clear(u);
@@ -188,9 +202,6 @@ int spdz2_ext_processor_gf2n::inverse_value(const mpz_t value, mpz_t inverse) co
 	mpz_clear(y);
 	mpz_clear(P);
 
-	char szv[128], szi[128];
-	syslog(LOG_DEBUG, "spdz2_ext_processor_gf2n::protocol_value_inverse: value = %s; inverse = %s;", mpz_get_str(szv, 10, value), mpz_get_str(szi, 10, inverse));
-
 	return 0;
 }
 
@@ -198,11 +209,11 @@ int spdz2_ext_processor_gf2n::open(const size_t share_count, const mpz_t * share
 {
 	int result = -1;
 	std::vector<GF2E> gf2shares(share_count), gf2opens(share_count);
-	syslog(LOG_DEBUG, "spdz2_ext_processor_gf2n::protocol_open: calling open for %u shares", (u_int32_t)share_count);
+	LC(m_logcat).debug("%s: calling open for %u shares", __FUNCTION__, (u_int32_t)share_count);
 	for(size_t i = 0; i < share_count; i++)
 	{
 		mpz2gf2e(share_values[i], gf2shares[i]);
-		syslog(LOG_DEBUG, "spdz2_ext_processor_gf2n::protocol_open() share value[%lu] = %s", i, trace(gf2shares[i]).c_str());
+		LC(m_logcat).debug("%s: share value[%lu] = %s", __FUNCTION__, i, trace(gf2shares[i]).c_str());
 	}
 
 	if(the_party->openShare((int)share_count, gf2shares, gf2opens))
@@ -212,18 +223,18 @@ int spdz2_ext_processor_gf2n::open(const size_t share_count, const mpz_t * share
 			for(size_t i = 0; i < share_count; i++)
 			{
 				gf2e2mpz(gf2opens[i], opens[i]);
-				syslog(LOG_DEBUG, "spdz2_ext_processor_gf2n::protocol_open() opened value[%lu] = %s", i, trace(gf2opens[i]).c_str());
+				LC(m_logcat).debug("%s: opened value[%lu] = %s", __FUNCTION__, i, trace(gf2opens[i]).c_str());
 			}
 			result = 0;
 		}
 		else
 		{
-			syslog(LOG_ERR, "spdz2_ext_processor_gf2n::protocol_open: verify failure.");
+			LC(m_logcat).error("%s: protocol verify failure.", __FUNCTION__);
 		}
 	}
 	else
 	{
-		syslog(LOG_ERR, "spdz2_ext_processor_gf2n::protocol_open: openShare failure.");
+		LC(m_logcat).error("%s: protocol openShare failure.", __FUNCTION__);
 	}
 	return result;
 }
@@ -243,7 +254,7 @@ int spdz2_ext_processor_gf2n::mult(const size_t share_count, const mpz_t * share
 	{
 		mpz2gf2e(shares[2*i], x_shares[i]);
 		mpz2gf2e(shares[2*i+1], y_shares[i]);
-		syslog(LOG_DEBUG, "spdz2_ext_processor_gf2n::protocol_mult: X-Y pair %lu: X=%s Y=%s", i, trace(x_shares[i]).c_str(), trace(y_shares[i]).c_str());
+		LC(m_logcat).debug("%s: X-Y pair %lu: X=%s Y=%s", __FUNCTION__, i, trace(x_shares[i]).c_str(), trace(y_shares[i]).c_str());
 	}
 
 	if(the_party->multShares(xy_pair_count, x_shares, y_shares, xy_shares))
@@ -251,13 +262,13 @@ int spdz2_ext_processor_gf2n::mult(const size_t share_count, const mpz_t * share
 		for(size_t i = 0; i < xy_pair_count; ++i)
 		{
 			gf2e2mpz(xy_shares[i], products[i]);
-			syslog(LOG_DEBUG, "spdz2_ext_processor_gf2n::protocol_mult: X-Y product %lu: X*Y=%s", i, trace(xy_shares[i]).c_str());
+			LC(m_logcat).debug("%s: X-Y product %lu: X*Y=%s", __FUNCTION__, i, trace(xy_shares[i]).c_str());
 		}
 		result = 0;
 	}
 	else
 	{
-		syslog(LOG_ERR, "spdz2_ext_processor_gf2n::protocol_mult: protocol mult failure.");
+		LC(m_logcat).error("%s: protocol mult failure.", __FUNCTION__);
 	}
 	return result;
 }
@@ -272,7 +283,7 @@ int spdz2_ext_processor_gf2n::mix_add(mpz_t share, const mpz_t scalar)
 		gf2e2mpz(output, share);
 		return 0;
 	}
-	syslog(LOG_ERR, "spdz2_ext_processor_gf2n::mix_add: protocol addShareAndScalar failure.");
+	LC(m_logcat).error("%s: protocol addShareAndScalar failure.", __FUNCTION__);
 	return -1;
 }
 
@@ -286,7 +297,7 @@ int spdz2_ext_processor_gf2n::mix_sub_scalar(mpz_t share, const mpz_t scalar)
 		gf2e2mpz(output, share);
 		return 0;
 	}
-	syslog(LOG_ERR, "spdz2_ext_processor_gf2n::mix_sub_scalar: protocol shareSubScalar failure.");
+	LC(m_logcat).error("%s: protocol shareSubScalar failure.", __FUNCTION__);
 	return -1;
 }
 
@@ -300,7 +311,7 @@ int spdz2_ext_processor_gf2n::mix_sub_share(const mpz_t scalar, mpz_t share)
 		gf2e2mpz(output, share);
 		return 0;
 	}
-	syslog(LOG_ERR, "spdz2_ext_processor_gf2n::mix_sub_share: protocol shareSubScalar failure.");
+	LC(m_logcat).error("%s: protocol scalarSubShare failure.", __FUNCTION__);
 	return -1;
 }
 
