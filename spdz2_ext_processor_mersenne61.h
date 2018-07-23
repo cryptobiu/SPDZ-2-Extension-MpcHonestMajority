@@ -17,7 +17,7 @@ public:
 	virtual ~spdz2_ext_processor_mersenne61();
 
 	int init(const int pid, const int num_of_parties, const int thread_id, const char * field,
-			 const int open_count, const int mult_count, const int bits_count);
+			 const int open_count, const int mult_count, const int bits_count, int log_level = 700);
 	int term();
 
 	int offline(const int offline_size);

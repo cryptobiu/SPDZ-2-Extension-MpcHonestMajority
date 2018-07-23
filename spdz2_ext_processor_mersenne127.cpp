@@ -13,15 +13,21 @@ spdz2_ext_processor_mersenne127::~spdz2_ext_processor_mersenne127()
 }
 
 int spdz2_ext_processor_mersenne127::init(const int pid, const int num_of_parties, const int thread_id, const char * field,
-		 	 	 	 	 	 	 	 	 const int open_count, const int mult_count, const int bits_count)
+		 	 	 	 	 	 	 	 	 const int open_count, const int mult_count, const int bits_count, int log_level)
 {
-	if(0 == spdz2_ext_processor_base::init(pid, num_of_parties, thread_id, field, open_count, mult_count, bits_count))
+	if(0 == spdz2_ext_processor_base::init(pid, num_of_parties, thread_id, field, open_count, mult_count, bits_count, log_level))
 	{
 		the_field = new TemplateField<Mersenne127>(0);
 		the_party = new Protocol<Mersenne127>(m_nparties, m_pid, open_count, mult_count, bits_count, the_field, get_parties_file());
 		if(the_party->offline())
 		{
-			return 0;
+			if(0 == load_inputs())
+			{
+				LC(m_logcat).info("%s: init() success", __FUNCTION__);
+				return 0;
+			}
+			else
+				LC(m_logcat).error("%s: load_inputs() failure", __FUNCTION__);
 		}
 		else
 			LC(m_logcat).error("%s: protocol offline() failure.", __FUNCTION__);

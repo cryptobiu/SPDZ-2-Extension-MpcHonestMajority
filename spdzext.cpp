@@ -79,9 +79,9 @@ int verify(void * handle, int * error)
 	return ((spdz2_ext_processor_base *)handle)->verify(error);
 }
 //-------------------------------------------------------------------------------------------//
-int input(void * handle, const int input_of_pid, mpz_t input_value)
+int input(void * handle, const int input_of_pid, const size_t num_of_inputs, mpz_t * inputs)
 {
-	return ((spdz2_ext_processor_base *)handle)->input(input_of_pid, input_value);
+	return ((spdz2_ext_processor_base *)handle)->input(input_of_pid, num_of_inputs, inputs);
 }
 //-------------------------------------------------------------------------------------------//
 int mult(void * handle, const size_t share_count, const mpz_t * shares, mpz_t * products, int verify)

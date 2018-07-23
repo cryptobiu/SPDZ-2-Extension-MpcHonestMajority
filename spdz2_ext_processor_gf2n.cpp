@@ -35,16 +35,22 @@ std::string spdz2_ext_processor_gf2n::trace(GF2E & value)
 }
 
 int spdz2_ext_processor_gf2n::init(const int pid, const int num_of_parties, const int thread_id, const char * field,
-			 	 	 	 	 	   const int open_count, const int mult_count, const int bits_count)
+			 	 	 	 	 	   const int open_count, const int mult_count, const int bits_count, int log_level)
 {
-	if(0 == spdz2_ext_processor_base::init(pid, num_of_parties, thread_id, field, open_count, mult_count, bits_count))
+	if(0 == spdz2_ext_processor_base::init(pid, num_of_parties, thread_id, field, open_count, mult_count, bits_count, log_level))
 	{
 		the_field = new TemplateField<GF2E>(gf2n_bits);
 		the_party = new Protocol<GF2E>(m_nparties, m_pid, open_count, mult_count, bits_count, the_field, get_parties_file());
 		if(the_party->offline())
 		{
-			mpz_ui_pow_ui(m_field, 2, bits_count);
-			return 0;
+			if(0 == load_inputs())
+			{
+				mpz_ui_pow_ui(m_field, 2, bits_count);
+				LC(m_logcat).info("%s: init() success", __FUNCTION__);
+				return 0;
+			}
+			else
+				LC(m_logcat).error("%s: load_inputs() failure", __FUNCTION__);
 		}
 		else
 			LC(m_logcat).error("%s: protocol offline() failure.", __FUNCTION__);

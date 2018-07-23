@@ -38,7 +38,12 @@ int spdz2_ext_processor_base::init(const int pid, const int num_of_parties, cons
 	m_pid = pid;
 	m_nparties = num_of_parties;
 	m_thid = thread_id;
-	return init_log(log_level);
+	if(0 != init_log(log_level))
+	{
+		syslog(LOG_ERR, "%s: init_log() failure.", __FUNCTION__);
+		return -1;
+	}
+	return 0;
 }
 
 //***********************************************************************************************//
@@ -75,6 +80,7 @@ int spdz2_ext_processor_base::init_log(int log_level)
     log4cpp::Category::getInstance(m_logcat).addAppender(appender);
     log4cpp::Category::getInstance(m_logcat).setPriority((log4cpp::Priority::PriorityLevel)log_level);
     log4cpp::Category::getInstance(m_logcat).notice("log start");
+    return 0;
 }
 
 //***********************************************************************************************//
@@ -83,15 +89,16 @@ int spdz2_ext_processor_base::load_inputs()
 	std::list<std::string> party_input_specs;
 	if(0 != load_party_input_specs(party_input_specs))
 	{
-		syslog(LOG_ERR, "spdz2_ext_processor_base::load_inputs: failed loading the party input specs");
+		LC(m_logcat).error("%s: failed loading the party input specs", __FUNCTION__);
 		return -1;
 	}
+	LC(m_logcat).debug("%s: party input specs loaded.", __FUNCTION__);
 
 	for(std::list<std::string>::const_iterator i = party_input_specs.begin(); i != party_input_specs.end(); ++i)
 	{
 		if(0 != load_party_inputs(*i))
 		{
-			syslog(LOG_ERR, "spdz2_ext_processor_base::load_inputs: failed loading party input by spec [%s]", i->c_str());
+			LC(m_logcat).error("%s: failed loading party input by spec [%s]", __FUNCTION__, i->c_str());
 			return -1;
 		}
 	}
@@ -118,7 +125,7 @@ int spdz2_ext_processor_base::load_party_input_specs(std::list<std::string> & pa
 	}
 	else
 	{
-		syslog(LOG_ERR, "spdz2_ext_processor_base::load_party_input_specs: failed to open [%s].", common_inputs_spec);
+		LC(m_logcat).error("%s: failed to open [%s].", __FUNCTION__, common_inputs_spec);
 		return -1;
 	}
 	return (party_input_specs.empty())? -1: 0;
@@ -127,11 +134,13 @@ int spdz2_ext_processor_base::load_party_input_specs(std::list<std::string> & pa
 //***********************************************************************************************//
 int spdz2_ext_processor_base::load_party_inputs(const std::string & party_input_spec)
 {
+	LC(m_logcat).debug("%s: party_input_spec = [%s].", __FUNCTION__, party_input_spec.c_str());
 	std::string::size_type pos = party_input_spec.find(',');
 	if(std::string::npos != pos)
 	{
 		int pid = (int)strtol(party_input_spec.substr(0, pos).c_str(), NULL, 10);
 		size_t count = (size_t)strtol(party_input_spec.substr(pos+1).c_str(), NULL, 10);
+		LC(m_logcat).debug("%s: party_input_spec: id=%d; count=%lu;", __FUNCTION__, pid, count);
 		if(0 < count)
 			return load_party_inputs(pid, count);
 		else
@@ -139,7 +148,7 @@ int spdz2_ext_processor_base::load_party_inputs(const std::string & party_input_
 	}
 	else
 	{
-		syslog(LOG_ERR, "spdz2_ext_processor_base::load_party_inputs: invalid party input spec format [%s]", party_input_spec.c_str());
+		LC(m_logcat).error("%s: invalid party input spec format [%s]", __FUNCTION__, party_input_spec.c_str());
 		return -1;
 	}
 }
@@ -164,7 +173,7 @@ int spdz2_ext_processor_base::load_self_party_inputs(const size_t count)
 		delete clr_values;
 	}
 	else
-		syslog(LOG_ERR, "spdz2_ext_processor_base::load_self_party_inputs: failed loading clear inputs.");
+		LC(m_logcat).error("%s: failed loading clear inputs.", __FUNCTION__);
 	return result;
 }
 
@@ -190,7 +199,7 @@ int spdz2_ext_processor_base::load_peer_party_inputs(const int pid, const size_t
 			for(size_t i = 0; i < count; ++i)
 				mpz_clear(party_inputs.shared_values[i]);
 			delete party_inputs.shared_values;
-			syslog(LOG_ERR, "spdz2_ext_processor_base::load_peer_party_inputs: failed to map-insert shared inputs for pid=%d.", pid);
+			LC(m_logcat).error("%s: failed to map-insert shared inputs for pid=%d.", __FUNCTION__, pid);
 		}
 	}
 	else
@@ -198,7 +207,7 @@ int spdz2_ext_processor_base::load_peer_party_inputs(const int pid, const size_t
 		for(size_t i = 0; i < count; ++i)
 			mpz_clear(party_inputs.shared_values[i]);
 		delete party_inputs.shared_values;
-		syslog(LOG_ERR, "spdz2_ext_processor_base::load_peer_party_inputs: protocol_share() failed for pid=%d.", pid);
+		LC(m_logcat).error("%s: protocol_share() failed for pid=%d.", __FUNCTION__, pid);
 	}
 	return result;
 }
@@ -231,8 +240,8 @@ int spdz2_ext_processor_base::load_clr_party_inputs(mpz_t ** clr_values, const s
 				mpz_clear((*clr_values)[i]);
 			delete (*clr_values);
 			*clr_values = NULL;
-			syslog(LOG_ERR, "spdz2_ext_processor_base::load_clr_party_inputs: not enough inputs in file [%s]; required %lu; file has %lu;",
-					input_file.c_str(), count, clr_values_idx);
+			LC(m_logcat).error("%s: not enough inputs in file [%s]; required %lu; file has %lu;",
+					__FUNCTION__, input_file.c_str(), count, clr_values_idx);
 		}
 	}
 	return (NULL != (*clr_values))? 0: -1;
@@ -249,7 +258,7 @@ int spdz2_ext_processor_base::input(const int input_of_pid, mpz_t input_value)
 		mpz_set(input_value, i->second.shared_values[i->second.share_index++]);
 		return 0;
 	}
-	syslog(LOG_ERR, "spdz2_ext_processor_base::input: failed to get input for pid %d.", input_of_pid);
+	LC(m_logcat).error("%s: failed to get input for pid %d.", __FUNCTION__, input_of_pid);
 	return -1;
 }
 
@@ -271,13 +280,13 @@ int spdz2_ext_processor_base::input(const int input_of_pid, const size_t num_of_
 		}
 		else
 		{
-			syslog(LOG_ERR, "spdz2_ext_processor_base::input: not enough input for pid %d; required %lu; available %lu;",
-					input_of_pid, num_of_inputs, (i->second.share_count - i->second.share_index));
+			LC(m_logcat).error("%s: not enough input for pid %d; required %lu; available %lu;",
+					__FUNCTION__, input_of_pid, num_of_inputs, (i->second.share_count - i->second.share_index));
 		}
 	}
 	else
 	{
-		syslog(LOG_ERR, "spdz2_ext_processor_base::input: failed to get input for pid %d.", input_of_pid);
+		LC(m_logcat).error("%s: failed to get input for pid %d.", __FUNCTION__, input_of_pid);
 	}
 	return result;
 }

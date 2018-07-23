@@ -37,6 +37,7 @@ target_link_libraries(	spdz_ext_biu
 						gmpxx
 						$ENV{HOME}/libscapi/install/lib/libboost_system.a
 						$ENV{HOME}/libscapi/install/lib/libboost_thread.a
+						log4cpp
 						pthread
 						dl
 						z
