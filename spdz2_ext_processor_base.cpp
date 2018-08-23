@@ -7,7 +7,7 @@
 #include <errno.h>
 #include <syslog.h>
 
-//#include "Measurement.hpp"
+#include <string>
 
 #include <log4cpp/Category.hh>
 #include <log4cpp/FileAppender.hh>
@@ -109,6 +109,7 @@ int spdz2_ext_processor_base::load_inputs()
 //***********************************************************************************************//
 int spdz2_ext_processor_base::load_party_input_specs(std::list<std::string> & party_input_specs)
 {
+	static const char spaces[] = " \t\n\v\f\r";
 	static const char common_inputs_spec[] = "parties_inputs.txt";
 
 	party_input_specs.clear();
@@ -118,8 +119,14 @@ int spdz2_ext_processor_base::load_party_input_specs(std::list<std::string> & pa
 		char sz[128];
 		while(NULL != fgets(sz, 128, pf))
 		{
-			if (NULL == strstr(sz, "#"))
-				party_input_specs.push_back(sz);
+			std::string str = sz;
+			if(str.find('#') != std::string::npos)
+				continue;
+			for(std::string::size_type n = str.find_first_of(spaces); n != std::string::npos; n = str.find_first_of(spaces, n))
+				str.erase(n, 1);
+			if(str.empty())
+				continue;
+			party_input_specs.push_back(str);
 		}
 		fclose(pf);
 	}
