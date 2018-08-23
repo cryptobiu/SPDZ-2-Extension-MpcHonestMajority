@@ -9,6 +9,42 @@ class spdz2_ext_processor_gf2n : public spdz2_ext_processor_base
 	int gf2n_bits;
 	TemplateField<GF2E> * the_field;
 	Protocol<GF2E> * the_party;
+	mpz_t m_field;
+
+	void mpz2gf2e(const mpz_t mpz_value, GF2E & gf2e_value);
+	void gf2e2mpz(GF2E & gf2e_value, mpz_t mpz_value);
+	std::string trace(GF2E & value);
+public:
+	spdz2_ext_processor_gf2n(const int numbits);
+	virtual ~spdz2_ext_processor_gf2n();
+
+	int init(const int pid, const int num_of_parties, const int thread_id, const char * field,
+			 const int open_count, const int mult_count, const int bits_count, int log_level = 700);
+	int term();
+
+	int offline(const int offline_size);
+	int triple(mpz_t a, mpz_t b, mpz_t c);
+	int share_immediates(const int share_of_pid, const size_t value_count, const mpz_t * values, mpz_t * shares);
+    int bit(mpz_t share);
+    int inverse(mpz_t share_value, mpz_t share_inverse);
+    int open(const size_t share_count, const mpz_t * share_values, mpz_t * opens, int verify);
+	int verify(int * error);
+    int mult(const size_t share_count, const mpz_t * shares, mpz_t * products, int verify);
+    int mix_add(mpz_t share, const mpz_t scalar);
+    int mix_sub_scalar(mpz_t share, const mpz_t scalar);
+    int mix_sub_share(const mpz_t scalar, mpz_t share);
+    std::string get_parties_file();
+    std::string get_log_file();
+    std::string get_log_category();
+
+    int inverse_value(const mpz_t value, mpz_t inverse) const;
+};
+/*
+class spdz2_ext_processor_gf2n : public spdz2_ext_processor_base
+{
+	int gf2n_bits;
+	TemplateField<GF2E> * the_field;
+	Protocol<GF2E> * the_party;
 
 	void mpz2gf2e(const mpz_t * mpz_value, GF2E & gf2e_value);
 	void gf2e2mpz(GF2E & gf2e_value, mpz_t * mpz_value);
@@ -39,4 +75,4 @@ public:
     virtual int mix_sub_scalar(mpz_t * share, const mpz_t * scalar);
     virtual int mix_sub_share(const mpz_t * scalar, mpz_t * share);
 };
-
+*/
