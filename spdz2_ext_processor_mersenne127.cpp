@@ -17,8 +17,8 @@ int spdz2_ext_processor_mersenne127::init(const int pid, const int num_of_partie
 {
 	if(0 == spdz2_ext_processor_base::init(pid, num_of_parties, thread_id, field, open_count, mult_count, bits_count, log_level))
 	{
-		the_field = new TemplateField<Mersenne127>(0);
-		the_party = new Protocol<Mersenne127>(m_nparties, m_pid, open_count, mult_count, bits_count, the_field, get_parties_file());
+		the_field = new TemplateField<ZpMersenne127Element>(0);
+		the_party = new Protocol<ZpMersenne127Element>(m_nparties, m_pid, open_count, mult_count, bits_count, the_field, get_parties_file());
 		if(the_party->offline())
 		{
 			if(0 == load_inputs())
@@ -55,12 +55,12 @@ int spdz2_ext_processor_mersenne127::offline(const int offline_size)
 
 int spdz2_ext_processor_mersenne127::triple(mpz_t a, mpz_t b, mpz_t c)
 {
-	std::vector<Mersenne127> triple(3);
+	std::vector<ZpMersenne127Element> triple(3);
 	if(the_party->triples(1, triple))
 	{
-		mpz_set(a, *triple[0].get_mpz_t());
-		mpz_set(b, *triple[1].get_mpz_t());
-		mpz_set(c, *triple[2].get_mpz_t());
+		triple[0].get_mpz_t(a);
+		triple[1].get_mpz_t(b);
+		triple[2].get_mpz_t(c);
 		return 0;
 	}
 	else
@@ -72,12 +72,12 @@ int spdz2_ext_processor_mersenne127::triple(mpz_t a, mpz_t b, mpz_t c)
 
 int spdz2_ext_processor_mersenne127::share_immediates(const int share_of_pid, const size_t value_count, const mpz_t * values, mpz_t * shares)
 {
-	std::vector<Mersenne127> m127shares(value_count), m127values(value_count);
+	std::vector<ZpMersenne127Element> m127shares(value_count), m127values(value_count);
 	if(share_of_pid == m_pid)
 	{
 		for(size_t i = 0; i < value_count; ++i)
 		{
-			m127values[i].set_mpz_t(values + i);
+			m127values[i].set_mpz_t(values[i]);
 		}
 	}
 
@@ -85,7 +85,7 @@ int spdz2_ext_processor_mersenne127::share_immediates(const int share_of_pid, co
 	{
 		for(size_t i = 0; i < value_count; ++i)
 		{
-			mpz_set(shares[i], *m127shares[i].get_mpz_t());
+			m127shares[i].get_mpz_t(shares[i]);
 		}
 		return 0;
 	}
@@ -98,10 +98,10 @@ int spdz2_ext_processor_mersenne127::share_immediates(const int share_of_pid, co
 
 int spdz2_ext_processor_mersenne127::bit(mpz_t share)
 {
-	std::vector<Mersenne127> zbit_shares(1);
+	std::vector<ZpMersenne127Element> zbit_shares(1);
 	if(the_party->bits(1, zbit_shares))
 	{
-		mpz_set(share, *zbit_shares[0].get_mpz_t());
+		zbit_shares[0].get_mpz_t(share);
 		return 0;
 	}
 	else
@@ -147,7 +147,7 @@ int spdz2_ext_processor_mersenne127::inverse(mpz_t x, mpz_t y)
 
 			mpz_t M127;
 			mpz_init(M127);
-			mpz_set_str(M127, Mersenne127::M127, 10);
+			ZpMersenne127Element::get_mpz_t_p(M127);
 			mpz_mod(y, product, M127);
 			mpz_clear(M127);
 			result = 0;
@@ -176,7 +176,7 @@ int spdz2_ext_processor_mersenne127::inverse_value(const mpz_t value, mpz_t inve
 	mpz_init(y);
 	mpz_init(P);
 
-	mpz_set_str(P, Mersenne127::M127, 10);
+	ZpMersenne127Element::get_mpz_t_p(P);
 	mpz_gcdext(gcd, x, y, value, P);
 	mpz_mod(inverse, x, P);
 
@@ -191,11 +191,11 @@ int spdz2_ext_processor_mersenne127::inverse_value(const mpz_t value, mpz_t inve
 int spdz2_ext_processor_mersenne127::open(const size_t share_count, const mpz_t * share_values, mpz_t * opens, int verify)
 {
 	int result = -1;
-	std::vector<Mersenne127> m127shares(share_count), m127opens(share_count);
+	std::vector<ZpMersenne127Element> m127shares(share_count), m127opens(share_count);
 	LC(m_logcat).debug("%s: calling open for %u shares", __FUNCTION__, (u_int32_t)share_count);
 	for(size_t i = 0; i < share_count; i++)
 	{
-		m127shares[i].set_mpz_t(share_values + i);
+		m127shares[i].set_mpz_t(share_values[i]);
 	}
 
 	if(the_party->openShare((int)share_count, m127shares, m127opens))
@@ -204,7 +204,7 @@ int spdz2_ext_processor_mersenne127::open(const size_t share_count, const mpz_t 
 		{
 			for(size_t i = 0; i < share_count; i++)
 			{
-				mpz_set(opens[i], *m127opens[i].get_mpz_t());
+				m127opens[i].get_mpz_t(opens[i]);
 			}
 			result = 0;
 		}
@@ -230,19 +230,19 @@ int spdz2_ext_processor_mersenne127::mult(const size_t share_count, const mpz_t 
 {
 	int result = -1;
 	size_t xy_pair_count = share_count/2;
-	std::vector<Mersenne127> x_shares(xy_pair_count), y_shares(xy_pair_count), xy_shares(xy_pair_count);
+	std::vector<ZpMersenne127Element> x_shares(xy_pair_count), y_shares(xy_pair_count), xy_shares(xy_pair_count);
 
 	for(size_t i = 0; i < xy_pair_count; ++i)
 	{
-		x_shares[i].set_mpz_t(shares + 2*i);
-		y_shares[i].set_mpz_t(shares + 2*i + 1);
+		x_shares[i].set_mpz_t(shares[2*i]);
+		y_shares[i].set_mpz_t(shares[2*i + 1]);
 	}
 
 	if(the_party->multShares(xy_pair_count, x_shares, y_shares, xy_shares))
 	{
 		for(size_t i = 0; i < xy_pair_count; ++i)
 		{
-			mpz_set(products[i], *xy_shares[i].get_mpz_t());
+			xy_shares[i].get_mpz_t(products[i]);
 		}
 		result = 0;
 	}
@@ -255,10 +255,12 @@ int spdz2_ext_processor_mersenne127::mult(const size_t share_count, const mpz_t 
 
 int spdz2_ext_processor_mersenne127::mix_add(mpz_t share, const mpz_t scalar)
 {
-	Mersenne127 input(share), output, arg(scalar);
-	if(Protocol<Mersenne127>::addShareAndScalar(input, arg, output))
+	ZpMersenne127Element input, output, arg;
+	input.set_mpz_t(share);
+	arg.set_mpz_t(scalar);
+	if(Protocol<ZpMersenne127Element>::addShareAndScalar(input, arg, output))
 	{
-		mpz_set(share, *output.get_mpz_t());
+		output.get_mpz_t(share);
 		return 0;
 	}
 	LC(m_logcat).error("%s: protocol addShareAndScalar failure.", __FUNCTION__);
@@ -267,10 +269,12 @@ int spdz2_ext_processor_mersenne127::mix_add(mpz_t share, const mpz_t scalar)
 
 int spdz2_ext_processor_mersenne127::mix_sub_scalar(mpz_t share, const mpz_t scalar)
 {
-	Mersenne127 input(share), output, arg(scalar);
-	if(Protocol<Mersenne127>::shareSubScalar(input, arg, output))
+	ZpMersenne127Element input, output, arg;
+	input.set_mpz_t(share);
+	arg.set_mpz_t(scalar);
+	if(Protocol<ZpMersenne127Element>::shareSubScalar(input, arg, output))
 	{
-		mpz_set(share, *output.get_mpz_t());
+		output.get_mpz_t(share);
 		return 0;
 	}
 	LC(m_logcat).error("%s: protocol shareSubScalar failure.", __FUNCTION__);
@@ -279,10 +283,12 @@ int spdz2_ext_processor_mersenne127::mix_sub_scalar(mpz_t share, const mpz_t sca
 
 int spdz2_ext_processor_mersenne127::mix_sub_share(const mpz_t scalar, mpz_t share)
 {
-	Mersenne127 input(share), output, arg(scalar);
-	if(Protocol<Mersenne127>::scalarSubShare(input, arg, output))
+	ZpMersenne127Element input, output, arg;
+	input.set_mpz_t(share);
+	arg.set_mpz_t(scalar);
+	if(Protocol<ZpMersenne127Element>::scalarSubShare(input, arg, output))
 	{
-		mpz_set(share, *output.get_mpz_t());
+		output.get_mpz_t(share);
 		return 0;
 	}
 	LC(m_logcat).error("%s: protocol scalarSubShare failure.", __FUNCTION__);
