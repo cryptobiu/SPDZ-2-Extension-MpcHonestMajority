@@ -37,12 +37,15 @@ std::string spdz2_ext_processor_gf2n::trace(GF2E & value)
 int spdz2_ext_processor_gf2n::init(const int pid, const int num_of_parties, const int thread_id, const char * field,
 			 	 	 	 	 	   const int open_count, const int mult_count, const int bits_count, int log_level)
 {
+	LC(m_logcat).notice("%s: init() start.", __FUNCTION__);
 	if(0 == spdz2_ext_processor_base::init(pid, num_of_parties, thread_id, field, open_count, mult_count, bits_count, log_level))
 	{
 		the_field = new TemplateField<GF2E>(gf2n_bits);
 		the_party = new Protocol<GF2E>(m_nparties, m_pid, open_count, mult_count, bits_count, the_field, get_parties_file());
+		LC(m_logcat).notice("%s: offline() start.", __FUNCTION__);
 		if(the_party->offline())
 		{
+			LC(m_logcat).notice("%s: load_inputs() start.", __FUNCTION__);
 			if(0 == load_inputs())
 			{
 				mpz_ui_pow_ui(m_field, 2, bits_count);
@@ -65,6 +68,7 @@ int spdz2_ext_processor_gf2n::init(const int pid, const int num_of_parties, cons
 
 int spdz2_ext_processor_gf2n::term()
 {
+	LC(m_logcat).notice("%s: term() start.", __FUNCTION__);
 	delete the_party;
 	the_party = NULL;
 	delete the_field;
