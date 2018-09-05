@@ -51,7 +51,7 @@ int spdz2_ext_processor_base::init_log(int log_level)
 {
 	static const char the_layout[] = "%d{%y-%m-%d %H:%M:%S.%l}| %-6p | %-15c | %m%n";
 
-	std::string log_file = "/var/log/";
+	std::string log_file = "/var/log/spdz";
 	log_file += get_log_file();
 	m_logcat = get_log_category();
 
