@@ -42,7 +42,7 @@ int init(void ** handle, const int pid, const int num_of_parties, const int thre
 		return -1;
 	}
 
-	if(0 != proc->init(pid, num_of_parties, thread_id, field, open_count, mult_count, bits_count))
+	if(0 != proc->init(pid, num_of_parties, thread_id, field, open_count, mult_count, bits_count, 500))
 	{
 		delete proc;
 		return -1;
