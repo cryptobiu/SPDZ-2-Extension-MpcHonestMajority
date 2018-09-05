@@ -15,12 +15,15 @@ spdz2_ext_processor_mersenne127::~spdz2_ext_processor_mersenne127()
 int spdz2_ext_processor_mersenne127::init(const int pid, const int num_of_parties, const int thread_id, const char * field,
 		 	 	 	 	 	 	 	 	 const int open_count, const int mult_count, const int bits_count, int log_level)
 {
+	LC(m_logcat).notice("%s: init() start.", __FUNCTION__);
 	if(0 == spdz2_ext_processor_base::init(pid, num_of_parties, thread_id, field, open_count, mult_count, bits_count, log_level))
 	{
 		the_field = new TemplateField<ZpMersenne127Element>(0);
 		the_party = new Protocol<ZpMersenne127Element>(m_nparties, m_pid, open_count, mult_count, bits_count, the_field, get_parties_file());
+		LC(m_logcat).notice("%s: offline() start.", __FUNCTION__);
 		if(the_party->offline())
 		{
+			LC(m_logcat).notice("%s: load_inputs() start.", __FUNCTION__);
 			if(0 == load_inputs())
 			{
 				LC(m_logcat).info("%s: init() success", __FUNCTION__);
@@ -41,6 +44,7 @@ int spdz2_ext_processor_mersenne127::init(const int pid, const int num_of_partie
 
 int spdz2_ext_processor_mersenne127::term()
 {
+	LC(m_logcat).notice("%s: term() start.", __FUNCTION__);
 	delete the_party;
 	the_party = NULL;
 	delete the_field;
