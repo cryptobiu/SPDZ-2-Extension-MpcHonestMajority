@@ -26,7 +26,7 @@ int spdz2_ext_processor_mersenne127::init(const int pid, const int num_of_partie
 			LC(m_logcat).notice("%s: load_inputs() start.", __FUNCTION__);
 			if(0 == load_inputs())
 			{
-				LC(m_logcat).info("%s: init() success", __FUNCTION__);
+				LC(m_logcat).notice("%s: init() success", __FUNCTION__);
 				return 0;
 			}
 			else

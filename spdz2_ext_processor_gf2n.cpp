@@ -49,7 +49,7 @@ int spdz2_ext_processor_gf2n::init(const int pid, const int num_of_parties, cons
 			if(0 == load_inputs())
 			{
 				mpz_ui_pow_ui(m_field, 2, bits_count);
-				LC(m_logcat).info("%s: init() success", __FUNCTION__);
+				LC(m_logcat).notice("%s: init() success", __FUNCTION__);
 				return 0;
 			}
 			else
