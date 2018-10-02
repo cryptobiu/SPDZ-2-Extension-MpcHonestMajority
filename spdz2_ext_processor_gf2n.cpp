@@ -325,6 +325,16 @@ int spdz2_ext_processor_gf2n::mix_sub_share(const mpz_t scalar, mpz_t share)
 	return -1;
 }
 
+int spdz2_ext_processor_gf2n::mix_mul(mpz_t share, const mpz_t scalar)
+{
+	GF2E input, output, arg;
+	mpz2gf2e(share, input);
+	mpz2gf2e(scalar, arg);
+	output = input * arg;
+	gf2e2mpz(output, share);
+	return 0;
+}
+
 std::string spdz2_ext_processor_gf2n::get_parties_file()
 {
 	return "parties_gf2n.txt";

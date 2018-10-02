@@ -300,6 +300,13 @@ int spdz2_ext_processor_mersenne61::mix_sub_share(const mpz_t scalar, mpz_t shar
 	return -1;
 }
 
+int spdz2_ext_processor_mersenne61::mix_mul(mpz_t share, const mpz_t scalar)
+{
+	mpz_mul(share, share, scalar);
+	mpz_mod_ui(share, share, spdz2_ext_processor_mersenne61::mersenne61);
+	return 0;
+}
+
 std::string spdz2_ext_processor_mersenne61::get_parties_file()
 {
 	return "parties_gfp61.txt";

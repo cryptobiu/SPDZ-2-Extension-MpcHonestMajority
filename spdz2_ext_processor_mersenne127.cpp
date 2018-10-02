@@ -299,6 +299,17 @@ int spdz2_ext_processor_mersenne127::mix_sub_share(const mpz_t scalar, mpz_t sha
 	return -1;
 }
 
+int spdz2_ext_processor_mersenne127::mix_mul(mpz_t share, const mpz_t scalar)
+{
+	mpz_t P;
+	mpz_init(P);
+	ZpMersenne127Element::get_mpz_t_p(P);
+	mpz_mul(share, share, scalar);
+	mpz_mod(share, share, P);
+	mpz_clear(P);
+	return 0;
+}
+
 std::string spdz2_ext_processor_mersenne127::get_parties_file()
 {
 	return "parties_gfp127.txt";
