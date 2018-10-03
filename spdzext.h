@@ -23,6 +23,7 @@ extern "C"
     int mix_sub_scalar(void * handle, mpz_t share, const mpz_t scalar);
     int mix_sub_share(void * handle, const mpz_t scalar, mpz_t share);
     int mix_mul(void * handle, mpz_t share, const mpz_t scalar);
+    int adds(void * handle, mpz_t share1, const mpz_t share2);
 
     int share_immediates(void * handle, const int party_id, const size_t value_count, const mpz_t * values, mpz_t * shares);
 

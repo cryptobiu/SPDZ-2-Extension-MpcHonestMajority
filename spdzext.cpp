@@ -2,7 +2,6 @@
 #include "spdzext.h"
 #include "spdz2_ext_processor_base.h"
 #include "spdz2_ext_processor_mersenne61.h"
-#include "spdz2_ext_processor_gf2n.h"
 #include "spdz2_ext_processor_mersenne127.h"
 
 #include <syslog.h>
@@ -30,11 +29,6 @@ int init(void ** handle, const int pid, const int num_of_parties, const int thre
 			syslog(LOG_ERR, "SPDZ-2 extension library init: invalid GFP number of bits [%ld]", numbits);
 			return -1;
 		}
-	}
-	else if(strncmp(field, "gf2n", 4) == 0)
-	{
-		long numbits = strtol(field + 4, NULL, 10);
-		proc = new spdz2_ext_processor_gf2n(numbits);
 	}
 	else
 	{
@@ -107,6 +101,12 @@ int mix_sub_share(void * handle, const mpz_t scalar, mpz_t share)
 int mix_mul(void * handle, mpz_t share, const mpz_t scalar)
 {
 	return ((spdz2_ext_processor_base *)handle)->mix_mul(share, scalar);
+}
+//-------------------------------------------------------------------------------------------//
+int adds(void * handle, mpz_t share1, const mpz_t share2)
+{
+	syslog(LOG_ERR, "SPDZ-2 extension library adds in use.");
+	return ((spdz2_ext_processor_base *)handle)->adds(share1, share2);
 }
 //-------------------------------------------------------------------------------------------//
 int share_immediates(void * handle, const int party_id, const size_t value_count, const mpz_t * values, mpz_t * shares)

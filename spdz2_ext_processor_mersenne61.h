@@ -32,6 +32,7 @@ public:
     int mix_sub_scalar(mpz_t share, const mpz_t scalar);
     int mix_sub_share(const mpz_t scalar, mpz_t share);
     int mix_mul(mpz_t share, const mpz_t scalar);
+    int adds(mpz_t share1, const mpz_t share2);
     std::string get_parties_file();
 	std::string get_log_file();
 	std::string get_log_category();
