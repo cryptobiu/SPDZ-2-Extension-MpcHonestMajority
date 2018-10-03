@@ -314,6 +314,13 @@ int spdz2_ext_processor_mersenne61::adds(mpz_t share1, const mpz_t share2)
 	return 0;
 }
 
+int spdz2_ext_processor_mersenne61::subs(mpz_t share1, const mpz_t share2)
+{
+	mpz_sub(share1, share1, share2);
+	mpz_mod_ui(share1, share1, spdz2_ext_processor_mersenne61::mersenne61);
+	return 0;
+}
+
 std::string spdz2_ext_processor_mersenne61::get_parties_file()
 {
 	return "parties_gfp61.txt";

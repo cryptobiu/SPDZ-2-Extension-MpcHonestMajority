@@ -105,8 +105,13 @@ int mix_mul(void * handle, mpz_t share, const mpz_t scalar)
 //-------------------------------------------------------------------------------------------//
 int adds(void * handle, mpz_t share1, const mpz_t share2)
 {
-	syslog(LOG_ERR, "SPDZ-2 extension library adds in use.");
 	return ((spdz2_ext_processor_base *)handle)->adds(share1, share2);
+}
+//-------------------------------------------------------------------------------------------//
+int subs(void * handle, mpz_t share1, const mpz_t share2)
+{
+	syslog(LOG_ERR, "SPDZ-2 extension library subs in use.");
+	return ((spdz2_ext_processor_base *)handle)->subs(share1, share2);
 }
 //-------------------------------------------------------------------------------------------//
 int share_immediates(void * handle, const int party_id, const size_t value_count, const mpz_t * values, mpz_t * shares)
