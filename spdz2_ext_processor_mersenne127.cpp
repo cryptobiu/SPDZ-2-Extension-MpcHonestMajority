@@ -100,12 +100,13 @@ int spdz2_ext_processor_mersenne127::share_immediates(const int share_of_pid, co
 	return -1;
 }
 
-int spdz2_ext_processor_mersenne127::bit(mpz_t share)
+int spdz2_ext_processor_mersenne127::bit(mp_limb_t * share)
 {
 	std::vector<ZpMersenne127Element> zbit_shares(1);
 	if(the_party->bits(1, zbit_shares))
 	{
-		zbit_shares[0].get_mpz_t(share);
+		memcpy(share, &zbit_shares[0], 16);
+		LC(m_logcat).debug("%s: bit share = [%llu:%llu].", __FUNCTION__, share[0], share[1]);
 		return 0;
 	}
 	else

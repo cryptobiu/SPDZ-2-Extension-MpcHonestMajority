@@ -102,13 +102,17 @@ int spdz2_ext_processor_mersenne61::share_immediates(const int share_of_pid, con
 	return -1;
 }
 
-int spdz2_ext_processor_mersenne61::bit(mpz_t share)
+int spdz2_ext_processor_mersenne61::bit(mp_limb_t * share)
 {
 	std::vector<ZpMersenneLongElement> zbit_shares(1);
 	if(the_party->bits(1, zbit_shares))
 	{
-		mpz_set_ui(share, zbit_shares[0].elem);
-		LC(m_logcat).debug("%s: protocol bits share = %lu.", __FUNCTION__, zbit_shares[0].elem);
+		LC(m_logcat).debug("%s: protocol bits share = [%016lX].", __FUNCTION__, zbit_shares[0].elem);
+
+		share[0] = zbit_shares[0].elem;
+		share[1] = 0;
+
+		LC(m_logcat).debug("%s: converted protocol bits share = [%016lX:%016lX].", __FUNCTION__, share[0], share[1]);
 		return 0;
 	}
 	else

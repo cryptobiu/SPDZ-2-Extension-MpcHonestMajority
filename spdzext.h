@@ -28,7 +28,7 @@ extern "C"
 
     int share_immediates(void * handle, const int party_id, const size_t value_count, const mpz_t * values, mpz_t * shares);
 
-    int bit(void * handle, mpz_t share);
+    int bit(void * handle, mp_limb_t * share);
     int inverse(void * handle, mpz_t share_value, mpz_t share_inverse);
 
     /*

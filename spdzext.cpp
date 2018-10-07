@@ -36,7 +36,7 @@ int init(void ** handle, const int pid, const int num_of_parties, const int thre
 		return -1;
 	}
 
-	if(0 != proc->init(pid, num_of_parties, thread_id, field, open_count, mult_count, bits_count, 500))
+	if(0 != proc->init(pid, num_of_parties, thread_id, field, open_count, mult_count, bits_count, 700))
 	{
 		delete proc;
 		return -1;
@@ -119,7 +119,7 @@ int share_immediates(void * handle, const int party_id, const size_t value_count
 	return ((spdz2_ext_processor_base *)handle)->share_immediates(party_id, value_count, values, shares);
 }
 //-------------------------------------------------------------------------------------------//
-int bit(void * handle, mpz_t share)
+int bit(void * handle, mp_limb_t * share)
 {
 	return ((spdz2_ext_processor_base *)handle)->bit(share);
 }
