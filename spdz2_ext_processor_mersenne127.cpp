@@ -139,8 +139,12 @@ int spdz2_ext_processor_mersenne127::inverse(mpz_t x, mpz_t y)
 
 	if(triple(x, r, u))
 	{
-		if(open(1, &u, &open_u, true))
+		mp_limb_t __u[4], __open_u[2];
+		__u[0] = __u[1] = __u[2] = __u[3] = __open_u[0] = __open_u[1] = 0;
+		mpz_export(__u, NULL, -1, 8, 0, 0, u);
+		if(open(1, __u, __open_u, true))
 		{
+			mpz_import(open_u, 2, -1, 8, 0, 0, __open_u);
 			inverse_value(open_u, v);
 			if(LC(m_logcat).isDebugEnabled())
 			{
@@ -193,24 +197,21 @@ int spdz2_ext_processor_mersenne127::inverse_value(const mpz_t value, mpz_t inve
 	return 0;
 }
 
-int spdz2_ext_processor_mersenne127::open(const size_t share_count, const mpz_t * share_values, mpz_t * opens, int verify)
+int spdz2_ext_processor_mersenne127::open(const size_t share_count, const mp_limb_t * share_values, mp_limb_t * opens, int verify)
 {
 	int result = -1;
 	std::vector<ZpMersenne127Element> m127shares(share_count), m127opens(share_count);
 	LC(m_logcat).debug("%s: calling open for %u shares", __FUNCTION__, (u_int32_t)share_count);
 	for(size_t i = 0; i < share_count; i++)
 	{
-		m127shares[i].set_mpz_t(share_values[i]);
+		memcpy((mp_limb_t *)m127shares[i], share_values + 4*i, 2 * sizeof(mp_limb_t));
 	}
 
 	if(the_party->openShare((int)share_count, m127shares, m127opens))
 	{
 		if(!verify || the_party->verify())
 		{
-			for(size_t i = 0; i < share_count; i++)
-			{
-				m127opens[i].get_mpz_t(opens[i]);
-			}
+			memcpy(opens, m127opens.data(), share_count * 2 * sizeof(mp_limb_t));
 			result = 0;
 		}
 		else

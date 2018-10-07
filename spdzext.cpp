@@ -58,7 +58,7 @@ int offline(void * handle, const int offline_size)
 	return ((spdz2_ext_processor_base *)handle)->offline(offline_size);
 }
 //-------------------------------------------------------------------------------------------//
-int opens(void * handle, const size_t share_count, const mpz_t * shares, mpz_t * opens, int verify)
+int opens(void * handle, const size_t share_count, const mp_limb_t * shares, mp_limb_t * opens, int verify)
 {
 	return ((spdz2_ext_processor_base *)handle)->open(share_count, shares, opens, verify);
 }

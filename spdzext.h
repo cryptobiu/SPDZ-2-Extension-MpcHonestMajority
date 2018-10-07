@@ -13,7 +13,7 @@ extern "C"
 	int term(void * handle);
 
 	int offline(void * handle, const int offline_size);
-	int opens(void * handle, const size_t share_count, const mpz_t * shares, mpz_t * opens, int verify);
+	int opens(void * handle, const size_t share_count, const mp_limb_t * shares, mp_limb_t * opens, int verify);
 	int triple(void * handle, mpz_t a, mpz_t b, mpz_t c);
 	int verify(void * handle, int * error);
     int input(void * handle, const int input_of_pid, const size_t num_of_inputs, mpz_t * inputs);

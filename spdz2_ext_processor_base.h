@@ -56,7 +56,7 @@ public:
 	virtual int share_immediates(const int share_of_pid, const size_t value_count, const mpz_t * values, mpz_t * shares) = 0;
     virtual int bit(mp_limb_t * share) = 0;
     virtual int inverse(mpz_t share_value, mpz_t share_inverse) = 0;
-    virtual int open(const size_t share_count, const mpz_t * share_values, mpz_t * opens, int verify) = 0;
+    virtual int open(const size_t share_count, const mp_limb_t * share_values, mp_limb_t * opens, int verify) = 0;
 	virtual int verify(int * error) = 0;
     virtual int mult(const size_t share_count, const mpz_t * shares, mpz_t * products, int verify) = 0;
     virtual int mix_add(mpz_t share, const mpz_t scalar) = 0;

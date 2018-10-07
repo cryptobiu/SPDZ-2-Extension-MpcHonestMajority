@@ -25,7 +25,7 @@ public:
 	int share_immediates(const int share_of_pid, const size_t value_count, const mpz_t * values, mpz_t * shares);
     int bit(mp_limb_t * share);
     int inverse(mpz_t share_value, mpz_t share_inverse);
-    int open(const size_t share_count, const mpz_t * share_values, mpz_t * opens, int verify);
+    int open(const size_t share_count, const mp_limb_t * share_values, mp_limb_t * opens, int verify);
 	int verify(int * error);
     int mult(const size_t share_count, const mpz_t * shares, mpz_t * products, int verify);
     int mix_add(mpz_t share, const mpz_t scalar);

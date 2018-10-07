@@ -145,8 +145,12 @@ int spdz2_ext_processor_mersenne61::inverse(mpz_t x, mpz_t y)
 
 	if(triple(x, r, u))
 	{
-		if(open(1, &u, &open_u, true))
+		mp_limb_t __u[4], __open_u[2];
+		__u[0] = __u[1] = __u[2] = __u[3] = __open_u[0] = __open_u[1] = 0;
+		mpz_export(__u, NULL, -1, 8, 0, 0, u);
+		if(open(1, __u, __open_u, true))
 		{
+			mpz_import(open_u, 1, -1, 8, 0, 0, __open_u);
 			inverse_value(open_u, v);
 			if(LC(m_logcat).isDebugEnabled())
 			{
@@ -193,14 +197,14 @@ int spdz2_ext_processor_mersenne61::inverse_value(const mpz_t value, mpz_t inver
 	return 0;
 }
 
-int spdz2_ext_processor_mersenne61::open(const size_t share_count, const mpz_t * share_values, mpz_t * opens, int verify)
+int spdz2_ext_processor_mersenne61::open(const size_t share_count, const mp_limb_t * share_values, mp_limb_t * opens, int verify)
 {
 	int result = -1;
 	std::vector<ZpMersenneLongElement> m61shares(share_count), m61opens(share_count);
 	LC(m_logcat).debug("%s: calling open for %u shares", __FUNCTION__, (u_int32_t)share_count);
 	for(size_t i = 0; i < share_count; i++)
 	{
-		m61shares[i].elem = mpz_get_ui(share_values[i]);
+		m61shares[i].elem = share_values[4*i];//mpz_get_ui(share_values[i]);
 		LC(m_logcat).debug("%s: share value[%lu] = %lu", __FUNCTION__, i, m61shares[i].elem);
 	}
 
@@ -210,7 +214,7 @@ int spdz2_ext_processor_mersenne61::open(const size_t share_count, const mpz_t *
 		{
 			for(size_t i = 0; i < share_count; i++)
 			{
-				mpz_set_ui(opens[i], m61opens[i].elem);
+				opens[2*i] = m61opens[i].elem;
 				LC(m_logcat).debug("%s: opened value[%lu] = %lu", __FUNCTION__, i, m61opens[i].elem);
 			}
 			result = 0;
