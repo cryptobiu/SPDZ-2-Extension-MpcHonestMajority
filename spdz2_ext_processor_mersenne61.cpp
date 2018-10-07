@@ -56,16 +56,16 @@ int spdz2_ext_processor_mersenne61::offline(const int offline_size)
 	return (the_party->offline())? 0: -1;
 }
 
-int spdz2_ext_processor_mersenne61::triple(mpz_t a, mpz_t b, mpz_t c)
+int spdz2_ext_processor_mersenne61::triple(mp_limb_t * a, mp_limb_t * b, mp_limb_t * c)
 {
 	std::vector<ZpMersenneLongElement> triple(3);
 	if(the_party->triples(1, triple))
 	{
 		LC(m_logcat).debug("%s: share a = %lu; share b = %lu; share c = %lu;",
 				__FUNCTION__, triple[0].elem, triple[1].elem, triple[2].elem);
-		mpz_set_ui(a, triple[0].elem);
-		mpz_set_ui(b, triple[1].elem);
-		mpz_set_ui(c, triple[2].elem);
+		*a = triple[0].elem;
+		*b = triple[1].elem;
+		*c = triple[2].elem;
 		return 0;
 	}
 	else
@@ -135,20 +135,21 @@ int spdz2_ext_processor_mersenne61::inverse(mpz_t x, mpz_t y)
 */
 
 	int result = -1;
-	mpz_t r, u, open_u, v, product;
+	mp_limb_t u[4], __open_u[2], __r[4], __x[4];
+	u[0] = u[1] = u[2] = u[3] = __open_u[0] = __open_u[1] = 0;
+	__r[0] = __r[1] = __r[2] = __r[3] = __x[0] = __x[1] = __x[2] = __x[3] = 0;
+	mpz_t r, open_u, v, product;
 
 	mpz_init(r);
-	mpz_init(u);
 	mpz_init(open_u);
 	mpz_init(v);
 	mpz_init(product);
 
-	if(triple(x, r, u))
+	if(triple(__x, __r, u))
 	{
-		mp_limb_t __u[4], __open_u[2];
-		__u[0] = __u[1] = __u[2] = __u[3] = __open_u[0] = __open_u[1] = 0;
-		mpz_export(__u, NULL, -1, 8, 0, 0, u);
-		if(open(1, __u, __open_u, true))
+		mpz_import(r, 1, -1, 8, 0, 0, __r);
+		mpz_import(x, 1, -1, 8, 0, 0, __x);
+		if(open(1, u, __open_u, true))
 		{
 			mpz_import(open_u, 1, -1, 8, 0, 0, __open_u);
 			inverse_value(open_u, v);
@@ -168,7 +169,6 @@ int spdz2_ext_processor_mersenne61::inverse(mpz_t x, mpz_t y)
 		LC(m_logcat).error("%s: protocol triple() failed.", __FUNCTION__);
 
 	mpz_clear(r);
-	mpz_clear(u);
 	mpz_clear(open_u);
 	mpz_clear(v);
 	mpz_clear(product);

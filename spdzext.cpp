@@ -63,7 +63,7 @@ int opens(void * handle, const size_t share_count, const mp_limb_t * shares, mp_
 	return ((spdz2_ext_processor_base *)handle)->open(share_count, shares, opens, verify);
 }
 //-------------------------------------------------------------------------------------------//
-int triple(void * handle, mpz_t a, mpz_t b, mpz_t c)
+int triple(void * handle, mp_limb_t * a, mp_limb_t * b, mp_limb_t * c)
 {
 	return ((spdz2_ext_processor_base *)handle)->triple(a, b, c);
 }

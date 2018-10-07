@@ -52,7 +52,7 @@ public:
 	virtual int input(const int input_of_pid, const size_t num_of_inputs, mpz_t * inputs);
 
 	virtual int offline(const int offline_size) = 0;
-	virtual int triple(mpz_t a, mpz_t b, mpz_t c) = 0;
+	virtual int triple(mp_limb_t * a, mp_limb_t * b, mp_limb_t * c) = 0;
 	virtual int share_immediates(const int share_of_pid, const size_t value_count, const mpz_t * values, mpz_t * shares) = 0;
     virtual int bit(mp_limb_t * share) = 0;
     virtual int inverse(mpz_t share_value, mpz_t share_inverse) = 0;
