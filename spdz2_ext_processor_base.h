@@ -59,7 +59,7 @@ public:
     virtual int open(const size_t share_count, const mp_limb_t * share_values, mp_limb_t * opens, int verify) = 0;
 	virtual int verify(int * error) = 0;
     virtual int mult(const size_t share_count, const mpz_t * shares, mpz_t * products, int verify) = 0;
-    virtual int mix_add(mpz_t share, const mpz_t scalar) = 0;
+    virtual int mix_add(const mp_limb_t * share, const mp_limb_t * scalar, mp_limb_t * sum) = 0;
     virtual int mix_sub_scalar(mpz_t share, const mpz_t scalar) = 0;
     virtual int mix_sub_share(const mpz_t scalar, mpz_t share) = 0;
     virtual int mix_mul(mpz_t share, const mpz_t scalar) = 0;

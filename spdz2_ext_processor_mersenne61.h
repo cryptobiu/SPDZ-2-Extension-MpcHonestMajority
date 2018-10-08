@@ -28,7 +28,7 @@ public:
     int open(const size_t share_count, const mp_limb_t * share_values, mp_limb_t * opens, int verify);
 	int verify(int * error);
     int mult(const size_t share_count, const mpz_t * shares, mpz_t * products, int verify);
-    int mix_add(mpz_t share, const mpz_t scalar);
+    int mix_add(const mp_limb_t * share, const mp_limb_t * scalar, mp_limb_t * sum);
     int mix_sub_scalar(mpz_t share, const mpz_t scalar);
     int mix_sub_share(const mpz_t scalar, mpz_t share);
     int mix_mul(mpz_t share, const mpz_t scalar);

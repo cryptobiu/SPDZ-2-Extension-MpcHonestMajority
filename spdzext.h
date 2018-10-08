@@ -19,7 +19,7 @@ extern "C"
     int input(void * handle, const int input_of_pid, const size_t num_of_inputs, mpz_t * inputs);
     int mult(void * handle, const size_t share_count, const mpz_t * shares, mpz_t * products, int verify);
 
-    int mix_add(void * handle, mpz_t share, const mpz_t scalar);
+    int mix_add(void * handle, const mp_limb_t * share, const mp_limb_t * scalar, mp_limb_t * sum);
     int mix_sub_scalar(void * handle, mpz_t share, const mpz_t scalar);
     int mix_sub_share(void * handle, const mpz_t scalar, mpz_t share);
     int mix_mul(void * handle, mpz_t share, const mpz_t scalar);

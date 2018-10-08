@@ -83,9 +83,9 @@ int mult(void * handle, const size_t share_count, const mpz_t * shares, mpz_t * 
 	return ((spdz2_ext_processor_base *)handle)->mult(share_count, shares, products, verify);
 }
 //-------------------------------------------------------------------------------------------//
-int mix_add(void * handle, mpz_t share, const mpz_t scalar)
+int mix_add(void * handle, const mp_limb_t * share, const mp_limb_t * scalar, mp_limb_t * sum)
 {
-	return ((spdz2_ext_processor_base *)handle)->mix_add(share, scalar);
+	return ((spdz2_ext_processor_base *)handle)->mix_add(share, scalar, sum);
 }
 //-------------------------------------------------------------------------------------------//
 int mix_sub_scalar(void * handle, mpz_t share, const mpz_t scalar)

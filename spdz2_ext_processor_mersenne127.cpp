@@ -261,14 +261,14 @@ int spdz2_ext_processor_mersenne127::mult(const size_t share_count, const mpz_t 
 	return result;
 }
 
-int spdz2_ext_processor_mersenne127::mix_add(mpz_t share, const mpz_t scalar)
+int spdz2_ext_processor_mersenne127::mix_add(const mp_limb_t * share, const mp_limb_t * scalar, mp_limb_t * sum)
 {
 	ZpMersenne127Element input, output, arg;
-	input.set_mpz_t(share);
-	arg.set_mpz_t(scalar);
+	memcpy((mp_limb_t*)input, share, 2 * sizeof(mp_limb_t));
+	memcpy((mp_limb_t*)arg, scalar, 2 * sizeof(mp_limb_t));
 	if(Protocol<ZpMersenne127Element>::addShareAndScalar(input, arg, output))
 	{
-		output.get_mpz_t(share);
+		memcpy(sum, (mp_limb_t*)output, 2 * sizeof(mp_limb_t));
 		return 0;
 	}
 	LC(m_logcat).error("%s: protocol addShareAndScalar failure.", __FUNCTION__);
