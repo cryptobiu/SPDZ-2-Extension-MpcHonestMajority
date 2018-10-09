@@ -31,9 +31,9 @@ public:
     int mix_add(const mp_limb_t * share, const mp_limb_t * scalar, mp_limb_t * sum);
     int mix_sub_scalar(const mp_limb_t * share, const mp_limb_t * scalar, mp_limb_t * diff);
     int mix_sub_share(const mp_limb_t * scalar, const mp_limb_t * share, mp_limb_t * diff);
-    int mix_mul(mpz_t share, const mpz_t scalar);
-    int adds(mpz_t share1, const mpz_t share2);
-    int subs(mpz_t share1, const mpz_t share2);
+    int mix_mul(const mp_limb_t * share, const mp_limb_t * scalar, mp_limb_t * product);
+    int adds(const mp_limb_t * share1, const mp_limb_t * share2, mp_limb_t * sum);
+    int subs(const mp_limb_t * share1, const mp_limb_t * share2, mp_limb_t * diff);
     std::string get_parties_file();
     std::string get_log_file();
     std::string get_log_category();

@@ -98,20 +98,19 @@ int mix_sub_share(void * handle, const mp_limb_t * scalar, const mp_limb_t * sha
 	return ((spdz2_ext_processor_base *)handle)->mix_sub_share(scalar, share, diff);
 }
 //-------------------------------------------------------------------------------------------//
-int mix_mul(void * handle, mpz_t share, const mpz_t scalar)
+int mix_mul(void * handle, const mp_limb_t * share, const mp_limb_t * scalar, mp_limb_t * product)
 {
-	return ((spdz2_ext_processor_base *)handle)->mix_mul(share, scalar);
+	return ((spdz2_ext_processor_base *)handle)->mix_mul(share, scalar, product);
 }
 //-------------------------------------------------------------------------------------------//
-int adds(void * handle, mpz_t share1, const mpz_t share2)
+int adds(void * handle, const mp_limb_t * share1, const mp_limb_t * share2, mp_limb_t * sum)
 {
-	return ((spdz2_ext_processor_base *)handle)->adds(share1, share2);
+	return ((spdz2_ext_processor_base *)handle)->adds(share1, share2, sum);
 }
 //-------------------------------------------------------------------------------------------//
-int subs(void * handle, mpz_t share1, const mpz_t share2)
+int subs(void * handle, const mp_limb_t * share1, const mp_limb_t * share2, mp_limb_t * diff)
 {
-	syslog(LOG_ERR, "SPDZ-2 extension library subs in use.");
-	return ((spdz2_ext_processor_base *)handle)->subs(share1, share2);
+	return ((spdz2_ext_processor_base *)handle)->subs(share1, share2, diff);
 }
 //-------------------------------------------------------------------------------------------//
 int share_immediates(void * handle, const int party_id, const size_t value_count, const mpz_t * values, mpz_t * shares)

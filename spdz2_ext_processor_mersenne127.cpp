@@ -266,13 +266,9 @@ int spdz2_ext_processor_mersenne127::mix_add(const mp_limb_t * share, const mp_l
 	ZpMersenne127Element input, output, arg;
 	memcpy((mp_limb_t*)input, share, 2 * sizeof(mp_limb_t));
 	memcpy((mp_limb_t*)arg, scalar, 2 * sizeof(mp_limb_t));
-	if(Protocol<ZpMersenne127Element>::addShareAndScalar(input, arg, output))
-	{
-		memcpy(sum, (mp_limb_t*)output, 2 * sizeof(mp_limb_t));
-		return 0;
-	}
-	LC(m_logcat).error("%s: protocol addShareAndScalar failure.", __FUNCTION__);
-	return -1;
+	output = input + arg;
+	memcpy(sum, (mp_limb_t*)output, 2 * sizeof(mp_limb_t));
+	return 0;
 }
 
 int spdz2_ext_processor_mersenne127::mix_sub_scalar(const mp_limb_t * share, const mp_limb_t * scalar, mp_limb_t * diff)
@@ -280,13 +276,9 @@ int spdz2_ext_processor_mersenne127::mix_sub_scalar(const mp_limb_t * share, con
 	ZpMersenne127Element input, output, arg;
 	memcpy((mp_limb_t*)input, share, 2 * sizeof(mp_limb_t));
 	memcpy((mp_limb_t*)arg, scalar, 2 * sizeof(mp_limb_t));
-	if(Protocol<ZpMersenne127Element>::shareSubScalar(input, arg, output))
-	{
-		memcpy(diff, (mp_limb_t*)output, 2 * sizeof(mp_limb_t));
-		return 0;
-	}
-	LC(m_logcat).error("%s: protocol shareSubScalar failure.", __FUNCTION__);
-	return -1;
+	output = input - arg;
+	memcpy(diff, (mp_limb_t*)output, 2 * sizeof(mp_limb_t));
+	return 0;
 }
 
 int spdz2_ext_processor_mersenne127::mix_sub_share(const mp_limb_t * scalar, const mp_limb_t * share, mp_limb_t * diff)
@@ -294,45 +286,38 @@ int spdz2_ext_processor_mersenne127::mix_sub_share(const mp_limb_t * scalar, con
 	ZpMersenne127Element input, output, arg;
 	memcpy((mp_limb_t*)input, share, 2 * sizeof(mp_limb_t));
 	memcpy((mp_limb_t*)arg, scalar, 2 * sizeof(mp_limb_t));
-	if(Protocol<ZpMersenne127Element>::scalarSubShare(input, arg, output))
-	{
-		memcpy(diff, (mp_limb_t*)output, 2 * sizeof(mp_limb_t));
-		return 0;
-	}
-	LC(m_logcat).error("%s: protocol scalarSubShare failure.", __FUNCTION__);
-	return -1;
-}
-
-int spdz2_ext_processor_mersenne127::mix_mul(mpz_t share, const mpz_t scalar)
-{
-	mpz_t P;
-	mpz_init(P);
-	ZpMersenne127Element::get_mpz_t_p(P);
-	mpz_mul(share, share, scalar);
-	mpz_mod(share, share, P);
-	mpz_clear(P);
+	output = arg - input;
+	memcpy(diff, (mp_limb_t*)output, 2 * sizeof(mp_limb_t));
 	return 0;
 }
 
-int spdz2_ext_processor_mersenne127::adds(mpz_t share1, const mpz_t share2)
+int spdz2_ext_processor_mersenne127::mix_mul(const mp_limb_t * share, const mp_limb_t * scalar, mp_limb_t * product)
 {
-	mpz_t P;
-	mpz_init(P);
-	ZpMersenne127Element::get_mpz_t_p(P);
-	mpz_add(share1, share1, share2);
-	mpz_mod(share1, share1, P);
-	mpz_clear(P);
+	ZpMersenne127Element input, output, arg;
+	memcpy((mp_limb_t*)input, share, 2 * sizeof(mp_limb_t));
+	memcpy((mp_limb_t*)arg, scalar, 2 * sizeof(mp_limb_t));
+	output = input * arg;
+	memcpy(product, (mp_limb_t*)output, 2 * sizeof(mp_limb_t));
 	return 0;
 }
 
-int spdz2_ext_processor_mersenne127::subs(mpz_t share1, const mpz_t share2)
+int spdz2_ext_processor_mersenne127::adds(const mp_limb_t * share1, const mp_limb_t * share2, mp_limb_t * sum)
 {
-	mpz_t P;
-	mpz_init(P);
-	ZpMersenne127Element::get_mpz_t_p(P);
-	mpz_sub(share1, share1, share2);
-	mpz_mod(share1, share1, P);
-	mpz_clear(P);
+	ZpMersenne127Element __share1, __share2, __sum;
+	memcpy((mp_limb_t*)__share1, share1, 2 * sizeof(mp_limb_t));
+	memcpy((mp_limb_t*)__share2, share2, 2 * sizeof(mp_limb_t));
+	__sum = __share1 + __share2;
+	memcpy((mp_limb_t*)sum, __sum, 2 * sizeof(mp_limb_t));
+	return 0;
+}
+
+int spdz2_ext_processor_mersenne127::subs(const mp_limb_t * share1, const mp_limb_t * share2, mp_limb_t * diff)
+{
+	ZpMersenne127Element __share1, __share2, __diff;
+	memcpy((mp_limb_t*)__share1, share1, 2 * sizeof(mp_limb_t));
+	memcpy((mp_limb_t*)__share2, share2, 2 * sizeof(mp_limb_t));
+	__diff = __share1 - __share2;
+	memcpy((mp_limb_t*)diff, __diff, 2 * sizeof(mp_limb_t));
 	return 0;
 }
 

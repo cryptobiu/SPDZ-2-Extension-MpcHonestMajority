@@ -271,13 +271,9 @@ int spdz2_ext_processor_mersenne61::mix_add(const mp_limb_t * share, const mp_li
 	ZpMersenneLongElement input, output, arg;
 	input.elem = *share;
 	arg.elem = *scalar;
-	if(Protocol<ZpMersenneLongElement>::addShareAndScalar(input, arg, output))
-	{
-		*sum = output.elem;
-		return 0;
-	}
-	LC(m_logcat).error("%s: protocol addShareAndScalar failure.", __FUNCTION__);
-	return -1;
+	output = input + arg;
+	*sum = output.elem;
+	return 0;
 }
 
 int spdz2_ext_processor_mersenne61::mix_sub_scalar(const mp_limb_t * share, const mp_limb_t * scalar, mp_limb_t * diff)
@@ -285,13 +281,9 @@ int spdz2_ext_processor_mersenne61::mix_sub_scalar(const mp_limb_t * share, cons
 	ZpMersenneLongElement input, output, arg;
 	input.elem = *share;
 	arg.elem = *scalar;
-	if(Protocol<ZpMersenneLongElement>::shareSubScalar(input, arg, output))
-	{
-		*diff = output.elem;
-		return 0;
-	}
-	LC(m_logcat).error("%s: protocol shareSubScalar failure.", __FUNCTION__);
-	return -1;
+	output = input - arg;
+	*diff = output.elem;
+	return 0;
 }
 
 int spdz2_ext_processor_mersenne61::mix_sub_share(const mp_limb_t * scalar, const mp_limb_t * share, mp_limb_t * diff)
@@ -299,33 +291,40 @@ int spdz2_ext_processor_mersenne61::mix_sub_share(const mp_limb_t * scalar, cons
 	ZpMersenneLongElement input, output, arg;
 	input.elem = *share;
 	arg.elem = *scalar;
-	if(Protocol<ZpMersenneLongElement>::scalarSubShare(input, arg, output))
-	{
-		*diff = output.elem;
-		return 0;
-	}
-	LC(m_logcat).error("%s: protocol scalarSubShare failure.", __FUNCTION__);
-	return -1;
-}
-
-int spdz2_ext_processor_mersenne61::mix_mul(mpz_t share, const mpz_t scalar)
-{
-	mpz_mul(share, share, scalar);
-	mpz_mod_ui(share, share, spdz2_ext_processor_mersenne61::mersenne61);
+	output = arg - input;
+	*diff = output.elem;
 	return 0;
 }
 
-int spdz2_ext_processor_mersenne61::adds(mpz_t share1, const mpz_t share2)
+int spdz2_ext_processor_mersenne61::mix_mul(const mp_limb_t * share, const mp_limb_t * scalar, mp_limb_t * product)
 {
-	mpz_add(share1, share1, share2);
-	mpz_mod_ui(share1, share1, spdz2_ext_processor_mersenne61::mersenne61);
+	LC(m_logcat).error("%s: share=%lu; scalar=%lu;", __FUNCTION__, *share, *scalar);
+	ZpMersenneLongElement input, output, arg;
+	input.elem = *share;
+	arg.elem = *scalar;
+	output = input * arg;
+	*product = output.elem;
+	LC(m_logcat).error("%s: product=%lu;", __FUNCTION__, *product);
 	return 0;
 }
 
-int spdz2_ext_processor_mersenne61::subs(mpz_t share1, const mpz_t share2)
+int spdz2_ext_processor_mersenne61::adds(const mp_limb_t * share1, const mp_limb_t * share2, mp_limb_t * sum)
 {
-	mpz_sub(share1, share1, share2);
-	mpz_mod_ui(share1, share1, spdz2_ext_processor_mersenne61::mersenne61);
+	ZpMersenneLongElement __share1, __share2, __sum;
+	__share1.elem = *share1;
+	__share2.elem = *share2;
+	__sum = __share1 + __share2;
+	*sum = __sum.elem;
+	return 0;
+}
+
+int spdz2_ext_processor_mersenne61::subs(const mp_limb_t * share1, const mp_limb_t * share2, mp_limb_t * diff)
+{
+	ZpMersenneLongElement __share1, __share2, __diff;
+	__share1.elem = *share1;
+	__share2.elem = *share2;
+	__diff = __share1 - __share2;
+	*diff = __diff.elem;
 	return 0;
 }
 

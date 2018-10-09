@@ -62,9 +62,9 @@ public:
     virtual int mix_add(const mp_limb_t * share, const mp_limb_t * scalar, mp_limb_t * sum) = 0;
     virtual int mix_sub_scalar(const mp_limb_t * share, const mp_limb_t * scalar, mp_limb_t * diff) = 0;
     virtual int mix_sub_share(const mp_limb_t * scalar, const mp_limb_t * share, mp_limb_t * diff) = 0;
-    virtual int mix_mul(mpz_t share, const mpz_t scalar) = 0;
-    virtual int adds(mpz_t share1, const mpz_t share2) = 0;
-    virtual int subs(mpz_t share1, const mpz_t share2) = 0;
+    virtual int mix_mul(const mp_limb_t * share, const mp_limb_t * scalar, mp_limb_t * product) = 0;
+    virtual int adds(const mp_limb_t * share1, const mp_limb_t * share2, mp_limb_t * sum) = 0;
+    virtual int subs(const mp_limb_t * share1, const mp_limb_t * share2, mp_limb_t * diff) = 0;
 
     virtual std::string get_parties_file() = 0;
 	virtual std::string get_log_file() = 0;
