@@ -289,14 +289,14 @@ int spdz2_ext_processor_mersenne127::mix_sub_scalar(const mp_limb_t * share, con
 	return -1;
 }
 
-int spdz2_ext_processor_mersenne127::mix_sub_share(const mpz_t scalar, mpz_t share)
+int spdz2_ext_processor_mersenne127::mix_sub_share(const mp_limb_t * scalar, const mp_limb_t * share, mp_limb_t * diff)
 {
 	ZpMersenne127Element input, output, arg;
-	input.set_mpz_t(share);
-	arg.set_mpz_t(scalar);
+	memcpy((mp_limb_t*)input, share, 2 * sizeof(mp_limb_t));
+	memcpy((mp_limb_t*)arg, scalar, 2 * sizeof(mp_limb_t));
 	if(Protocol<ZpMersenne127Element>::scalarSubShare(input, arg, output))
 	{
-		output.get_mpz_t(share);
+		memcpy(diff, (mp_limb_t*)output, 2 * sizeof(mp_limb_t));
 		return 0;
 	}
 	LC(m_logcat).error("%s: protocol scalarSubShare failure.", __FUNCTION__);

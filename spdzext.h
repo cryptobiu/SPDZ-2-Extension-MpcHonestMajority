@@ -21,7 +21,7 @@ extern "C"
 
     int mix_add(void * handle, const mp_limb_t * share, const mp_limb_t * scalar, mp_limb_t * sum);
     int mix_sub_scalar(void * handle, const mp_limb_t * share, const mp_limb_t * scalar, mp_limb_t * diff);
-    int mix_sub_share(void * handle, const mpz_t scalar, mpz_t share);
+    int mix_sub_share(void * handle, const mp_limb_t * scalar, const mp_limb_t * share, mp_limb_t * diff);
     int mix_mul(void * handle, mpz_t share, const mpz_t scalar);
     int adds(void * handle, mpz_t share1, const mpz_t share2);
     int subs(void * handle, mpz_t share1, const mpz_t share2);
