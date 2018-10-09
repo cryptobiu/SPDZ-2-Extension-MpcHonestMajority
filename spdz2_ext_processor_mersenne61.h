@@ -29,7 +29,7 @@ public:
 	int verify(int * error);
     int mult(const size_t share_count, const mpz_t * shares, mpz_t * products, int verify);
     int mix_add(const mp_limb_t * share, const mp_limb_t * scalar, mp_limb_t * sum);
-    int mix_sub_scalar(mpz_t share, const mpz_t scalar);
+    int mix_sub_scalar(const mp_limb_t * share, const mp_limb_t * scalar, mp_limb_t * diff);
     int mix_sub_share(const mpz_t scalar, mpz_t share);
     int mix_mul(mpz_t share, const mpz_t scalar);
     int adds(mpz_t share1, const mpz_t share2);

@@ -280,14 +280,14 @@ int spdz2_ext_processor_mersenne61::mix_add(const mp_limb_t * share, const mp_li
 	return -1;
 }
 
-int spdz2_ext_processor_mersenne61::mix_sub_scalar(mpz_t share, const mpz_t scalar)
+int spdz2_ext_processor_mersenne61::mix_sub_scalar(const mp_limb_t * share, const mp_limb_t * scalar, mp_limb_t * diff)
 {
 	ZpMersenneLongElement input, output, arg;
-	input.elem = mpz_get_ui(share);
-	arg.elem = mpz_get_ui(scalar);
+	input.elem = *share;
+	arg.elem = *scalar;
 	if(Protocol<ZpMersenneLongElement>::shareSubScalar(input, arg, output))
 	{
-		mpz_set_ui(share, output.elem);
+		*diff = output.elem;
 		return 0;
 	}
 	LC(m_logcat).error("%s: protocol shareSubScalar failure.", __FUNCTION__);
