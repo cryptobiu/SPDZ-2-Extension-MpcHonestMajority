@@ -8,6 +8,8 @@
 #include <syslog.h>
 
 #include <string>
+#include <sstream>
+#include <iomanip>
 
 #include <log4cpp/Category.hh>
 #include <log4cpp/FileAppender.hh>
@@ -170,58 +172,60 @@ int spdz2_ext_processor_base::load_party_inputs(const int pid, const size_t coun
 int spdz2_ext_processor_base::load_self_party_inputs(const size_t count)
 {
 	int result = -1;
-	mpz_t * clr_values = NULL;
-	if(0 == load_clr_party_inputs(&clr_values, count) && NULL != clr_values)
-	{
+	mp_limb_t * clr_values = new mp_limb_t[count * 2];
+	memset(clr_values, 0, count * 2 * sizeof(mp_limb_t));
+	if(0 == load_clr_party_inputs(clr_values, count))
 		result = load_peer_party_inputs(m_pid, count, clr_values);
-
-		for(size_t i = 0; i < count; ++i)
-			mpz_clear(clr_values[i]);
-		delete clr_values;
-	}
 	else
 		LC(m_logcat).error("%s: failed loading clear inputs.", __FUNCTION__);
+	delete clr_values;
 	return result;
 }
 
 //***********************************************************************************************//
-int spdz2_ext_processor_base::load_peer_party_inputs(const int pid, const size_t count, const mpz_t * clr_values)
+int spdz2_ext_processor_base::load_peer_party_inputs(const int pid, const size_t count, const mp_limb_t * clr_values)
 {
 	int result = -1;
 	shared_input_t party_inputs;
 	party_inputs.share_count = count;
 	party_inputs.share_index = 0;
-	party_inputs.shared_values = new mpz_t[party_inputs.share_count];
-	for(size_t i = 0; i < party_inputs.share_count; ++i)
-		mpz_init(party_inputs.shared_values[i]);
-
-	//if(protocol_share(pid, count, (NULL != clr_values)? clr_values: party_inputs.shared_values, party_inputs.shared_values))
+	party_inputs.shared_values = new mp_limb_t[party_inputs.share_count * 4];
+	memset(party_inputs.shared_values, 0, party_inputs.share_count * 4 * sizeof(mp_limb_t));
 
 	if(0 == share_immediates(pid, count, (m_pid == pid)? clr_values: NULL, party_inputs.shared_values))
 	{
+		if(LC(m_logcat).isDebugEnabled())
+		{
+			std::stringstream sts;
+			const u_int8_t * pbuff = (const u_int8_t *)party_inputs.shared_values;
+			for(size_t i = 0; i < party_inputs.share_count*4*sizeof(mp_limb_t); ++i)
+			{
+				sts << std::hex << std::setw(2) << std::setfill('0') << (int)pbuff[i] << " ";
+				if((4*sizeof(mp_limb_t) - 1) == i%(4*sizeof(mp_limb_t))) sts << std::endl;
+			}
+			LC(m_logcat).debug("%s: shared values memory dump \n%s\n", __FUNCTION__, sts.str().c_str());
+		}
+
 		if(m_shared_inputs.insert(std::pair<int, shared_input_t>(pid, party_inputs)).second)
 			result = 0;
 		else
 		{
-			for(size_t i = 0; i < count; ++i)
-				mpz_clear(party_inputs.shared_values[i]);
 			delete party_inputs.shared_values;
 			LC(m_logcat).error("%s: failed to map-insert shared inputs for pid=%d.", __FUNCTION__, pid);
 		}
 	}
 	else
 	{
-		for(size_t i = 0; i < count; ++i)
-			mpz_clear(party_inputs.shared_values[i]);
 		delete party_inputs.shared_values;
-		LC(m_logcat).error("%s: protocol_share() failed for pid=%d.", __FUNCTION__, pid);
+		LC(m_logcat).error("%s: share_immediates() failed for pid=%d.", __FUNCTION__, pid);
 	}
 	return result;
 }
 
 //***********************************************************************************************//
-int spdz2_ext_processor_base::load_clr_party_inputs(mpz_t ** clr_values, const size_t count)
+int spdz2_ext_processor_base::load_clr_party_inputs(mp_limb_t * clr_values, const size_t count)
 {
+	int result = -1;
 	char sz[128];
 	snprintf(sz, 128, "party_%d_input.txt", m_pid);
 	std::string input_file = sz;
@@ -229,40 +233,49 @@ int spdz2_ext_processor_base::load_clr_party_inputs(mpz_t ** clr_values, const s
 	FILE * pf = fopen(input_file.c_str(), "r");
 	if(NULL != pf)
 	{
-		*clr_values = new mpz_t[count];
 		size_t clr_values_idx = 0;
-
+		mpz_t t;
+		mpz_init(t);
 		while(NULL != fgets(sz, 128, pf))
 		{
-			mpz_init((*clr_values)[clr_values_idx]);
-			mpz_set_str((*clr_values)[clr_values_idx++], sz, 10);
-			if(clr_values_idx >= count)
+			LC(m_logcat).debug("%s: party input [%s] line: [%s];", __FUNCTION__, input_file.c_str(), sz);
+			mpz_set_str(t, sz, 10);
+			mpz_export(clr_values + 2*clr_values_idx, NULL, -1, 8, 0, 0, t);
+			if(++clr_values_idx >= count)
 				break;
 		}
+		mpz_clear(t);
 		fclose(pf);
 
-		if(count > clr_values_idx)
+		if(LC(m_logcat).isDebugEnabled())
 		{
-			for(size_t i = 0; i < clr_values_idx; i++)
-				mpz_clear((*clr_values)[i]);
-			delete (*clr_values);
-			*clr_values = NULL;
-			LC(m_logcat).error("%s: not enough inputs in file [%s]; required %lu; file has %lu;",
-					__FUNCTION__, input_file.c_str(), count, clr_values_idx);
+			std::stringstream sts;
+			const u_int8_t * pbuff = (const u_int8_t *)clr_values;
+			for(size_t i = 0; i < count*2*sizeof(mp_limb_t); ++i)
+			{
+				sts << std::hex << std::setw(2) << std::setfill('0') << (int)pbuff[i] << " ";
+				if((4*sizeof(mp_limb_t) - 1) == i%(4*sizeof(mp_limb_t))) sts << std::endl;
+			}
+			LC(m_logcat).debug("%s: input clear memory dump \n%s\n", __FUNCTION__, sts.str().c_str());
 		}
+
+		if(count == clr_values_idx)
+			result = 0;
+		else
+			LC(m_logcat).error("%s: not enough inputs in file [%s]; required %lu; file has %lu;",
+							   __FUNCTION__, input_file.c_str(), count, clr_values_idx);
 	}
-	return (NULL != (*clr_values))? 0: -1;
+	return result;
 }
 
 //***********************************************************************************************//
 
-int spdz2_ext_processor_base::input(const int input_of_pid, mpz_t input_value)
+int spdz2_ext_processor_base::input(const int input_of_pid, mp_limb_t * input_value)
 {
 	std::map< int , shared_input_t >::iterator i = m_shared_inputs.find(input_of_pid);
-
 	if(m_shared_inputs.end() != i && 0 < i->second.share_count && i->second.share_index < i->second.share_count)
 	{
-		mpz_set(input_value, i->second.shared_values[i->second.share_index++]);
+		memcpy(input_value, i->second.shared_values + (4 * i->second.share_index++), 4 * sizeof(mp_limb_t));
 		return 0;
 	}
 	LC(m_logcat).error("%s: failed to get input for pid %d.", __FUNCTION__, input_of_pid);
@@ -271,18 +284,18 @@ int spdz2_ext_processor_base::input(const int input_of_pid, mpz_t input_value)
 
 //***********************************************************************************************//
 
-int spdz2_ext_processor_base::input(const int input_of_pid, const size_t num_of_inputs, mpz_t * inputs)
+int spdz2_ext_processor_base::input(const int input_of_pid, const size_t num_of_inputs, mp_limb_t * inputs)
 {
+	LC(m_logcat).debug("%s: %lu input of party %d requested.", __FUNCTION__, num_of_inputs, input_of_pid);
+
 	int result = -1;
 	std::map< int , shared_input_t >::iterator i = m_shared_inputs.find(input_of_pid);
 	if(m_shared_inputs.end() != i)
 	{
-		if((i->second.share_count - i->second.share_index) >= num_of_inputs)
+		if(i->second.share_count >= (i->second.share_index + num_of_inputs))
 		{
-			for(size_t j = 0; j < num_of_inputs; ++j)
-			{
-				mpz_set(inputs[j], i->second.shared_values[i->second.share_index++]);
-			}
+			memcpy(inputs, i->second.shared_values + (4 * i->second.share_index), num_of_inputs * 4 * sizeof(mp_limb_t));
+			i->second.share_index += num_of_inputs;
 			result = 0;
 		}
 		else
@@ -296,6 +309,78 @@ int spdz2_ext_processor_base::input(const int input_of_pid, const size_t num_of_
 		LC(m_logcat).error("%s: failed to get input for pid %d.", __FUNCTION__, input_of_pid);
 	}
 	return result;
+}
+
+//***********************************************************************************************//
+
+int spdz2_ext_processor_base::inverse(mp_limb_t * x, mp_limb_t * y)
+{
+/*
+1.      Non-interactively generate a share of a field element [x]				]
+2.      Non-interactively generate a share of another filed element [r].		] All 3 are implemented below
+3.      MPC multiply [u] = [x][r]												] using protocol_triple
+4.      Open u=[u]
+5.      Non-interactively inverse v=1/u
+6.      Non-interactively multiply [y] =v [r]
+7.		Now [y] [x] =1 holds.
+*/
+	mp_limb_t r[4], u[4];
+	if(0 != triple(x, r, u))
+	{
+		LC(m_logcat).error("%s: protocol triple() failed", __FUNCTION__);
+		return -1;
+	}
+
+	mp_limb_t open_u[2];
+	if(0 != open(1, u, open_u, 1))
+	{
+		LC(m_logcat).error("%s: protocol open() failed", __FUNCTION__);
+		return -1;
+	}
+
+	mp_limb_t v[2];
+	if(0 != inverse_value(open_u, v))
+	{
+		LC(m_logcat).error("%s: inverse_value() failed", __FUNCTION__);
+		return -1;
+	}
+
+	if(0 != mix_mul(r, v, y))
+	{
+		LC(m_logcat).error("%s: protocol mix_mul() failed", __FUNCTION__);
+		return -1;
+	}
+
+	return 0;
+}
+
+//***********************************************************************************************//
+
+int spdz2_ext_processor_base::inverse_value(const mp_limb_t * value, mp_limb_t * inverse)
+{
+	mpz_t gcd, x, y, P, _value, _inverse;
+
+	mpz_init(gcd);
+	mpz_init(x);
+	mpz_init(y);
+	mpz_init(P);
+	mpz_init(_value);
+	mpz_init(_inverse);
+
+	mpz_import(_value, 2, -1, 8, 0, 0, value);
+	get_P(P);
+	mpz_gcdext(gcd, x, y, _value, P);
+	mpz_mod(_inverse, x, P);
+	mpz_export(inverse, NULL, -1, 8, 0, 0, _inverse);
+
+	mpz_clear(gcd);
+	mpz_clear(x);
+	mpz_clear(y);
+	mpz_clear(P);
+	mpz_clear(_value);
+	mpz_clear(_inverse);
+
+	return 0;
 }
 
 //***********************************************************************************************//

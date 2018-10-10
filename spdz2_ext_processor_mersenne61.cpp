@@ -51,6 +51,12 @@ int spdz2_ext_processor_mersenne61::term()
 	return 0;
 }
 
+int spdz2_ext_processor_mersenne61::get_P(mpz_t P)
+{
+	mpz_set_ui(P, spdz2_ext_processor_mersenne61::mersenne61);
+	return 0;
+}
+
 int spdz2_ext_processor_mersenne61::offline(const int offline_size)
 {
 	return (the_party->offline())? 0: -1;
@@ -75,14 +81,14 @@ int spdz2_ext_processor_mersenne61::triple(mp_limb_t * a, mp_limb_t * b, mp_limb
 	return -1;
 }
 
-int spdz2_ext_processor_mersenne61::share_immediates(const int share_of_pid, const size_t value_count, const mpz_t * values, mpz_t * shares)
+int spdz2_ext_processor_mersenne61::share_immediates(const int share_of_pid, const size_t value_count, const mp_limb_t * values, mp_limb_t * shares)
 {
 	std::vector<ZpMersenneLongElement> m61shares(value_count), m61values(value_count);
 	if(share_of_pid == m_pid)
 	{
 		for(size_t i = 0; i < value_count; ++i)
 		{
-			m61values[i].elem = mpz_get_ui(values[i]);
+			m61values[i].elem = values[2*i];
 		}
 	}
 
@@ -90,7 +96,7 @@ int spdz2_ext_processor_mersenne61::share_immediates(const int share_of_pid, con
 	{
 		for(size_t i = 0; i < value_count; ++i)
 		{
-			mpz_set_ui(shares[i], m61shares[i].elem);
+			shares[4*i] = m61shares[i].elem;
 			LC(m_logcat).debug("%s: value [%lu] share[%lu] = %lu", __FUNCTION__, m61values[i].elem, i, m61shares[i].elem);
 		}
 		return 0;
@@ -122,81 +128,6 @@ int spdz2_ext_processor_mersenne61::bit(mp_limb_t * share)
 	return -1;
 }
 
-int spdz2_ext_processor_mersenne61::inverse(mpz_t x, mpz_t y)
-{
-/*
-1.      Non-interactively generate a share of a field element [x]				]
-2.      Non-interactively generate a share of another filed element [r].		] All 3 are implemented below
-3.      MPC multiply [u] = [x][r]												] using protocol_triple
-4.      Open u=[u]
-5.      Non-interactively inverse v=1/u
-6.      Non-interactively multiply [y] =v [r]
-7.		Now [y] [x] =1 holds.
-*/
-
-	int result = -1;
-	mp_limb_t u[4], __open_u[2], __r[4], __x[4];
-	u[0] = u[1] = u[2] = u[3] = __open_u[0] = __open_u[1] = 0;
-	__r[0] = __r[1] = __r[2] = __r[3] = __x[0] = __x[1] = __x[2] = __x[3] = 0;
-	mpz_t r, open_u, v, product;
-
-	mpz_init(r);
-	mpz_init(open_u);
-	mpz_init(v);
-	mpz_init(product);
-
-	if(triple(__x, __r, u))
-	{
-		mpz_import(r, 1, -1, 8, 0, 0, __r);
-		mpz_import(x, 1, -1, 8, 0, 0, __x);
-		if(open(1, u, __open_u, true))
-		{
-			mpz_import(open_u, 1, -1, 8, 0, 0, __open_u);
-			inverse_value(open_u, v);
-			if(LC(m_logcat).isDebugEnabled())
-			{
-				char szv[128], szi[128];
-				LC(m_logcat).debug("%s: value = %s; inverse = %s;", __FUNCTION__, mpz_get_str(szv, 10, open_u), mpz_get_str(szi, 10, v));
-			}
-			mpz_mul(product, v, r);
-			mpz_mod_ui(y, product, spdz2_ext_processor_mersenne61::mersenne61);
-			result = 0;
-		}
-		else
-			LC(m_logcat).error("%s: protocol open() failed.", __FUNCTION__);
-	}
-	else
-		LC(m_logcat).error("%s: protocol triple() failed.", __FUNCTION__);
-
-	mpz_clear(r);
-	mpz_clear(open_u);
-	mpz_clear(v);
-	mpz_clear(product);
-
-	return result;
-}
-
-int spdz2_ext_processor_mersenne61::inverse_value(const mpz_t value, mpz_t inverse)
-{
-	mpz_t gcd, x, y, P;
-
-	mpz_init(gcd);
-	mpz_init(x);
-	mpz_init(y);
-	mpz_init(P);
-
-	mpz_set_ui(P, spdz2_ext_processor_mersenne61::mersenne61);
-	mpz_gcdext(gcd, x, y, value, P);
-	mpz_mod(inverse, x, P);
-
-	mpz_clear(gcd);
-	mpz_clear(x);
-	mpz_clear(y);
-	mpz_clear(P);
-
-	return 0;
-}
-
 int spdz2_ext_processor_mersenne61::open(const size_t share_count, const mp_limb_t * share_values, mp_limb_t * opens, int verify)
 {
 	int result = -1;
@@ -204,7 +135,7 @@ int spdz2_ext_processor_mersenne61::open(const size_t share_count, const mp_limb
 	LC(m_logcat).debug("%s: calling open for %u shares", __FUNCTION__, (u_int32_t)share_count);
 	for(size_t i = 0; i < share_count; i++)
 	{
-		m61shares[i].elem = share_values[4*i];//mpz_get_ui(share_values[i]);
+		m61shares[i].elem = share_values[4*i];
 		LC(m_logcat).debug("%s: share value[%lu] = %lu", __FUNCTION__, i, m61shares[i].elem);
 	}
 
@@ -237,7 +168,7 @@ int spdz2_ext_processor_mersenne61::verify(int * error)
 	return (the_party->verify())? 0: -1;
 }
 
-int spdz2_ext_processor_mersenne61::mult(const size_t share_count, const mpz_t * shares, mpz_t * products, int verify)
+int spdz2_ext_processor_mersenne61::mult(const size_t share_count, const mp_limb_t * shares, mp_limb_t * products, int verify)
 {
 	int result = -1;
 	size_t xy_pair_count = share_count/2;
@@ -245,8 +176,10 @@ int spdz2_ext_processor_mersenne61::mult(const size_t share_count, const mpz_t *
 
 	for(size_t i = 0; i < xy_pair_count; ++i)
 	{
-		x_shares[i].elem = mpz_get_ui(shares[2*i]);
-		y_shares[i].elem = mpz_get_ui(shares[2*i+1]);
+		x_shares[i].elem = *(shares + 4*(2*i));
+		y_shares[i].elem = *(shares + 4*(2*i+1));
+		//x_shares[i].elem = mpz_get_ui(shares[2*i]);
+		//y_shares[i].elem = mpz_get_ui(shares[2*i+1]);
 		LC(m_logcat).debug("%s: X-Y pair %lu: X=%lu Y=%lu", __FUNCTION__, i, x_shares[i].elem, y_shares[i].elem);
 	}
 
@@ -254,7 +187,8 @@ int spdz2_ext_processor_mersenne61::mult(const size_t share_count, const mpz_t *
 	{
 		for(size_t i = 0; i < xy_pair_count; ++i)
 		{
-			mpz_set_ui(products[i], xy_shares[i].elem);
+			products[4*i] = xy_shares[i].elem;
+			//mpz_set_ui(products[i], xy_shares[i].elem);
 			LC(m_logcat).debug("%s: X-Y product %lu: X*Y=%lu", __FUNCTION__, i, xy_shares[i].elem);
 		}
 		result = 0;

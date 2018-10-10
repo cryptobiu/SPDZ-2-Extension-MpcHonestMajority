@@ -73,12 +73,12 @@ int verify(void * handle, int * error)
 	return ((spdz2_ext_processor_base *)handle)->verify(error);
 }
 //-------------------------------------------------------------------------------------------//
-int input(void * handle, const int input_of_pid, const size_t num_of_inputs, mpz_t * inputs)
+int input(void * handle, const int input_of_pid, const size_t num_of_inputs, mp_limb_t * inputs)
 {
 	return ((spdz2_ext_processor_base *)handle)->input(input_of_pid, num_of_inputs, inputs);
 }
 //-------------------------------------------------------------------------------------------//
-int mult(void * handle, const size_t share_count, const mpz_t * shares, mpz_t * products, int verify)
+int mult(void * handle, const size_t share_count, const mp_limb_t * shares, mp_limb_t * products, int verify)
 {
 	return ((spdz2_ext_processor_base *)handle)->mult(share_count, shares, products, verify);
 }
@@ -113,7 +113,7 @@ int subs(void * handle, const mp_limb_t * share1, const mp_limb_t * share2, mp_l
 	return ((spdz2_ext_processor_base *)handle)->subs(share1, share2, diff);
 }
 //-------------------------------------------------------------------------------------------//
-int share_immediates(void * handle, const int party_id, const size_t value_count, const mpz_t * values, mpz_t * shares)
+int share_immediates(void * handle, const int party_id, const size_t value_count, const mp_limb_t * values, mp_limb_t * shares)
 {
 	return ((spdz2_ext_processor_base *)handle)->share_immediates(party_id, value_count, values, shares);
 }
@@ -123,69 +123,8 @@ int bit(void * handle, mp_limb_t * share)
 	return ((spdz2_ext_processor_base *)handle)->bit(share);
 }
 //-------------------------------------------------------------------------------------------//
-int inverse(void * handle, mpz_t share_value, mpz_t share_inverse)
+int inverse(void * handle, mp_limb_t * share_value, mp_limb_t * share_inverse)
 {
 	return ((spdz2_ext_processor_base *)handle)->inverse(share_value, share_inverse);
 }
 //-------------------------------------------------------------------------------------------//
-/*
-mpz_t gfp_conversion(const mpz_t value)
-{
-	ZpMersenneLongElement element(value);
-	return element.elem;
-}
-//-------------------------------------------------------------------------------------------//
-mpz_t gfp_add(mpz_t v1, mpz_t v2)
-{
-	ZpMersenneLongElement e1(v1), e2(v2);
-	return (e1 + e2).elem;
-}
-//-------------------------------------------------------------------------------------------//
-mpz_t gfp_sub(mpz_t v1, mpz_t v2)
-{
-	ZpMersenneLongElement e1(v1), e2(v2);
-	return (e1 - e2).elem;
-}
-//-------------------------------------------------------------------------------------------//
-mpz_t gfp_mult(mpz_t v1, mpz_t v2)
-{
-	ZpMersenneLongElement e1(v1), e2(v2);
-	return (e1 * e2).elem;
-}
-//-------------------------------------------------------------------------------------------//
-mpz_t gf2n_conversion(const mpz_t value)
-{
-	GF2E element = to_GF2E(value);
-	u_int64_t result;
-	conv(element, result);
-	return result;
-}
-//-------------------------------------------------------------------------------------------//
-u_int64_t gf2n_add(u_int64_t v1_, u_int64_t v2_)
-{
-	u_int64_t result;
-	GF2E v1 = to_GF2E(v1_), v2 = to_GF2E(v2_), sum;
-	add(sum, v1, v2);
-	conv(sum, result);
-	return result;
-}
-//-------------------------------------------------------------------------------------------//
-u_int64_t gf2n_sub(u_int64_t v1_, u_int64_t v2_)
-{
-	u_int64_t result;
-	GF2E v1 = to_GF2E(v1_), v2 = to_GF2E(v2_), diff;
-	sub(diff, v1, v2);
-	conv(diff, result);
-	return result;
-}
-//-------------------------------------------------------------------------------------------//
-u_int64_t gf2n_mult(u_int64_t v1_, u_int64_t v2_)
-{
-	u_int64_t result;
-	GF2E v1 = to_GF2E(v1_), v2 = to_GF2E(v2_), product;
-	mul(product, v1, v2);
-	conv(product, result);
-	return result;
-}
-//-------------------------------------------------------------------------------------------//
-*/

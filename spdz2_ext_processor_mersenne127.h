@@ -20,14 +20,14 @@ public:
 			 const int open_count, const int mult_count, const int bits_count, int log_level = 700);
 	int term();
 
+	int get_P(mpz_t P);
 	int offline(const int offline_size);
 	int triple(mp_limb_t * a, mp_limb_t * b, mp_limb_t * c);
-	int share_immediates(const int share_of_pid, const size_t value_count, const mpz_t * values, mpz_t * shares);
+	int share_immediates(const int share_of_pid, const size_t value_count, const mp_limb_t * values, mp_limb_t * shares);
     int bit(mp_limb_t * share);
-    int inverse(mpz_t share_value, mpz_t share_inverse);
     int open(const size_t share_count, const mp_limb_t * share_values, mp_limb_t * opens, int verify);
 	int verify(int * error);
-    int mult(const size_t share_count, const mpz_t * shares, mpz_t * products, int verify);
+    int mult(const size_t share_count, const mp_limb_t * shares, mp_limb_t * products, int verify);
     int mix_add(const mp_limb_t * share, const mp_limb_t * scalar, mp_limb_t * sum);
     int mix_sub_scalar(const mp_limb_t * share, const mp_limb_t * scalar, mp_limb_t * diff);
     int mix_sub_share(const mp_limb_t * scalar, const mp_limb_t * share, mp_limb_t * diff);
@@ -38,5 +38,4 @@ public:
     std::string get_log_file();
     std::string get_log_category();
 
-    static int inverse_value(const mpz_t value, mpz_t inverse);
 };

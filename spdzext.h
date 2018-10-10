@@ -16,8 +16,8 @@ extern "C"
 	int opens(void * handle, const size_t share_count, const mp_limb_t * shares, mp_limb_t * opens, int verify);
 	int triple(void * handle, mp_limb_t * a, mp_limb_t * b, mp_limb_t * c);
 	int verify(void * handle, int * error);
-    int input(void * handle, const int input_of_pid, const size_t num_of_inputs, mpz_t * inputs);
-    int mult(void * handle, const size_t share_count, const mpz_t * shares, mpz_t * products, int verify);
+    int input(void * handle, const int input_of_pid, const size_t num_of_inputs, mp_limb_t * inputs);
+    int mult(void * handle, const size_t share_count, const mp_limb_t * shares, mp_limb_t * products, int verify);
 
     int mix_add(void * handle, const mp_limb_t * share, const mp_limb_t * scalar, mp_limb_t * sum);
     int mix_sub_scalar(void * handle, const mp_limb_t * share, const mp_limb_t * scalar, mp_limb_t * diff);
@@ -26,22 +26,10 @@ extern "C"
     int adds(void * handle, const mp_limb_t * share1, const mp_limb_t * share2, mp_limb_t * sum);
     int subs(void * handle, const mp_limb_t * share1, const mp_limb_t * share2, mp_limb_t * diff);
 
-    int share_immediates(void * handle, const int party_id, const size_t value_count, const mpz_t * values, mpz_t * shares);
+    int share_immediates(void * handle, const int party_id, const size_t value_count, const mp_limb_t * values, mp_limb_t * shares);
 
     int bit(void * handle, mp_limb_t * share);
-    int inverse(void * handle, mpz_t share_value, mpz_t share_inverse);
-
-    /*
-    mpz_t gfp_conversion(const mpz_t * value);
-    mpz_t gfp_add(const mpz_t *, const mpz_t *);
-    mpz_t gfp_sub(const mpz_t *, const mpz_t *);
-    mpz_t gfp_mult(const mpz_t *, const mpz_t *);
-
-    mpz_t gf2n_conversion(const mpz_t value);
-    mpz_t gf2n_add(const mpz_t *, const mpz_t *);
-    mpz_t gf2n_sub(const mpz_t *, const mpz_t *);
-    mpz_t gf2n_mult(const mpz_t *, const mpz_t *);
-    */
+    int inverse(void * handle, mp_limb_t * share_value, mp_limb_t * share_inverse);
 }
 
 #endif /* SPDZEXT_H_ */

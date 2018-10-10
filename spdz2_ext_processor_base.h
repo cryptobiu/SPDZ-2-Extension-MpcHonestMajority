@@ -22,7 +22,7 @@ protected:
 
 	typedef struct
 	{
-		mpz_t * shared_values;
+		mp_limb_t * shared_values;
 		size_t share_count, share_index;
 	}shared_input_t;
 
@@ -33,9 +33,10 @@ protected:
 	int load_party_input_specs(std::list<std::string> & party_input_specs);
 	int load_party_inputs(const std::string & party_input_spec);
 	int load_party_inputs(const int pid, const size_t count);
+
 	int load_self_party_inputs(const size_t count);
-	int load_peer_party_inputs(const int pid, const size_t count, const mpz_t * clr_values = NULL);
-	int load_clr_party_inputs(mpz_t ** clr_values, const size_t count);
+	int load_peer_party_inputs(const int pid, const size_t count, const mp_limb_t * clr_values = NULL);
+	int load_clr_party_inputs(mp_limb_t * clr_values, const size_t count);
 
 	int init_log(int log_level);
 
@@ -48,17 +49,19 @@ public:
 
 	virtual int term() = 0;
 
-	virtual int input(const int input_of_pid, mpz_t input_value);
-	virtual int input(const int input_of_pid, const size_t num_of_inputs, mpz_t * inputs);
+	virtual int input(const int input_of_pid, mp_limb_t * input_value);
+	virtual int input(const int input_of_pid, const size_t num_of_inputs, mp_limb_t * inputs);
+    virtual int inverse(mp_limb_t * share_value, mp_limb_t * share_inverse);
+	virtual int inverse_value(const mp_limb_t * value, mp_limb_t * inverse);
 
+	virtual int get_P(mpz_t P) = 0;
 	virtual int offline(const int offline_size) = 0;
 	virtual int triple(mp_limb_t * a, mp_limb_t * b, mp_limb_t * c) = 0;
-	virtual int share_immediates(const int share_of_pid, const size_t value_count, const mpz_t * values, mpz_t * shares) = 0;
+	virtual int share_immediates(const int share_of_pid, const size_t value_count, const mp_limb_t * values, mp_limb_t * shares) = 0;
     virtual int bit(mp_limb_t * share) = 0;
-    virtual int inverse(mpz_t share_value, mpz_t share_inverse) = 0;
     virtual int open(const size_t share_count, const mp_limb_t * share_values, mp_limb_t * opens, int verify) = 0;
 	virtual int verify(int * error) = 0;
-    virtual int mult(const size_t share_count, const mpz_t * shares, mpz_t * products, int verify) = 0;
+    virtual int mult(const size_t share_count, const mp_limb_t * shares, mp_limb_t * products, int verify) = 0;
     virtual int mix_add(const mp_limb_t * share, const mp_limb_t * scalar, mp_limb_t * sum) = 0;
     virtual int mix_sub_scalar(const mp_limb_t * share, const mp_limb_t * scalar, mp_limb_t * diff) = 0;
     virtual int mix_sub_share(const mp_limb_t * scalar, const mp_limb_t * share, mp_limb_t * diff) = 0;

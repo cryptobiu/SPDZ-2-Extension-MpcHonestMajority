@@ -52,6 +52,12 @@ int spdz2_ext_processor_mersenne127::term()
 	return 0;
 }
 
+int spdz2_ext_processor_mersenne127::get_P(mpz_t P)
+{
+	ZpMersenne127Element::get_mpz_t_p(P);
+	return 0;
+}
+
 int spdz2_ext_processor_mersenne127::offline(const int offline_size)
 {
 	return (the_party->offline())? 0: -1;
@@ -74,14 +80,14 @@ int spdz2_ext_processor_mersenne127::triple(mp_limb_t * a, mp_limb_t * b, mp_lim
 	return -1;
 }
 
-int spdz2_ext_processor_mersenne127::share_immediates(const int share_of_pid, const size_t value_count, const mpz_t * values, mpz_t * shares)
+int spdz2_ext_processor_mersenne127::share_immediates(const int share_of_pid, const size_t value_count, const mp_limb_t * values, mp_limb_t * shares)
 {
 	std::vector<ZpMersenne127Element> m127shares(value_count), m127values(value_count);
 	if(share_of_pid == m_pid)
 	{
 		for(size_t i = 0; i < value_count; ++i)
 		{
-			m127values[i].set_mpz_t(values[i]);
+			memcpy((mp_limb_t*)m127values[i], values + 2*i, 2*sizeof(mp_limb_t));
 		}
 	}
 
@@ -89,7 +95,7 @@ int spdz2_ext_processor_mersenne127::share_immediates(const int share_of_pid, co
 	{
 		for(size_t i = 0; i < value_count; ++i)
 		{
-			m127shares[i].get_mpz_t(shares[i]);
+			memcpy(shares + 4*i, (mp_limb_t*)m127shares[i], 2*sizeof(mp_limb_t));
 		}
 		return 0;
 	}
@@ -114,89 +120,6 @@ int spdz2_ext_processor_mersenne127::bit(mp_limb_t * share)
 		LC(m_logcat).error("%s: protocol bits failure.", __FUNCTION__);
 	}
 	return -1;
-}
-
-int spdz2_ext_processor_mersenne127::inverse(mpz_t x, mpz_t y)
-{
-/*
-1.      Non-interactively generate a share of a field element [x]				]
-2.      Non-interactively generate a share of another filed element [r].		] All 3 are implemented below
-3.      MPC multiply [u] = [x][r]												] using protocol_triple
-4.      Open u=[u]
-5.      Non-interactively inverse v=1/u
-6.      Non-interactively multiply [y] =v [r]
-7.		Now [y] [x] =1 holds.
-*/
-
-	int result = -1;
-	mp_limb_t u[4], __open_u[2];
-	u[0] = u[1] = u[2] = u[3] = __open_u[0] = __open_u[1] = 0;
-	mpz_t r, open_u, v, product;
-
-	mpz_init(r);
-	mpz_init(open_u);
-	mpz_init(v);
-	mpz_init(product);
-
-	mp_limb_t __x[4], __r[4];
-	__x[0] = __x[1] = __x[2] = __x[3] = __r[0] = __r[1] = __r[2] = __r[3] = 0;
-	if(triple(__x, __r, u))
-	{
-		mpz_import(x, 2, -1, 8, 0, 0, __x);
-		mpz_import(r, 2, -1, 8, 0, 0, __r);
-
-		if(open(1, u, __open_u, true))
-		{
-			mpz_import(open_u, 2, -1, 8, 0, 0, __open_u);
-			inverse_value(open_u, v);
-			if(LC(m_logcat).isDebugEnabled())
-			{
-				char szv[128], szi[128];
-				LC(m_logcat).debug("%s: value = %s; inverse = %s;", __FUNCTION__, mpz_get_str(szv, 10, open_u), mpz_get_str(szi, 10, v));
-			}
-
-			mpz_mul(product, v, r);
-
-			mpz_t M127;
-			mpz_init(M127);
-			ZpMersenne127Element::get_mpz_t_p(M127);
-			mpz_mod(y, product, M127);
-			mpz_clear(M127);
-			result = 0;
-		}
-		else
-			LC(m_logcat).error("%s: protocol open() failed", __FUNCTION__);
-	}
-	else
-		LC(m_logcat).error("%s: protocol triple() failed", __FUNCTION__);
-
-	mpz_clear(r);
-	mpz_clear(open_u);
-	mpz_clear(v);
-	mpz_clear(product);
-
-	return result;
-}
-
-int spdz2_ext_processor_mersenne127::inverse_value(const mpz_t value, mpz_t inverse)
-{
-	mpz_t gcd, x, y, P;
-
-	mpz_init(gcd);
-	mpz_init(x);
-	mpz_init(y);
-	mpz_init(P);
-
-	ZpMersenne127Element::get_mpz_t_p(P);
-	mpz_gcdext(gcd, x, y, value, P);
-	mpz_mod(inverse, x, P);
-
-	mpz_clear(gcd);
-	mpz_clear(x);
-	mpz_clear(y);
-	mpz_clear(P);
-
-	return 0;
 }
 
 int spdz2_ext_processor_mersenne127::open(const size_t share_count, const mp_limb_t * share_values, mp_limb_t * opens, int verify)
@@ -234,7 +157,7 @@ int spdz2_ext_processor_mersenne127::verify(int * error)
 	return (the_party->verify())? 0: -1;
 }
 
-int spdz2_ext_processor_mersenne127::mult(const size_t share_count, const mpz_t * shares, mpz_t * products, int verify)
+int spdz2_ext_processor_mersenne127::mult(const size_t share_count, const mp_limb_t * shares, mp_limb_t * products, int verify)
 {
 	int result = -1;
 	size_t xy_pair_count = share_count/2;
@@ -242,15 +165,18 @@ int spdz2_ext_processor_mersenne127::mult(const size_t share_count, const mpz_t 
 
 	for(size_t i = 0; i < xy_pair_count; ++i)
 	{
-		x_shares[i].set_mpz_t(shares[2*i]);
-		y_shares[i].set_mpz_t(shares[2*i + 1]);
+		memcpy((mp_limb_t*)x_shares[i], shares + 4*(2*i), 2*sizeof(mp_limb_t));
+		memcpy((mp_limb_t*)y_shares[i], shares + 4*(2*i+1), 2*sizeof(mp_limb_t));
+		//x_shares[i].set_mpz_t(shares[2*i]);
+		//y_shares[i].set_mpz_t(shares[2*i + 1]);
 	}
 
 	if(the_party->multShares(xy_pair_count, x_shares, y_shares, xy_shares))
 	{
 		for(size_t i = 0; i < xy_pair_count; ++i)
 		{
-			xy_shares[i].get_mpz_t(products[i]);
+			memcpy(products + 4*i, (mp_limb_t*)xy_shares[i], 2*sizeof(mp_limb_t));
+			//xy_shares[i].get_mpz_t(products[i]);
 		}
 		result = 0;
 	}
