@@ -23,7 +23,7 @@ public:
 	int get_P(mpz_t P);
 	int offline(const int offline_size);
 	int triple(mp_limb_t * a, mp_limb_t * b, mp_limb_t * c);
-	int share_immediates(const int share_of_pid, const size_t value_count, const mp_limb_t * values, mp_limb_t * shares);
+	int closes(const int share_of_pid, const size_t value_count, const mp_limb_t * values, mp_limb_t * shares);
     int bit(mp_limb_t * share);
     int open(const size_t share_count, const mp_limb_t * share_values, mp_limb_t * opens, int verify);
 	int verify(int * error);

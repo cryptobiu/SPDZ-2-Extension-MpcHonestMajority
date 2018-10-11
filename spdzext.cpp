@@ -113,9 +113,9 @@ int subs(void * handle, const mp_limb_t * share1, const mp_limb_t * share2, mp_l
 	return ((spdz2_ext_processor_base *)handle)->subs(share1, share2, diff);
 }
 //-------------------------------------------------------------------------------------------//
-int share_immediates(void * handle, const int party_id, const size_t value_count, const mp_limb_t * values, mp_limb_t * shares)
+int closes(void * handle, const int party_id, const size_t value_count, const mp_limb_t * values, mp_limb_t * shares)
 {
-	return ((spdz2_ext_processor_base *)handle)->share_immediates(party_id, value_count, values, shares);
+	return ((spdz2_ext_processor_base *)handle)->closes(party_id, value_count, values, shares);
 }
 //-------------------------------------------------------------------------------------------//
 int bit(void * handle, mp_limb_t * share)

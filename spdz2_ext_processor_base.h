@@ -57,7 +57,7 @@ public:
 	virtual int get_P(mpz_t P) = 0;
 	virtual int offline(const int offline_size) = 0;
 	virtual int triple(mp_limb_t * a, mp_limb_t * b, mp_limb_t * c) = 0;
-	virtual int share_immediates(const int share_of_pid, const size_t value_count, const mp_limb_t * values, mp_limb_t * shares) = 0;
+	virtual int closes(const int share_of_pid, const size_t value_count, const mp_limb_t * values, mp_limb_t * shares) = 0;
     virtual int bit(mp_limb_t * share) = 0;
     virtual int open(const size_t share_count, const mp_limb_t * share_values, mp_limb_t * opens, int verify) = 0;
 	virtual int verify(int * error) = 0;

@@ -81,7 +81,7 @@ int spdz2_ext_processor_mersenne61::triple(mp_limb_t * a, mp_limb_t * b, mp_limb
 	return -1;
 }
 
-int spdz2_ext_processor_mersenne61::share_immediates(const int share_of_pid, const size_t value_count, const mp_limb_t * values, mp_limb_t * shares)
+int spdz2_ext_processor_mersenne61::closes(const int share_of_pid, const size_t value_count, const mp_limb_t * values, mp_limb_t * shares)
 {
 	std::vector<ZpMersenneLongElement> m61shares(value_count), m61values(value_count);
 	if(share_of_pid == m_pid)
@@ -103,7 +103,7 @@ int spdz2_ext_processor_mersenne61::share_immediates(const int share_of_pid, con
 	}
 	else
 	{
-		LC(m_logcat).error("%s: protocol share_immediates failure.", __FUNCTION__);
+		LC(m_logcat).error("%s: protocol makeShare failure.", __FUNCTION__);
 	}
 	return -1;
 }

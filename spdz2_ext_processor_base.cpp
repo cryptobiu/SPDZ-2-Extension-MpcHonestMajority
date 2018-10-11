@@ -192,20 +192,8 @@ int spdz2_ext_processor_base::load_peer_party_inputs(const int pid, const size_t
 	party_inputs.shared_values = new mp_limb_t[party_inputs.share_count * 4];
 	memset(party_inputs.shared_values, 0, party_inputs.share_count * 4 * sizeof(mp_limb_t));
 
-	if(0 == share_immediates(pid, count, (m_pid == pid)? clr_values: NULL, party_inputs.shared_values))
+	if(0 == closes(pid, count, (m_pid == pid)? clr_values: NULL, party_inputs.shared_values))
 	{
-		if(LC(m_logcat).isDebugEnabled())
-		{
-			std::stringstream sts;
-			const u_int8_t * pbuff = (const u_int8_t *)party_inputs.shared_values;
-			for(size_t i = 0; i < party_inputs.share_count*4*sizeof(mp_limb_t); ++i)
-			{
-				sts << std::hex << std::setw(2) << std::setfill('0') << (int)pbuff[i] << " ";
-				if((4*sizeof(mp_limb_t) - 1) == i%(4*sizeof(mp_limb_t))) sts << std::endl;
-			}
-			LC(m_logcat).debug("%s: shared values memory dump \n%s\n", __FUNCTION__, sts.str().c_str());
-		}
-
 		if(m_shared_inputs.insert(std::pair<int, shared_input_t>(pid, party_inputs)).second)
 			result = 0;
 		else
@@ -246,18 +234,6 @@ int spdz2_ext_processor_base::load_clr_party_inputs(mp_limb_t * clr_values, cons
 		}
 		mpz_clear(t);
 		fclose(pf);
-
-		if(LC(m_logcat).isDebugEnabled())
-		{
-			std::stringstream sts;
-			const u_int8_t * pbuff = (const u_int8_t *)clr_values;
-			for(size_t i = 0; i < count*2*sizeof(mp_limb_t); ++i)
-			{
-				sts << std::hex << std::setw(2) << std::setfill('0') << (int)pbuff[i] << " ";
-				if((4*sizeof(mp_limb_t) - 1) == i%(4*sizeof(mp_limb_t))) sts << std::endl;
-			}
-			LC(m_logcat).debug("%s: input clear memory dump \n%s\n", __FUNCTION__, sts.str().c_str());
-		}
 
 		if(count == clr_values_idx)
 			result = 0;
@@ -324,7 +300,12 @@ int spdz2_ext_processor_base::inverse(mp_limb_t * x, mp_limb_t * y)
 6.      Non-interactively multiply [y] =v [r]
 7.		Now [y] [x] =1 holds.
 */
+	memset(x, 0, 4*sizeof(mp_limb_t));
+	memset(y, 0, 4*sizeof(mp_limb_t));
+
 	mp_limb_t r[4], u[4];
+	memset(r, 0, 4*sizeof(mp_limb_t));
+	memset(u, 0, 4*sizeof(mp_limb_t));
 	if(0 != triple(x, r, u))
 	{
 		LC(m_logcat).error("%s: protocol triple() failed", __FUNCTION__);
@@ -332,6 +313,7 @@ int spdz2_ext_processor_base::inverse(mp_limb_t * x, mp_limb_t * y)
 	}
 
 	mp_limb_t open_u[2];
+	memset(open_u, 0, 2*sizeof(mp_limb_t));
 	if(0 != open(1, u, open_u, 1))
 	{
 		LC(m_logcat).error("%s: protocol open() failed", __FUNCTION__);
@@ -339,6 +321,7 @@ int spdz2_ext_processor_base::inverse(mp_limb_t * x, mp_limb_t * y)
 	}
 
 	mp_limb_t v[2];
+	memset(v, 0, 2*sizeof(mp_limb_t));
 	if(0 != inverse_value(open_u, v))
 	{
 		LC(m_logcat).error("%s: inverse_value() failed", __FUNCTION__);

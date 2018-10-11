@@ -14,6 +14,7 @@ extern "C"
 
 	int offline(void * handle, const int offline_size);
 	int opens(void * handle, const size_t share_count, const mp_limb_t * shares, mp_limb_t * opens, int verify);
+    int closes(void * handle, const int party_id, const size_t value_count, const mp_limb_t * values, mp_limb_t * shares);
 	int triple(void * handle, mp_limb_t * a, mp_limb_t * b, mp_limb_t * c);
 	int verify(void * handle, int * error);
     int input(void * handle, const int input_of_pid, const size_t num_of_inputs, mp_limb_t * inputs);
@@ -25,8 +26,6 @@ extern "C"
     int mix_mul(void * handle, const mp_limb_t * share, const mp_limb_t * scalar, mp_limb_t * product);
     int adds(void * handle, const mp_limb_t * share1, const mp_limb_t * share2, mp_limb_t * sum);
     int subs(void * handle, const mp_limb_t * share1, const mp_limb_t * share2, mp_limb_t * diff);
-
-    int share_immediates(void * handle, const int party_id, const size_t value_count, const mp_limb_t * values, mp_limb_t * shares);
 
     int bit(void * handle, mp_limb_t * share);
     int inverse(void * handle, mp_limb_t * share_value, mp_limb_t * share_inverse);
