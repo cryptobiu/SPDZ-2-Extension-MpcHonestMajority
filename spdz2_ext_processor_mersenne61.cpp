@@ -54,20 +54,17 @@ int spdz2_ext_processor_mersenne61::term()
 
 int spdz2_ext_processor_mersenne61::get_P(mpz_t P)
 {
-	LC(m_logcat).info("%s.", __FUNCTION__);
 	mpz_set_ui(P, spdz2_ext_processor_mersenne61::mersenne61);
 	return 0;
 }
 
 int spdz2_ext_processor_mersenne61::offline(const int offline_size)
 {
-	LC(m_logcat).info("%s.", __FUNCTION__);
 	return (the_party->offline())? 0: -1;
 }
 
 int spdz2_ext_processor_mersenne61::triple(mp_limb_t * a, mp_limb_t * b, mp_limb_t * c)
 {
-	LC(m_logcat).info("%s.", __FUNCTION__);
 	std::vector<ZpMersenneLongElement> triple(3);
 	if(the_party->triples(1, triple))
 	{
@@ -90,7 +87,6 @@ int spdz2_ext_processor_mersenne61::triple(mp_limb_t * a, mp_limb_t * b, mp_limb
 
 int spdz2_ext_processor_mersenne61::closes(const int share_of_pid, const size_t value_count, const mp_limb_t * values, mp_limb_t * shares)
 {
-	LC(m_logcat).info("%s.", __FUNCTION__);
 	std::vector<ZpMersenneLongElement> m61shares(value_count), m61values(value_count);
 	if(share_of_pid == m_pid)
 	{
@@ -119,7 +115,6 @@ int spdz2_ext_processor_mersenne61::closes(const int share_of_pid, const size_t 
 
 int spdz2_ext_processor_mersenne61::bit(mp_limb_t * share)
 {
-	LC(m_logcat).info("%s.", __FUNCTION__);
 	std::vector<ZpMersenneLongElement> zbit_shares(1);
 	if(the_party->bits(1, zbit_shares))
 	{
@@ -137,7 +132,6 @@ int spdz2_ext_processor_mersenne61::bit(mp_limb_t * share)
 
 int spdz2_ext_processor_mersenne61::open(const size_t share_count, const mp_limb_t * share_values, mp_limb_t * opens, int verify)
 {
-	LC(m_logcat).info("%s.", __FUNCTION__);
 	int result = -1;
 	std::vector<ZpMersenneLongElement> m61shares(share_count), m61opens(share_count);
 	LC(m_logcat).debug("%s: calling open for %u shares", __FUNCTION__, (u_int32_t)share_count);
@@ -174,7 +168,6 @@ int spdz2_ext_processor_mersenne61::open(const size_t share_count, const mp_limb
 
 int spdz2_ext_processor_mersenne61::verify(int * error)
 {
-	LC(m_logcat).info("%s.", __FUNCTION__);
 	return (the_party->verify())? 0: -1;
 }
 
@@ -213,7 +206,6 @@ int spdz2_ext_processor_mersenne61::mult(const size_t share_count, const mp_limb
 
 int spdz2_ext_processor_mersenne61::mix_add(const mp_limb_t * share, const mp_limb_t * scalar, mp_limb_t * sum)
 {
-	LC(m_logcat).info("%s.", __FUNCTION__);
 	ZpMersenneLongElement input, output, arg;
 	input.elem = *share;
 	arg.elem = *scalar;
@@ -225,7 +217,6 @@ int spdz2_ext_processor_mersenne61::mix_add(const mp_limb_t * share, const mp_li
 
 int spdz2_ext_processor_mersenne61::mix_sub_scalar(const mp_limb_t * share, const mp_limb_t * scalar, mp_limb_t * diff)
 {
-	LC(m_logcat).info("%s.", __FUNCTION__);
 	ZpMersenneLongElement input, output, arg;
 	input.elem = *share;
 	arg.elem = *scalar;
@@ -237,7 +228,6 @@ int spdz2_ext_processor_mersenne61::mix_sub_scalar(const mp_limb_t * share, cons
 
 int spdz2_ext_processor_mersenne61::mix_sub_share(const mp_limb_t * scalar, const mp_limb_t * share, mp_limb_t * diff)
 {
-	LC(m_logcat).info("%s.", __FUNCTION__);
 	ZpMersenneLongElement input, output, arg;
 	input.elem = *share;
 	arg.elem = *scalar;
@@ -249,7 +239,6 @@ int spdz2_ext_processor_mersenne61::mix_sub_share(const mp_limb_t * scalar, cons
 
 int spdz2_ext_processor_mersenne61::mix_mul(const mp_limb_t * share, const mp_limb_t * scalar, mp_limb_t * product)
 {
-	LC(m_logcat).info("%s.", __FUNCTION__);
 	ZpMersenneLongElement input, output, arg;
 	input.elem = *share;
 	arg.elem = *scalar;
@@ -261,7 +250,6 @@ int spdz2_ext_processor_mersenne61::mix_mul(const mp_limb_t * share, const mp_li
 
 int spdz2_ext_processor_mersenne61::adds(const mp_limb_t * share1, const mp_limb_t * share2, mp_limb_t * sum)
 {
-	LC(m_logcat).info("%s.", __FUNCTION__);
 	ZpMersenneLongElement __share1, __share2, __sum;
 	__share1.elem = *share1;
 	__share2.elem = *share2;
@@ -273,7 +261,6 @@ int spdz2_ext_processor_mersenne61::adds(const mp_limb_t * share1, const mp_limb
 
 int spdz2_ext_processor_mersenne61::subs(const mp_limb_t * share1, const mp_limb_t * share2, mp_limb_t * diff)
 {
-	LC(m_logcat).info("%s.", __FUNCTION__);
 	ZpMersenneLongElement __share1, __share2, __diff;
 	__share1.elem = *share1;
 	__share2.elem = *share2;
