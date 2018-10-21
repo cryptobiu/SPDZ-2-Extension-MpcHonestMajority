@@ -52,6 +52,39 @@ int spdz2_ext_processor_mersenne127::term()
 	return 0;
 }
 
+int spdz2_ext_processor_mersenne127::input(const int input_of_pid, mp_limb_t * input_value)
+{
+	if(0 == spdz2_ext_processor_base::input(input_of_pid, input_value))
+	{
+		if(LC(m_logcat + ".acct").isDebugEnabled())
+		{
+			char buffer[512];
+			snprintf(buffer, 512, "[%016lX:%016lX:%016lX:%016lX]", input_value[3], input_value[2], input_value[1], input_value[0]);
+			LC(m_logcat + ".acct").debug("%s: input_value=%s;", __FUNCTION__,buffer);
+		}
+		return 0;
+	}
+	return -1;
+}
+
+int spdz2_ext_processor_mersenne127::input(const int input_of_pid, const size_t num_of_inputs, mp_limb_t * inputs)
+{
+	if(0 == spdz2_ext_processor_base::input(input_of_pid, num_of_inputs, inputs))
+	{
+		if(LC(m_logcat + ".acct").isDebugEnabled())
+		{
+			for(size_t i = 0; i < num_of_inputs; ++i)
+			{
+				char buffer[512];
+				snprintf(buffer, 512, "[%016lX:%016lX:%016lX:%016lX]", inputs[4*i+3], inputs[4*i+2], inputs[4*i+1], inputs[4*i+0]);
+				LC(m_logcat + ".acct").debug("%s: input_value=%s;", __FUNCTION__, buffer);
+			}
+		}
+		return 0;
+	}
+	return -1;
+}
+
 int spdz2_ext_processor_mersenne127::get_P(mpz_t P)
 {
 	ZpMersenne127Element::get_mpz_t_p(P);
@@ -68,9 +101,12 @@ int spdz2_ext_processor_mersenne127::triple(mp_limb_t * a, mp_limb_t * b, mp_lim
 	std::vector<ZpMersenne127Element> triple(3);
 	if(the_party->triples(1, triple))
 	{
-		memcpy(a, (mp_limb_t *)triple[0], 2 * sizeof(mp_limb_t));
-		memcpy(b, (mp_limb_t *)triple[1], 2 * sizeof(mp_limb_t));
-		memcpy(c, (mp_limb_t *)triple[2], 2 * sizeof(mp_limb_t));
+		triple[0].get_mp_limb_t(a);
+		a[2] = a[3] = 0;
+		triple[1].get_mp_limb_t(b);
+		b[2] = b[3] = 0;
+		triple[2].get_mp_limb_t(c);
+		c[2] = c[3] = 0;
 		return 0;
 	}
 	else
@@ -82,12 +118,18 @@ int spdz2_ext_processor_mersenne127::triple(mp_limb_t * a, mp_limb_t * b, mp_lim
 
 int spdz2_ext_processor_mersenne127::closes(const int share_of_pid, const size_t value_count, const mp_limb_t * values, mp_limb_t * shares)
 {
+	char buffer[512];
 	std::vector<ZpMersenne127Element> m127shares(value_count), m127values(value_count);
 	if(share_of_pid == m_pid)
 	{
 		for(size_t i = 0; i < value_count; ++i)
 		{
-			memcpy((mp_limb_t*)m127values[i], values + 2*i, 2*sizeof(mp_limb_t));
+			m127values[i].set_mp_limb_t(values+ 2*i);
+			if(LC(m_logcat + ".acct").isDebugEnabled())
+			{
+				snprintf(buffer, 512, "[%016lX:%016lX]", values[2*i+1], values[2*i]);
+				LC(m_logcat + ".acct").debug("%s: (%lu/%lu) close value=%s;", __FUNCTION__, i + 1, value_count, buffer);
+			}
 		}
 	}
 
@@ -95,7 +137,13 @@ int spdz2_ext_processor_mersenne127::closes(const int share_of_pid, const size_t
 	{
 		for(size_t i = 0; i < value_count; ++i)
 		{
-			memcpy(shares + 4*i, (mp_limb_t*)m127shares[i], 2*sizeof(mp_limb_t));
+			m127shares[i].get_mp_limb_t(shares + 4*i);
+			shares[4*i+2] = shares[4*i+3] = 0;
+			if(LC(m_logcat + ".acct").isDebugEnabled())
+			{
+				snprintf(buffer, 512, "[%016lX:%016lX:%016lX:%016lX]", shares[4*i+3], shares[4*i+2], shares[4*i+1], shares[4*i]);
+				LC(m_logcat + ".acct").debug("%s: (%lu/%lu) share value=%s;", __FUNCTION__, i + 1, value_count, buffer);
+			}
 		}
 		return 0;
 	}
@@ -125,11 +173,18 @@ int spdz2_ext_processor_mersenne127::bit(mp_limb_t * share)
 int spdz2_ext_processor_mersenne127::open(const size_t share_count, const mp_limb_t * share_values, mp_limb_t * opens, int verify)
 {
 	int result = -1;
+	char buffer[512];
 	std::vector<ZpMersenne127Element> m127shares(share_count), m127opens(share_count);
 	LC(m_logcat).debug("%s: calling open for %u shares", __FUNCTION__, (u_int32_t)share_count);
 	for(size_t i = 0; i < share_count; i++)
 	{
-		memcpy((mp_limb_t *)m127shares[i], share_values + 4*i, 2 * sizeof(mp_limb_t));
+		m127shares[i].set_mp_limb_t(share_values + 4*i);
+		if(LC(m_logcat + ".acct").isDebugEnabled())
+		{
+			const mp_limb_t * pv = (share_values + 4*i);
+			snprintf(buffer, 512, "[%016lX:%016lX:%016lX:%016lX]", pv[3], pv[2], pv[1], pv[0]);
+			LC(m_logcat + ".acct").debug("%s: (%lu/%lu); s=%s;", __FUNCTION__, i + 1, share_count, buffer);
+		}
 	}
 
 	if(the_party->openShare((int)share_count, m127shares, m127opens))
@@ -165,18 +220,15 @@ int spdz2_ext_processor_mersenne127::mult(const size_t share_count, const mp_lim
 
 	for(size_t i = 0; i < xy_pair_count; ++i)
 	{
-		memcpy((mp_limb_t*)x_shares[i], shares + 4*(2*i), 2*sizeof(mp_limb_t));
-		memcpy((mp_limb_t*)y_shares[i], shares + 4*(2*i+1), 2*sizeof(mp_limb_t));
-		//x_shares[i].set_mpz_t(shares[2*i]);
-		//y_shares[i].set_mpz_t(shares[2*i + 1]);
+		x_shares[i].set_mp_limb_t(shares + 4*(2*i));
+		y_shares[i].set_mp_limb_t(shares + 4*(2*i+1));
 	}
 
 	if(the_party->multShares(xy_pair_count, x_shares, y_shares, xy_shares))
 	{
 		for(size_t i = 0; i < xy_pair_count; ++i)
 		{
-			memcpy(products + 4*i, (mp_limb_t*)xy_shares[i], 2*sizeof(mp_limb_t));
-			//xy_shares[i].get_mpz_t(products[i]);
+			xy_shares[i].get_mp_limb_t(products + 4*i);
 		}
 		result = 0;
 	}
@@ -190,60 +242,76 @@ int spdz2_ext_processor_mersenne127::mult(const size_t share_count, const mp_lim
 int spdz2_ext_processor_mersenne127::mix_add(const mp_limb_t * share, const mp_limb_t * scalar, mp_limb_t * sum)
 {
 	ZpMersenne127Element input, output, arg;
-	memcpy((mp_limb_t*)input, share, 2 * sizeof(mp_limb_t));
-	memcpy((mp_limb_t*)arg, scalar, 2 * sizeof(mp_limb_t));
+	input.set_mp_limb_t(share);
+	arg.set_mp_limb_t(scalar);
 	output = input + arg;
-	memcpy(sum, (mp_limb_t*)output, 2 * sizeof(mp_limb_t));
+	output.get_mp_limb_t(sum);
+	sum[2] = sum[3] = 0;
 	return 0;
 }
 
 int spdz2_ext_processor_mersenne127::mix_sub_scalar(const mp_limb_t * share, const mp_limb_t * scalar, mp_limb_t * diff)
 {
 	ZpMersenne127Element input, output, arg;
-	memcpy((mp_limb_t*)input, share, 2 * sizeof(mp_limb_t));
-	memcpy((mp_limb_t*)arg, scalar, 2 * sizeof(mp_limb_t));
+	input.set_mp_limb_t(share);
+	arg.set_mp_limb_t(scalar);
 	output = input - arg;
-	memcpy(diff, (mp_limb_t*)output, 2 * sizeof(mp_limb_t));
+	output.get_mp_limb_t(diff);
+	diff[2] = diff[3] = 0;
 	return 0;
 }
 
 int spdz2_ext_processor_mersenne127::mix_sub_share(const mp_limb_t * scalar, const mp_limb_t * share, mp_limb_t * diff)
 {
 	ZpMersenne127Element input, output, arg;
-	memcpy((mp_limb_t*)input, share, 2 * sizeof(mp_limb_t));
-	memcpy((mp_limb_t*)arg, scalar, 2 * sizeof(mp_limb_t));
+	input.set_mp_limb_t(share);
+	arg.set_mp_limb_t(scalar);
 	output = arg - input;
-	memcpy(diff, (mp_limb_t*)output, 2 * sizeof(mp_limb_t));
+	output.get_mp_limb_t(diff);
+	diff[2] = diff[3] = 0;
 	return 0;
 }
 
 int spdz2_ext_processor_mersenne127::mix_mul(const mp_limb_t * share, const mp_limb_t * scalar, mp_limb_t * product)
 {
 	ZpMersenne127Element input, output, arg;
-	memcpy((mp_limb_t*)input, share, 2 * sizeof(mp_limb_t));
-	memcpy((mp_limb_t*)arg, scalar, 2 * sizeof(mp_limb_t));
+	input.set_mp_limb_t(share);
+	arg.set_mp_limb_t(scalar);
 	output = input * arg;
-	memcpy(product, (mp_limb_t*)output, 2 * sizeof(mp_limb_t));
+	output.get_mp_limb_t(product);
+	product[2] = product[3] = 0;
+	if(LC(m_logcat + ".acct").isDebugEnabled())
+	{
+		char buffer[512];
+		snprintf(buffer, 512, "[%016lX:%016lX:%016lX:%016lX]", share[3], share[2], share[1], share[0]);
+		LC(m_logcat + ".acct").debug("%s: share=%s;", __FUNCTION__, buffer);
+		snprintf(buffer, 512, "[%016lX:%016lX]", scalar[1], scalar[0]);
+		LC(m_logcat + ".acct").debug("%s: scalar=%s;", __FUNCTION__, buffer);
+		snprintf(buffer, 512, "[%016lX:%016lX:%016lX:%016lX]", product[3], product[2], product[1], product[0]);
+		LC(m_logcat + ".acct").debug("%s: product=%s;", __FUNCTION__, buffer);
+	}
 	return 0;
 }
 
 int spdz2_ext_processor_mersenne127::adds(const mp_limb_t * share1, const mp_limb_t * share2, mp_limb_t * sum)
 {
 	ZpMersenne127Element __share1, __share2, __sum;
-	memcpy((mp_limb_t*)__share1, share1, 2 * sizeof(mp_limb_t));
-	memcpy((mp_limb_t*)__share2, share2, 2 * sizeof(mp_limb_t));
+	__share1.set_mp_limb_t(share1);
+	__share2.set_mp_limb_t(share2);
 	__sum = __share1 + __share2;
-	memcpy((mp_limb_t*)sum, __sum, 2 * sizeof(mp_limb_t));
+	__sum.get_mp_limb_t(sum);
+	sum[2] = sum[3] = 0;
 	return 0;
 }
 
 int spdz2_ext_processor_mersenne127::subs(const mp_limb_t * share1, const mp_limb_t * share2, mp_limb_t * diff)
 {
 	ZpMersenne127Element __share1, __share2, __diff;
-	memcpy((mp_limb_t*)__share1, share1, 2 * sizeof(mp_limb_t));
-	memcpy((mp_limb_t*)__share2, share2, 2 * sizeof(mp_limb_t));
+	__share1.set_mp_limb_t(share1);
+	__share2.set_mp_limb_t(share2);
 	__diff = __share1 - __share2;
-	memcpy((mp_limb_t*)diff, __diff, 2 * sizeof(mp_limb_t));
+	__diff.get_mp_limb_t(diff);
+	diff[2] = diff[3] = 0;
 	return 0;
 }
 

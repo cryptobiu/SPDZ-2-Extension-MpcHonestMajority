@@ -20,6 +20,8 @@ public:
 			 const int open_count, const int mult_count, const int bits_count, int log_level = 700);
 	int term();
 
+	int input(const int input_of_pid, mp_limb_t * input_value);
+	virtual int input(const int input_of_pid, const size_t num_of_inputs, mp_limb_t * inputs);
 	int get_P(mpz_t P);
 	int offline(const int offline_size);
 	int triple(mp_limb_t * a, mp_limb_t * b, mp_limb_t * c);
