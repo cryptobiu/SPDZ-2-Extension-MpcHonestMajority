@@ -68,14 +68,13 @@ int spdz2_ext_processor_mersenne61::triple(mp_limb_t * a, mp_limb_t * b, mp_limb
 	std::vector<ZpMersenneLongElement> triple(3);
 	if(the_party->triples(1, triple))
 	{
-		LC(m_logcat).debug("%s: share a = %lu; share b = %lu; share c = %lu;",
-				__FUNCTION__, triple[0].elem, triple[1].elem, triple[2].elem);
 		*a = triple[0].elem;
 		memset(a + 1, 0, 3 * sizeof(mp_limb_t));
 		*b = triple[1].elem;
 		memset(b + 1, 0, 3 * sizeof(mp_limb_t));
 		*c = triple[2].elem;
 		memset(c + 1, 0, 3 * sizeof(mp_limb_t));
+		LC(m_logcat + ".acct").debug("%s: a=%lu; b=%lu; c=%lu;", __FUNCTION__, *a, *b, *c);
 		return 0;
 	}
 	else
@@ -102,7 +101,10 @@ int spdz2_ext_processor_mersenne61::closes(const int share_of_pid, const size_t 
 		{
 			shares[4*i] = m61shares[i].elem;
 			memset(shares + 4*i + 1, 0, 3 * sizeof(mp_limb_t));
-			LC(m_logcat).debug("%s: value [%lu] share[%lu] = %lu", __FUNCTION__, m61values[i].elem, i, m61shares[i].elem);
+			if(share_of_pid == m_pid)
+				LC(m_logcat + ".acct").debug("%s: (%lu/%lu); v=%lu; s=%lu;", __FUNCTION__, i + 1, value_count, values[2*i], shares[4*i]);
+			else
+				LC(m_logcat + ".acct").debug("%s: (%lu/%lu); s=%lu;", __FUNCTION__, i + 1, value_count, shares[4*i]);
 		}
 		return 0;
 	}
@@ -118,9 +120,9 @@ int spdz2_ext_processor_mersenne61::bit(mp_limb_t * share)
 	std::vector<ZpMersenneLongElement> zbit_shares(1);
 	if(the_party->bits(1, zbit_shares))
 	{
-		LC(m_logcat).debug("%s: protocol bits share = %lu.", __FUNCTION__, zbit_shares[0].elem);
 		*share = zbit_shares[0].elem;
 		memset(share + 1, 0, 3 * sizeof(mp_limb_t));
+		LC(m_logcat + ".acct").debug("%s: s=%lu;", __FUNCTION__, *share);
 		return 0;
 	}
 	else
@@ -138,7 +140,7 @@ int spdz2_ext_processor_mersenne61::open(const size_t share_count, const mp_limb
 	for(size_t i = 0; i < share_count; i++)
 	{
 		m61shares[i].elem = share_values[4*i];
-		LC(m_logcat).debug("%s: share value[%lu] = %lu", __FUNCTION__, i, m61shares[i].elem);
+		LC(m_logcat + ".acct").debug("%s: (%lu/%lu); s=%lu;", __FUNCTION__, i + 1, share_count, share_values[4*i]);
 	}
 
 	if(the_party->openShare((int)share_count, m61shares, m61opens))
@@ -149,7 +151,7 @@ int spdz2_ext_processor_mersenne61::open(const size_t share_count, const mp_limb
 			{
 				opens[2*i] = m61opens[i].elem;
 				opens[2*i + 1] = 0;
-				LC(m_logcat).debug("%s: opened value[%lu] = %lu", __FUNCTION__, i, m61opens[i].elem);
+				LC(m_logcat + ".acct").debug("%s: (%lu/%lu); v=%lu;", __FUNCTION__, i + 1, share_count, opens[2*i]);
 			}
 			result = 0;
 		}
@@ -182,9 +184,7 @@ int spdz2_ext_processor_mersenne61::mult(const size_t share_count, const mp_limb
 	{
 		x_shares[i].elem = *(shares + 4*(2*i));
 		y_shares[i].elem = *(shares + 4*(2*i+1));
-		//x_shares[i].elem = mpz_get_ui(shares[2*i]);
-		//y_shares[i].elem = mpz_get_ui(shares[2*i+1]);
-		LC(m_logcat).debug("%s: X-Y pair %lu: X=%lu Y=%lu", __FUNCTION__, i, x_shares[i].elem, y_shares[i].elem);
+		LC(m_logcat + ".acct").debug("%s: (%lu/%lu); x=%lu; y=%lu;", __FUNCTION__, i + 1, xy_pair_count, *(shares + 4*(2*i)), *(shares + 4*(2*i+1)));
 	}
 
 	if(the_party->multShares(xy_pair_count, x_shares, y_shares, xy_shares))
@@ -193,7 +193,7 @@ int spdz2_ext_processor_mersenne61::mult(const size_t share_count, const mp_limb
 		{
 			products[4*i] = xy_shares[i].elem;
 			memset(products + 4*i + 1, 0, 3 * sizeof(mp_limb_t));
-			LC(m_logcat).debug("%s: X-Y product %lu: X*Y=%lu", __FUNCTION__, i, xy_shares[i].elem);
+			LC(m_logcat + ".acct").debug("%s: (%lu/%lu); xy=%lu;", __FUNCTION__, i + 1, xy_pair_count, products[4*i]);
 		}
 		result = 0;
 	}
@@ -212,6 +212,7 @@ int spdz2_ext_processor_mersenne61::mix_add(const mp_limb_t * share, const mp_li
 	output = input + arg;
 	*sum = output.elem;
 	memset(sum + 1, 0, 3 * sizeof(mp_limb_t));
+	LC(m_logcat + ".acct").debug("%s: sh=%lu; sc=%lu; su=%lu;", __FUNCTION__, *share, *scalar, *sum);
 	return 0;
 }
 
@@ -223,6 +224,7 @@ int spdz2_ext_processor_mersenne61::mix_sub_scalar(const mp_limb_t * share, cons
 	output = input - arg;
 	*diff = output.elem;
 	memset(diff + 1, 0, 3 * sizeof(mp_limb_t));
+	LC(m_logcat + ".acct").debug("%s: sh=%lu; sc=%lu; df=%lu;", __FUNCTION__, *share, *scalar, *diff);
 	return 0;
 }
 
@@ -234,6 +236,7 @@ int spdz2_ext_processor_mersenne61::mix_sub_share(const mp_limb_t * scalar, cons
 	output = arg - input;
 	*diff = output.elem;
 	memset(diff + 1, 0, 3 * sizeof(mp_limb_t));
+	LC(m_logcat + ".acct").debug("%s: sc=%lu; sh=%lu; df=%lu;", __FUNCTION__, *scalar, *share, *diff);
 	return 0;
 }
 
@@ -245,6 +248,7 @@ int spdz2_ext_processor_mersenne61::mix_mul(const mp_limb_t * share, const mp_li
 	output = input * arg;
 	*product = output.elem;
 	memset(product + 1, 0, 3 * sizeof(mp_limb_t));
+	LC(m_logcat + ".acct").debug("%s: sh=%lu; sc=%lu; pd=%lu;", __FUNCTION__, *share, *scalar, *product);
 	return 0;
 }
 
@@ -256,6 +260,7 @@ int spdz2_ext_processor_mersenne61::adds(const mp_limb_t * share1, const mp_limb
 	__sum = __share1 + __share2;
 	*sum = __sum.elem;
 	memset(sum + 1, 0, 3 * sizeof(mp_limb_t));
+	LC(m_logcat + ".acct").debug("%s: sh1=%lu; sh2=%lu; sum=%lu;", __FUNCTION__, *share1, *share2, *sum);
 	return 0;
 }
 
@@ -267,6 +272,7 @@ int spdz2_ext_processor_mersenne61::subs(const mp_limb_t * share1, const mp_limb
 	__diff = __share1 - __share2;
 	*diff = __diff.elem;
 	memset(diff + 1, 0, 3 * sizeof(mp_limb_t));
+	LC(m_logcat + ".acct").debug("%s: sh1=%lu; sh2=%lu; dif=%lu;", __FUNCTION__, *share1, *share2, *diff);
 	return 0;
 }
 
