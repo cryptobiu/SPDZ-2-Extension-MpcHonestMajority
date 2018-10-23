@@ -14,6 +14,7 @@ INCLUDE_DIRECTORIES(	$ENV{HOME}/MPCHonestMajorityForSpdz
 set(SOURCE_FILES
 	spdzext.h
 	spdzext.cpp
+	spdzext_width_defs.h
 	spdz2_ext_processor_base.h
 	spdz2_ext_processor_base.cpp
 	spdz2_ext_processor_mersenne127.h

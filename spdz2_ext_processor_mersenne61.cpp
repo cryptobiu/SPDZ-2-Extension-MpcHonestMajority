@@ -1,4 +1,5 @@
 
+#include "spdzext_width_defs.h"
 #include "spdz2_ext_processor_mersenne61.h"
 
 #include <log4cpp/Category.hh>
@@ -65,15 +66,18 @@ int spdz2_ext_processor_mersenne61::offline(const int offline_size)
 
 int spdz2_ext_processor_mersenne61::triple(mp_limb_t * a, mp_limb_t * b, mp_limb_t * c)
 {
-	std::vector<ZpMersenneLongElement> triple(3);
-	if(the_party->triples(1, triple))
+	std::vector<ZpMersenneLongElement> triple(3 * GFP_VECTOR);
+	if(the_party->triples(GFP_VECTOR, triple))
 	{
-		*a = triple[0].elem;
-		memset(a + 1, 0, 3 * sizeof(mp_limb_t));
-		*b = triple[1].elem;
-		memset(b + 1, 0, 3 * sizeof(mp_limb_t));
-		*c = triple[2].elem;
-		memset(c + 1, 0, 3 * sizeof(mp_limb_t));
+		for(size_t i = 0; i < GFP_VECTOR; ++i)
+		{
+			a[i*2] = triple[3*i].elem;
+			b[i*2] = triple[3*i+1].elem;
+			c[i*2] = triple[3*i+2].elem;
+		}
+		memset(a + GFP_LIMBS, 0, GFP_BYTES);//memset-0 the 2nd GFP of the share @a
+		memset(b + GFP_LIMBS, 0, GFP_BYTES);//memset-0 the 2nd GFP of the share @b
+		memset(c + GFP_LIMBS, 0, GFP_BYTES);//memset-0 the 2nd GFP of the share @c
 		LC(m_logcat + ".acct").debug("%s: a=%lu; b=%lu; c=%lu;", __FUNCTION__, *a, *b, *c);
 		return 0;
 	}

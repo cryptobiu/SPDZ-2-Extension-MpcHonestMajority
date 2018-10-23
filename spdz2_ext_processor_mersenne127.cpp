@@ -1,3 +1,5 @@
+
+#include "spdzext_width_defs.h"
 #include "spdz2_ext_processor_mersenne127.h"
 
 #include <log4cpp/Category.hh>
