@@ -217,23 +217,26 @@ int spdz2_ext_processor_mersenne127::verify(int * error)
 	return (the_party->verify())? 0: -1;
 }
 
-int spdz2_ext_processor_mersenne127::mult(const size_t share_count, const mp_limb_t * shares, mp_limb_t * products, int verify)
+int spdz2_ext_processor_mersenne127::mult(const size_t share_count, const mp_limb_t * xshares, const mp_limb_t * yshares, mp_limb_t * products, int verify)
 {
 	int result = -1;
-	size_t xy_pair_count = share_count/2;
-	std::vector<ZpMersenne127Element> x_shares(xy_pair_count), y_shares(xy_pair_count), xy_shares(xy_pair_count);
+	std::vector<ZpMersenne127Element> x_shares(share_count), y_shares(share_count), xy_shares(share_count);
 
-	for(size_t i = 0; i < xy_pair_count; ++i)
+	for(size_t i = 0; i < share_count; ++i)
 	{
-		x_shares[i].set_mp_limb_t(shares + 4*(2*i));
-		y_shares[i].set_mp_limb_t(shares + 4*(2*i+1));
+		x_shares[i].set_mp_limb_t(xshares+4*i);
+		y_shares[i].set_mp_limb_t(yshares+4*i);
+		LC(m_logcat).debug("%s: (%lu/%lu) x=[%lu:%lu]; y=[%lu:%lu];",
+				__FUNCTION__, i+1, share_count, xshares[4*i+1], xshares[4*i], yshares[4*i+1], yshares[4*i]);
 	}
 
-	if(the_party->multShares(xy_pair_count, x_shares, y_shares, xy_shares))
+	if(the_party->multShares(share_count, x_shares, y_shares, xy_shares))
 	{
-		for(size_t i = 0; i < xy_pair_count; ++i)
+		for(size_t i = 0; i < share_count; ++i)
 		{
 			xy_shares[i].get_mp_limb_t(products + 4*i);
+			LC(m_logcat).debug("%s: (%lu/%lu) x=[%lu:%lu];",
+					__FUNCTION__, i+1, share_count, products[4*i+1], products[4*i]);
 		}
 		result = 0;
 	}

@@ -18,7 +18,7 @@ extern "C"
 	int triple(void * handle, mp_limb_t * a, mp_limb_t * b, mp_limb_t * c);
 	int verify(void * handle, int * error);
     int input(void * handle, const int input_of_pid, const size_t num_of_inputs, mp_limb_t * inputs);
-    int mult(void * handle, const size_t share_count, const mp_limb_t * shares, mp_limb_t * products, int verify);
+    int mult(void * handle, const size_t share_count, const mp_limb_t * xshares, const mp_limb_t * yshares, mp_limb_t * products, int verify);
 
     int mix_add(void * handle, const mp_limb_t * share, const mp_limb_t * scalar, mp_limb_t * sum);
     int mix_sub_scalar(void * handle, const mp_limb_t * share, const mp_limb_t * scalar, mp_limb_t * diff);

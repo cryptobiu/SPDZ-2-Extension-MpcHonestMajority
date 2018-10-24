@@ -36,7 +36,7 @@ int init(void ** handle, const int pid, const int num_of_parties, const int thre
 		return -1;
 	}
 
-	if(0 != proc->init(pid, num_of_parties, thread_id, field, open_count, mult_count, bits_count, 500))
+	if(0 != proc->init(pid, num_of_parties, thread_id, field, open_count, mult_count, bits_count, 700))
 	{
 		delete proc;
 		return -1;
@@ -78,9 +78,9 @@ int input(void * handle, const int input_of_pid, const size_t num_of_inputs, mp_
 	return ((spdz2_ext_processor_base *)handle)->input(input_of_pid, num_of_inputs, inputs);
 }
 //-------------------------------------------------------------------------------------------//
-int mult(void * handle, const size_t share_count, const mp_limb_t * shares, mp_limb_t * products, int verify)
+int mult(void * handle, const size_t share_count, const mp_limb_t * xshares, const mp_limb_t * yshares, mp_limb_t * products, int verify)
 {
-	return ((spdz2_ext_processor_base *)handle)->mult(share_count, shares, products, verify);
+	return ((spdz2_ext_processor_base *)handle)->mult(share_count, xshares, yshares, products, verify);
 }
 //-------------------------------------------------------------------------------------------//
 int mix_add(void * handle, const mp_limb_t * share, const mp_limb_t * scalar, mp_limb_t * sum)
