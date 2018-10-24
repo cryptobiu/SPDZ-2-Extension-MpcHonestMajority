@@ -227,73 +227,97 @@ int spdz2_ext_processor_mersenne61::mult(const size_t share_count, const mp_limb
 
 int spdz2_ext_processor_mersenne61::mix_add(const mp_limb_t * share, const mp_limb_t * scalar, mp_limb_t * sum)
 {
-	ZpMersenneLongElement input, output, arg;
-	input.elem = *share;
-	arg.elem = *scalar;
-	output = input + arg;
-	*sum = output.elem;
-	memset(sum + 1, 0, 3 * sizeof(mp_limb_t));
-	LC(m_logcat + ".acct").debug("%s: sh=%lu; sc=%lu; su=%lu;", __FUNCTION__, *share, *scalar, *sum);
+	for(size_t i = 0; i < GFP_VECTOR; ++i)
+	{
+		ZpMersenneLongElement input, output, arg;
+		input.elem = share[i*2];
+		arg.elem = scalar[i*2];
+		output = input + arg;
+		sum[i*2] = output.elem;
+		sum[i*2+1] = 0;
+		LC(m_logcat + ".acct").debug("%s: sh=%lu; sc=%lu; su=%lu;", __FUNCTION__, share[i*2], scalar[i*2], sum[i*2]);
+	}
+	memset(sum + GFP_LIMBS, 0, GFP_BYTES);
 	return 0;
 }
 
 int spdz2_ext_processor_mersenne61::mix_sub_scalar(const mp_limb_t * share, const mp_limb_t * scalar, mp_limb_t * diff)
 {
-	ZpMersenneLongElement input, output, arg;
-	input.elem = *share;
-	arg.elem = *scalar;
-	output = input - arg;
-	*diff = output.elem;
-	memset(diff + 1, 0, 3 * sizeof(mp_limb_t));
-	LC(m_logcat + ".acct").debug("%s: sh=%lu; sc=%lu; df=%lu;", __FUNCTION__, *share, *scalar, *diff);
+	for(size_t i = 0; i < GFP_VECTOR; ++i)
+	{
+		ZpMersenneLongElement input, output, arg;
+		input.elem = share[i*2];
+		arg.elem = scalar[i*2];
+		output = input - arg;
+		diff[i*2] = output.elem;
+		diff[i*2+1] = 0;
+		LC(m_logcat + ".acct").debug("%s: sh=%lu; sc=%lu; df=%lu;", __FUNCTION__, share[i*2], scalar[i*2], diff[i*2]);
+	}
+	memset(diff + GFP_LIMBS, 0, GFP_BYTES);
 	return 0;
 }
 
 int spdz2_ext_processor_mersenne61::mix_sub_share(const mp_limb_t * scalar, const mp_limb_t * share, mp_limb_t * diff)
 {
-	ZpMersenneLongElement input, output, arg;
-	input.elem = *share;
-	arg.elem = *scalar;
-	output = arg - input;
-	*diff = output.elem;
-	memset(diff + 1, 0, 3 * sizeof(mp_limb_t));
-	LC(m_logcat + ".acct").debug("%s: sc=%lu; sh=%lu; df=%lu;", __FUNCTION__, *scalar, *share, *diff);
+	for(size_t i = 0; i < GFP_VECTOR; ++i)
+	{
+		ZpMersenneLongElement input, output, arg;
+		input.elem = share[i*2];
+		arg.elem = scalar[i*2];
+		output = arg - input;
+		diff[i*2] = output.elem;
+		diff[i*2+1] = 0;
+		LC(m_logcat + ".acct").debug("%s: sc=%lu; sh=%lu; df=%lu;", __FUNCTION__, share[i*2], scalar[i*2], diff[i*2]);
+	}
+	memset(diff + GFP_LIMBS, 0, GFP_BYTES);
 	return 0;
 }
 
 int spdz2_ext_processor_mersenne61::mix_mul(const mp_limb_t * share, const mp_limb_t * scalar, mp_limb_t * product)
 {
-	ZpMersenneLongElement input, output, arg;
-	input.elem = *share;
-	arg.elem = *scalar;
-	output = input * arg;
-	*product = output.elem;
-	memset(product + 1, 0, 3 * sizeof(mp_limb_t));
-	LC(m_logcat + ".acct").debug("%s: sh=%lu; sc=%lu; pd=%lu;", __FUNCTION__, *share, *scalar, *product);
+	for(size_t i = 0; i < GFP_VECTOR; ++i)
+	{
+		ZpMersenneLongElement input, output, arg;
+		input.elem = share[i*2];
+		arg.elem = scalar[i*2];
+		output = input * arg;
+		product[i*2] = output.elem;
+		product[i*2+1] = 0;
+		LC(m_logcat + ".acct").debug("%s: sh=%lu; sc=%lu; pd=%lu;", __FUNCTION__, share[i*2], scalar[i*2], product[i*2]);
+	}
+	memset(product + GFP_LIMBS, 0, GFP_BYTES);
 	return 0;
 }
 
 int spdz2_ext_processor_mersenne61::adds(const mp_limb_t * share1, const mp_limb_t * share2, mp_limb_t * sum)
 {
-	ZpMersenneLongElement __share1, __share2, __sum;
-	__share1.elem = *share1;
-	__share2.elem = *share2;
-	__sum = __share1 + __share2;
-	*sum = __sum.elem;
-	memset(sum + 1, 0, 3 * sizeof(mp_limb_t));
-	LC(m_logcat + ".acct").debug("%s: sh1=%lu; sh2=%lu; sum=%lu;", __FUNCTION__, *share1, *share2, *sum);
+	for(size_t i = 0; i < GFP_VECTOR; ++i)
+	{
+		ZpMersenneLongElement __share1, __share2, __sum;
+		__share1.elem = share1[i*2];
+		__share2.elem = share2[i*2];
+		__sum = __share1 + __share2;
+		sum[i*2] = __sum.elem;
+		sum[i*2+1] = 0;
+		LC(m_logcat + ".acct").debug("%s: sh1=%lu; sh2=%lu; sum=%lu;", __FUNCTION__, share1[i*2], share2[i*2], sum[i*2]);
+	}
+	memset(sum + GFP_LIMBS, 0, GFP_BYTES);
 	return 0;
 }
 
 int spdz2_ext_processor_mersenne61::subs(const mp_limb_t * share1, const mp_limb_t * share2, mp_limb_t * diff)
 {
-	ZpMersenneLongElement __share1, __share2, __diff;
-	__share1.elem = *share1;
-	__share2.elem = *share2;
-	__diff = __share1 - __share2;
-	*diff = __diff.elem;
-	memset(diff + 1, 0, 3 * sizeof(mp_limb_t));
-	LC(m_logcat + ".acct").debug("%s: sh1=%lu; sh2=%lu; dif=%lu;", __FUNCTION__, *share1, *share2, *diff);
+	for(size_t i = 0; i < GFP_VECTOR; ++i)
+	{
+		ZpMersenneLongElement __share1, __share2, __diff;
+		__share1.elem = share1[i*2];
+		__share2.elem = share2[i*2];
+		__diff = __share1 - __share2;
+		diff[i*2] = __diff.elem;
+		diff[i*2+1] = 0;
+		LC(m_logcat + ".acct").debug("%s: sh1=%lu; sh2=%lu; dif=%lu;", __FUNCTION__, share1[i*2], share2[i*2], diff[i*2]);
+	}
+	memset(diff + GFP_LIMBS, 0, GFP_BYTES);
 	return 0;
 }
 
