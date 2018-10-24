@@ -158,7 +158,7 @@ int spdz2_ext_processor_mersenne61::open(const size_t share_count, const mp_limb
 		}
 	}
 
-	if(the_party->openShare((int)share_count, m61shares, m61opens))
+	if(the_party->openShare((int)GFP_VECTOR*share_count, m61shares, m61opens))
 	{
 		if(!verify || the_party->verify())
 		{
@@ -191,22 +191,30 @@ int spdz2_ext_processor_mersenne61::mult(const size_t share_count, const mp_limb
 {
 	LC(m_logcat).info("%s called for %lu shares.", __FUNCTION__, share_count);
 	int result = -1;
-	std::vector<ZpMersenneLongElement> x_shares(share_count), y_shares(share_count), xy_shares(share_count);
+	std::vector<ZpMersenneLongElement> x_shares(GFP_VECTOR*share_count), y_shares(GFP_VECTOR*share_count), xy_shares(GFP_VECTOR*share_count);
 
 	for(size_t i = 0; i < share_count; ++i)
 	{
-		x_shares[i].elem = xshares[4*i];
-		y_shares[i].elem = yshares[4*i];
-		LC(m_logcat + ".acct").debug("%s: (%lu/%lu); x=%lu; y=%lu;", __FUNCTION__, i + 1, share_count, xshares[4*i], yshares[4*i]);
+		const mp_limb_t * xshare = xshares + i*2*GFP_LIMBS;
+		const mp_limb_t * yshare = yshares + i*2*GFP_LIMBS;
+		for(size_t j = 0; j < GFP_VECTOR; ++j)
+		{
+			x_shares[i*GFP_VECTOR+j].elem = xshare[2*j];
+			y_shares[i*GFP_VECTOR+j].elem = yshare[2*j];
+		}
 	}
 
-	if(the_party->multShares(share_count, x_shares, y_shares, xy_shares))
+	if(the_party->multShares(GFP_VECTOR*share_count, x_shares, y_shares, xy_shares))
 	{
 		for(size_t i = 0; i < share_count; ++i)
 		{
-			products[4*i] = xy_shares[i].elem;
-			memset(products + 4*i + 1, 0, 3 * sizeof(mp_limb_t));
-			LC(m_logcat + ".acct").debug("%s: (%lu/%lu); xy=%lu;", __FUNCTION__, i + 1, share_count, products[4*i]);
+			mp_limb_t * product = products + i*2*GFP_LIMBS;
+			for(size_t j = 0; j < GFP_VECTOR; ++j)
+			{
+				product[2*j] = xy_shares[i*GFP_VECTOR+j].elem;
+				product[2*j+1] = 0;
+			}
+			memset(product + GFP_LIMBS, 0, GFP_BYTES);
 		}
 		result = 0;
 	}
