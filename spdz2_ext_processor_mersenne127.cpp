@@ -100,15 +100,18 @@ int spdz2_ext_processor_mersenne127::offline(const int offline_size)
 
 int spdz2_ext_processor_mersenne127::triple(mp_limb_t * a, mp_limb_t * b, mp_limb_t * c)
 {
-	std::vector<ZpMersenne127Element> triple(3);
-	if(the_party->triples(1, triple))
+	std::vector<ZpMersenne127Element> triple(3 * GFP_VECTOR);
+	if(the_party->triples(GFP_VECTOR, triple))
 	{
-		triple[0].get_mp_limb_t(a);
-		a[2] = a[3] = 0;
-		triple[1].get_mp_limb_t(b);
-		b[2] = b[3] = 0;
-		triple[2].get_mp_limb_t(c);
-		c[2] = c[3] = 0;
+		for(size_t i = 0; i < GFP_VECTOR; ++i)
+		{
+			triple[3*i].get_mp_limb_t(a+2*i);
+			triple[3*i+1].get_mp_limb_t(b+2*i);
+			triple[3*i+2].get_mp_limb_t(c+2*i);
+		}
+		memset(a + GFP_LIMBS, 0, GFP_BYTES);//memset-0 the 2nd GFP @a
+		memset(b + GFP_LIMBS, 0, GFP_BYTES);//memset-0 the 2nd GFP @b
+		memset(c + GFP_LIMBS, 0, GFP_BYTES);//memset-0 the 2nd GFP @c
 		return 0;
 	}
 	else
