@@ -143,6 +143,28 @@ int spdz2_ext_processor_mersenne61::bit(mp_limb_t * share)
 	return -1;
 }
 
+/*
+int spdz2_ext_processor_mersenne61::input(const int input_of_pid, const size_t num_of_inputs, mp_limb_t * inputs)
+{
+	int result = spdz2_ext_processor_base::input(input_of_pid, num_of_inputs, inputs);
+	if(0 == result)
+	{
+		if(LC(m_logcat).isDebugEnabled())
+		{
+			std::stringstream srs;
+			const u_int8_t * p = (const u_int8_t *)inputs;
+			for(size_t j = 0; j < num_of_inputs * 2 * GFP_BYTES; ++j)
+			{
+				if(0 == j%64) srs << std::endl;
+				srs << std::hex << std::setw(2) << std::setfill('0') << (int)p[j];
+			}
+			LC(m_logcat).debug("%s: pid %d input dump: %s", __FUNCTION__, m_pid, srs.str().c_str());
+		}
+	}
+	return result;
+}*/
+
+
 int spdz2_ext_processor_mersenne61::open(const size_t share_count, const mp_limb_t * share_values, mp_limb_t * opens, int verify)
 {
 	int result = -1;
@@ -151,6 +173,16 @@ int spdz2_ext_processor_mersenne61::open(const size_t share_count, const mp_limb
 	for(size_t i = 0; i < share_count; ++i)
 	{
 		const mp_limb_t * share = share_values + i*2*GFP_LIMBS;
+
+		if(LC(m_logcat).isDebugEnabled())
+		{
+			std::stringstream srs;
+			const u_int8_t * p = (const u_int8_t *)share;
+			for(size_t j = 0; j < 2 * GFP_BYTES; ++j)
+				srs << std::hex << std::setw(2) << std::setfill('0') << (int)p[j];
+			LC(m_logcat).debug("%s: designated share %lu dump: %s", __FUNCTION__, i, srs.str().c_str());
+		}
+
 		for(size_t j = 0; j < GFP_VECTOR; ++j)
 		{
 			m61shares[i*GFP_VECTOR+j].elem = share[2*j];
@@ -161,7 +193,11 @@ int spdz2_ext_processor_mersenne61::open(const size_t share_count, const mp_limb
 	{
 		if(!verify || the_party->verify())
 		{
-			memcpy(opens, m61opens.data(), share_count * GFP_BYTES);
+			for(size_t i = 0; i < GFP_VECTOR*share_count; ++i)
+			{
+				opens[2*i] = m61opens[i].elem;
+				opens[2*i+1] = 0;
+			}
 			result = 0;
 		}
 		else

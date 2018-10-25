@@ -1,5 +1,6 @@
 
 #include "spdz2_ext_processor_base.h"
+#include "spdzext_width_defs.h"
 
 #include <iostream>
 #include <stdio.h>
@@ -172,8 +173,8 @@ int spdz2_ext_processor_base::load_party_inputs(const int pid, const size_t coun
 int spdz2_ext_processor_base::load_self_party_inputs(const size_t count)
 {
 	int result = -1;
-	mp_limb_t * clr_values = new mp_limb_t[count * 2];
-	memset(clr_values, 0, count * 2 * sizeof(mp_limb_t));
+	mp_limb_t * clr_values = new mp_limb_t[count * GFP_LIMBS];
+	memset(clr_values, 0, count * GFP_BYTES);
 	if(0 == load_clr_party_inputs(clr_values, count))
 		result = load_peer_party_inputs(m_pid, count, clr_values);
 	else
@@ -189,8 +190,8 @@ int spdz2_ext_processor_base::load_peer_party_inputs(const int pid, const size_t
 	shared_input_t party_inputs;
 	party_inputs.share_count = count;
 	party_inputs.share_index = 0;
-	party_inputs.shared_values = new mp_limb_t[party_inputs.share_count * 4];
-	memset(party_inputs.shared_values, 0, party_inputs.share_count * 4 * sizeof(mp_limb_t));
+	party_inputs.shared_values = new mp_limb_t[party_inputs.share_count * 2 * GFP_LIMBS];
+	memset(party_inputs.shared_values, 0, party_inputs.share_count * 2 * GFP_BYTES);
 
 	if(0 == closes(pid, count, (m_pid == pid)? clr_values: NULL, party_inputs.shared_values))
 	{
@@ -229,17 +230,17 @@ int spdz2_ext_processor_base::load_clr_party_inputs(mp_limb_t * clr_values, cons
 			LC(m_logcat).debug("%s: party input [%s] line: [%s];", __FUNCTION__, input_file.c_str(), sz);
 			mpz_set_str(t, sz, 10);
 			mpz_export(clr_values + 2*clr_values_idx, NULL, -1, 8, 0, 0, t);
-			if(++clr_values_idx >= count)
+			if(++clr_values_idx >= count*GFP_VECTOR)
 				break;
 		}
 		mpz_clear(t);
 		fclose(pf);
 
-		if(count == clr_values_idx)
+		if(count*GFP_VECTOR == clr_values_idx)
 			result = 0;
 		else
-			LC(m_logcat).error("%s: not enough inputs in file [%s]; required %lu; file has %lu;",
-							   __FUNCTION__, input_file.c_str(), count, clr_values_idx);
+			LC(m_logcat).error("%s: not enough inputs in file [%s]; required %lu*%u; file has %lu;",
+							   __FUNCTION__, input_file.c_str(), count, GFP_VECTOR, clr_values_idx);
 	}
 	return result;
 }
@@ -248,42 +249,52 @@ int spdz2_ext_processor_base::load_clr_party_inputs(mp_limb_t * clr_values, cons
 
 int spdz2_ext_processor_base::input(const int input_of_pid, mp_limb_t * input_value)
 {
+	int result = -1;
 	std::map< int , shared_input_t >::iterator i = m_shared_inputs.find(input_of_pid);
-	if(m_shared_inputs.end() != i && 0 < i->second.share_count && i->second.share_index < i->second.share_count)
+	if(m_shared_inputs.end() != i)
 	{
-		memcpy(input_value, i->second.shared_values + (4 * i->second.share_index++), 4 * sizeof(mp_limb_t));
-		return 0;
+		if(0 < i->second.share_count)
+		{
+			if(i->second.share_count > i->second.share_index)
+			{
+				memcpy(input_value, i->second.shared_values + (2 * GFP_LIMBS * i->second.share_index++), GFP_BYTES);
+				memset(input_value + GFP_LIMBS, 0, GFP_BYTES);
+				result = 0;
+			}
+			else
+				LC(m_logcat).error("%s: input exhausted for pid %d.", __FUNCTION__, input_of_pid);
+		}
+		else
+			LC(m_logcat).error("%s: no input loaded for pid %d.", __FUNCTION__, input_of_pid);
 	}
-	LC(m_logcat).error("%s: failed to get input for pid %d.", __FUNCTION__, input_of_pid);
-	return -1;
+	else
+		LC(m_logcat).error("%s: no input for pid %d.", __FUNCTION__, input_of_pid);
+	return result;
 }
 
 //***********************************************************************************************//
 
 int spdz2_ext_processor_base::input(const int input_of_pid, const size_t num_of_inputs, mp_limb_t * inputs)
 {
-	LC(m_logcat).debug("%s: %lu input of party %d requested.", __FUNCTION__, num_of_inputs, input_of_pid);
-
 	int result = -1;
 	std::map< int , shared_input_t >::iterator i = m_shared_inputs.find(input_of_pid);
 	if(m_shared_inputs.end() != i)
 	{
-		if(i->second.share_count >= (i->second.share_index + num_of_inputs))
+		if(0 < i->second.share_count)
 		{
-			memcpy(inputs, i->second.shared_values + (4 * i->second.share_index), num_of_inputs * 4 * sizeof(mp_limb_t));
-			i->second.share_index += num_of_inputs;
-			result = 0;
+			if((i->second.share_count - i->second.share_index) >= num_of_inputs)
+			{
+				memcpy(inputs, i->second.shared_values + (2 * GFP_LIMBS * i->second.share_index++), GFP_BYTES * 2 * num_of_inputs);
+				result = 0;
+			}
+			else
+				LC(m_logcat).error("%s: input exhausted for pid %d.", __FUNCTION__, input_of_pid);
 		}
 		else
-		{
-			LC(m_logcat).error("%s: not enough input for pid %d; required %lu; available %lu;",
-					__FUNCTION__, input_of_pid, num_of_inputs, (i->second.share_count - i->second.share_index));
-		}
+			LC(m_logcat).error("%s: no input loaded for pid %d.", __FUNCTION__, input_of_pid);
 	}
 	else
-	{
-		LC(m_logcat).error("%s: failed to get input for pid %d.", __FUNCTION__, input_of_pid);
-	}
+		LC(m_logcat).error("%s: no input for pid %d.", __FUNCTION__, input_of_pid);
 	return result;
 }
 
