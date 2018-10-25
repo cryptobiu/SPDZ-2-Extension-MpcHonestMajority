@@ -147,7 +147,6 @@ int spdz2_ext_processor_mersenne61::open(const size_t share_count, const mp_limb
 {
 	int result = -1;
 	std::vector<ZpMersenneLongElement> m61shares(GFP_VECTOR*share_count), m61opens(GFP_VECTOR*share_count);
-	LC(m_logcat).debug("%s: calling open for %u shares", __FUNCTION__, (u_int32_t)GFP_VECTOR*share_count);
 
 	for(size_t i = 0; i < share_count; ++i)
 	{
@@ -162,11 +161,7 @@ int spdz2_ext_processor_mersenne61::open(const size_t share_count, const mp_limb
 	{
 		if(!verify || the_party->verify())
 		{
-			for(size_t i = 0; i < GFP_VECTOR*share_count; ++i)
-			{
-				opens[2*i] = m61opens[i].elem;
-				opens[2*i+1] = 0;
-			}
+			memcpy(opens, m61opens.data(), share_count * GFP_BYTES);
 			result = 0;
 		}
 		else
