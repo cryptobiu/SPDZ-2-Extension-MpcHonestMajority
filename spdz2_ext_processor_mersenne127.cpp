@@ -152,7 +152,7 @@ int spdz2_ext_processor_mersenne127::open(const size_t share_count, const mp_lim
 		}
 	}
 
-	if(the_party->openShare((int)share_count, m127shares, m127opens))
+	if(the_party->openShare((int)GFP_VECTOR*share_count, m127shares, m127opens))
 	{
 		if(!verify || the_party->verify())
 		{
@@ -193,7 +193,7 @@ int spdz2_ext_processor_mersenne127::mult(const size_t share_count, const mp_lim
 		}
 	}
 
-	if(the_party->multShares(share_count, x_shares, y_shares, xy_shares))
+	if(the_party->multShares(GFP_VECTOR*share_count, x_shares, y_shares, xy_shares))
 	{
 		for(size_t i = 0; i < share_count; ++i)
 		{
