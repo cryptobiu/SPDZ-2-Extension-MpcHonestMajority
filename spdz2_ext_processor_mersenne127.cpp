@@ -91,17 +91,12 @@ int spdz2_ext_processor_mersenne127::triple(mp_limb_t * a, mp_limb_t * b, mp_lim
 int spdz2_ext_processor_mersenne127::closes(const int share_of_pid, const size_t value_count, const mp_limb_t * values, mp_limb_t * shares)
 {
 	char buffer[512];
-	std::vector<ZpMersenne127Element> m127shares(value_count), m127values(value_count);
+	std::vector<ZpMersenne127Element> m127shares(GFP_VECTOR*value_count), m127values(GFP_VECTOR*value_count);
 	if(share_of_pid == m_pid)
 	{
-		for(size_t i = 0; i < value_count; ++i)
+		for(size_t i = 0; i < GFP_VECTOR*value_count; ++i)
 		{
 			m127values[i].set_mp_limb_t(values+ 2*i);
-			if(LC(m_logcat + ".acct").isDebugEnabled())
-			{
-				snprintf(buffer, 512, "[%016lX:%016lX]", values[2*i+1], values[2*i]);
-				LC(m_logcat + ".acct").debug("%s: (%lu/%lu) close value=%s;", __FUNCTION__, i + 1, value_count, buffer);
-			}
 		}
 	}
 
@@ -109,13 +104,12 @@ int spdz2_ext_processor_mersenne127::closes(const int share_of_pid, const size_t
 	{
 		for(size_t i = 0; i < value_count; ++i)
 		{
-			m127shares[i].get_mp_limb_t(shares + 4*i);
-			shares[4*i+2] = shares[4*i+3] = 0;
-			if(LC(m_logcat + ".acct").isDebugEnabled())
+			mp_limb_t * share = shares + (i*2*GFP_LIMBS);
+			for(size_t j = 0; j < GFP_VECTOR; ++j)
 			{
-				snprintf(buffer, 512, "[%016lX:%016lX:%016lX:%016lX]", shares[4*i+3], shares[4*i+2], shares[4*i+1], shares[4*i]);
-				LC(m_logcat + ".acct").debug("%s: (%lu/%lu) share value=%s;", __FUNCTION__, i + 1, value_count, buffer);
+				m127shares[i*GFP_VECTOR+j].get_mp_limb_t(share+j*2);
 			}
+			memset(share + GFP_LIMBS, 0, GFP_BYTES);
 		}
 		return 0;
 	}
