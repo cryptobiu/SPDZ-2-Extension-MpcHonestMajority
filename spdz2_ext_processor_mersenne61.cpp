@@ -174,15 +174,6 @@ int spdz2_ext_processor_mersenne61::open(const size_t share_count, const mp_limb
 	{
 		const mp_limb_t * share = share_values + i*2*GFP_LIMBS;
 
-		if(LC(m_logcat).isDebugEnabled())
-		{
-			std::stringstream srs;
-			const u_int8_t * p = (const u_int8_t *)share;
-			for(size_t j = 0; j < 2 * GFP_BYTES; ++j)
-				srs << std::hex << std::setw(2) << std::setfill('0') << (int)p[j];
-			LC(m_logcat).debug("%s: designated share %lu dump: %s", __FUNCTION__, i, srs.str().c_str());
-		}
-
 		for(size_t j = 0; j < GFP_VECTOR; ++j)
 		{
 			m61shares[i*GFP_VECTOR+j].elem = share[2*j];
