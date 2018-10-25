@@ -54,39 +54,6 @@ int spdz2_ext_processor_mersenne127::term()
 	return 0;
 }
 
-int spdz2_ext_processor_mersenne127::input(const int input_of_pid, mp_limb_t * input_value)
-{
-	if(0 == spdz2_ext_processor_base::input(input_of_pid, input_value))
-	{
-		if(LC(m_logcat + ".acct").isDebugEnabled())
-		{
-			char buffer[512];
-			snprintf(buffer, 512, "[%016lX:%016lX:%016lX:%016lX]", input_value[3], input_value[2], input_value[1], input_value[0]);
-			LC(m_logcat + ".acct").debug("%s: input_value=%s;", __FUNCTION__,buffer);
-		}
-		return 0;
-	}
-	return -1;
-}
-
-int spdz2_ext_processor_mersenne127::input(const int input_of_pid, const size_t num_of_inputs, mp_limb_t * inputs)
-{
-	if(0 == spdz2_ext_processor_base::input(input_of_pid, num_of_inputs, inputs))
-	{
-		if(LC(m_logcat + ".acct").isDebugEnabled())
-		{
-			for(size_t i = 0; i < num_of_inputs; ++i)
-			{
-				char buffer[512];
-				snprintf(buffer, 512, "[%016lX:%016lX:%016lX:%016lX]", inputs[4*i+3], inputs[4*i+2], inputs[4*i+1], inputs[4*i+0]);
-				LC(m_logcat + ".acct").debug("%s: input_value=%s;", __FUNCTION__, buffer);
-			}
-		}
-		return 0;
-	}
-	return -1;
-}
-
 int spdz2_ext_processor_mersenne127::get_P(mpz_t P)
 {
 	ZpMersenne127Element::get_mpz_t_p(P);
