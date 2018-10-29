@@ -311,32 +311,35 @@ int spdz2_ext_processor_base::inverse(mp_limb_t * x, mp_limb_t * y)
 6.      Non-interactively multiply [y] =v [r]
 7.		Now [y] [x] =1 holds.
 */
-	memset(x, 0, 4*sizeof(mp_limb_t));
-	memset(y, 0, 4*sizeof(mp_limb_t));
+	memset(x, 0, SHR_BYTES);
+	memset(y, 0, SHR_BYTES);
 
-	mp_limb_t r[4], u[4];
-	memset(r, 0, 4*sizeof(mp_limb_t));
-	memset(u, 0, 4*sizeof(mp_limb_t));
+	mp_limb_t r[SHR_LIMBS], u[SHR_LIMBS];
+	memset(r, 0, SHR_BYTES);
+	memset(u, 0, SHR_BYTES);
 	if(0 != triple(x, r, u))
 	{
 		LC(m_logcat).error("%s: protocol triple() failed", __FUNCTION__);
 		return -1;
 	}
 
-	mp_limb_t open_u[2];
-	memset(open_u, 0, 2*sizeof(mp_limb_t));
+	mp_limb_t open_u[GFP_LIMBS];
+	memset(open_u, 0, GFP_BYTES);
 	if(0 != open(1, u, open_u, 1))
 	{
 		LC(m_logcat).error("%s: protocol open() failed", __FUNCTION__);
 		return -1;
 	}
 
-	mp_limb_t v[2];
-	memset(v, 0, 2*sizeof(mp_limb_t));
-	if(0 != inverse_value(open_u, v))
+	mp_limb_t v[GFP_LIMBS];
+	memset(v, 0, GFP_BYTES);
+	for(size_t j = 0; j < GFP_VECTOR; ++j)
 	{
-		LC(m_logcat).error("%s: inverse_value() failed", __FUNCTION__);
-		return -1;
+		if(0 != inverse_value(open_u + 2*j, v + 2*j))
+		{
+			LC(m_logcat).error("%s: inverse_value(@%lu) failed", __FUNCTION__, j);
+			return -1;
+		}
 	}
 
 	if(0 != mix_mul(r, v, y))
