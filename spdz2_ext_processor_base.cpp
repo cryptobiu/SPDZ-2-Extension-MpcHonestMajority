@@ -229,18 +229,18 @@ int spdz2_ext_processor_base::load_clr_party_inputs(mp_limb_t * clr_values, cons
 		{
 			LC(m_logcat).debug("%s: party input [%s] line: [%s];", __FUNCTION__, input_file.c_str(), sz);
 			mpz_set_str(t, sz, 10);
-			mpz_export(clr_values + 2*clr_values_idx, NULL, -1, 8, 0, 0, t);
-			if(++clr_values_idx >= count*GFP_VECTOR)
+			mpz_export(clr_values + clr_values_idx*VAL_LIMBS, NULL, -1, 8, 0, 0, t);
+			if(++clr_values_idx >= count*GFP_VALS)
 				break;
 		}
 		mpz_clear(t);
 		fclose(pf);
 
-		if(count*GFP_VECTOR == clr_values_idx)
+		if(count*GFP_VALS == clr_values_idx)
 			result = 0;
 		else
 			LC(m_logcat).error("%s: not enough inputs in file [%s]; required %lu*%u; file has %lu;",
-							   __FUNCTION__, input_file.c_str(), count, GFP_VECTOR, clr_values_idx);
+							   __FUNCTION__, input_file.c_str(), count, GFP_VALS, clr_values_idx);
 	}
 	return result;
 }
@@ -333,9 +333,9 @@ int spdz2_ext_processor_base::inverse(mp_limb_t * x, mp_limb_t * y)
 
 	mp_limb_t v[GFP_LIMBS];
 	memset(v, 0, GFP_BYTES);
-	for(size_t j = 0; j < GFP_VECTOR; ++j)
+	for(size_t j = 0; j < GFP_VALS; ++j)
 	{
-		if(0 != inverse_value(open_u + 2*j, v + 2*j))
+		if(0 != inverse_value(open_u + j*VAL_LIMBS, v + j*VAL_LIMBS))
 		{
 			LC(m_logcat).error("%s: inverse_value(@%lu) failed", __FUNCTION__, j);
 			return -1;
